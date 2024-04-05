@@ -1,0 +1,26 @@
+{
+    "us_births": {
+        "path": "/Users/garethdavies/Downloads/us_births_dataset.tsf",
+        "dataset": "us_births",
+        "context_length": 9,
+        "prediction_length": 30,
+        "freq": "1D",
+        "seasonality": 52
+    },
+    "tourism": {
+        "path": "/Users/garethdavies/Downloads/tourism_monthly_dataset.tsf",
+        "dataset": "tourism",
+        "context_length": 15,
+        "prediction_length": 24,
+        "freq": "M",
+        "seasonality": 12
+    },
+    "hospital": {
+        "path": "/Users/garethdavies/Downloads/hospital_dataset.tsf",
+        "dataset": "hospital",
+        "context_length": 15,
+        "prediction_length": 12,
+        "freq": "M",
+        "seasonality": 12
+    }
+}
