@@ -17,15 +17,15 @@ class LinearModel(nn.Module):
             nn.Linear(hidden_size, output_size),
         )
 
-    def forward(self, x, target_scale):
+    def forward(self, x: torch.tensor, target_scale: torch.tensor):
         y_hat = self.main(x)
         y_hat = y_hat * target_scale
         return y_hat
 
 
-class TsarLSTMDecoder(nn.Module):
-    def __init__(self, params, output_dim):
-        super(TsarLSTMDecoder, self).__init__()
+class BaseLSTMDecoder(nn.Module):
+    def __init__(self, params: nnts.models.Hyperparams, output_dim: int):
+        super(BaseLSTMDecoder, self).__init__()
         self.params = params
 
         if params.rnn_type == "gru":
@@ -46,7 +46,7 @@ class TsarLSTMDecoder(nn.Module):
             )
         self.rnn_type = params.rnn_type
 
-    def init_hidden_zeros(self, batch_size):
+    def init_hidden_zeros(self, batch_size: int):
         if self.rnn_type == "gru":
             hidden = torch.zeros(
                 self.params.n_layers, batch_size, self.params.hidden_dim
@@ -57,14 +57,14 @@ class TsarLSTMDecoder(nn.Module):
             hidden = (h0, c0)
         return hidden
 
-    def forward(self, X, hidden=None):
+    def forward(self, X: torch.tensor, hidden=None):
         B, T, C = X.shape
         if hidden is None:
             hidden = self.init_hidden_zeros(B)
         return self.rnn(X, hidden)
 
 
-class TsarLSTM(nn.Module):
+class BaseLSTM(nn.Module):
 
     def __init__(
         self,
@@ -73,17 +73,57 @@ class TsarLSTM(nn.Module):
         scaling_fn: callable,
         output_dim: int,
     ):
-        super(TsarLSTM, self).__init__()
-        self.encoder = TsarLSTMDecoder(params, output_dim)
-        self.distribution = Distribution(params.hidden_dim, output_dim)
+        super(BaseLSTM, self).__init__()
         self.scaling_fn = scaling_fn
+        self.decoder = BaseLSTMDecoder(params, output_dim)
+        self.distribution = Distribution(params.hidden_dim, output_dim)
 
-    def forward(self, X, mask):
+    def forward(self, X: torch.tensor, pad_mask: torch.tensor) -> torch.tensor:
         X = X.clone()
         B, T, C = X.shape
-        target_scale = self.scaling_fn(X[:, :, :1], mask)
+        target_scale = self.scaling_fn(X[:, :, :1], pad_mask)
         conts = X / target_scale
         embedded = torch.cat([conts, torch.log(target_scale).expand(B, T, 1)], 2)
-        out, _ = self.encoder(embedded)
+        out, _ = self.decoder(embedded)
         distr = self.distribution(out, target_scale=target_scale)
         return distr
+
+    def generate(
+        self,
+        X: torch.tensor,
+        pad_mask: torch.tensor,
+        prediction_length: int,
+        context_length: int,
+    ) -> torch.tensor:
+        pred_list = []
+        while True:
+            pad_mask = pad_mask[:, -context_length:]
+            assert (
+                pad_mask.sum()
+                == X[:, -context_length:, :].shape[0]
+                * X[:, -context_length:, :].shape[1]
+            )
+            preds = self.forward(X[:, -context_length:, :], pad_mask)
+            # focus only on the last time step
+            preds = preds[:, -1:, :]  # becomes (B, 1, C)
+            pred_list.append(preds)
+
+            if len(pred_list) >= prediction_length:
+                break
+            y_hat = preds.detach().clone()
+            X = torch.cat((X, y_hat), dim=1)  # (B, T+1)
+            pad_mask = torch.cat((pad_mask, torch.ones_like(preds[:, :, 0])), dim=1)
+        return torch.cat(pred_list, 1)
+
+    def teacher_forcing_output(self, data):
+        """
+        data: dict with keys "X" and "pad_mask"
+        """
+        x = data["X"]
+        pad_mask = data["pad_mask"]
+        y_hat = self(x[:, :-1, :], pad_mask[:, :-1])
+        y = x[:, 1:, :]
+
+        y_hat = y_hat[pad_mask[:, 1:]]
+        y = y[pad_mask[:, 1:]]
+        return y_hat, y

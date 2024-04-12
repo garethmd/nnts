@@ -9,4 +9,4 @@ class CovariateScenario:
     pearson: float = 0
     noise: float = 0
     covariates: int = 0
-    round_error: bool = True
+    seed: int = 42

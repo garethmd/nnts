@@ -39,10 +39,10 @@ class TimeseriesDataset(torch.utils.data.Dataset):
         context_length: int,
         prediction_length: int,
         conts: List[int] = [],
-        seed_fn: callable = seed_everything,
+        # seed_fn: callable = seed_everything,
     ):
-        if seed_fn is not None:
-            seed_fn(42)
+        # if seed_fn is not None:
+        #    seed_fn(42)
         self.df = df.copy()
         self.conts = conts.copy()
         self.context_length = torch.tensor(context_length).long()
