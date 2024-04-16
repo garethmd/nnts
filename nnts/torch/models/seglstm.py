@@ -3,24 +3,6 @@ import torch.nn as nn
 
 import nnts.models
 
-# class LinearModel(nn.Module):
-#    """
-#    This model predicts a point predction for ordinal data.
-#    """
-#
-#    def __init__(self, params: nnts.models.Hyperparams):
-#        super(LinearModel, self).__init__()
-#        hidden_dim = params.hidden_dim * params.covariates_plus_one
-#        self.main = nn.Sequential(
-#            nn.Linear(hidden_dim, hidden_dim),
-#            nn.ReLU(),
-#            nn.Linear(hidden_dim, hidden_dim),
-#            nn.Linear(hidden_dim, params.output_dim * params.covariates_plus_one),
-#        )
-#
-#    def forward(self, x: torch.tensor) -> torch.tensor:
-#        return self.main(x)
-
 
 class SegLSTMDecoder(nn.Module):
 
@@ -109,8 +91,15 @@ class SegLSTM(nn.Module):
 
         X = X.clone()
         B, T, C = X.shape
-        target_scale = self.scaling_fn(X[:, :, :1], pad_mask)
-        x = X / target_scale
+
+        if self.scaling_fn is None:
+            target_scale = None
+            x = X
+        else:
+            # target_scale = self.scaling_fn(X, pad_mask)
+            target_scale = self.scaling_fn(X[:, :, :1], pad_mask)
+            x = X / target_scale
+
         x = x.reshape(B, -1, self.segment_length, C)  # B, T/12, 12, C
         B, T, T_dim, C = x.shape
 

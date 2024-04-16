@@ -19,7 +19,8 @@ class LinearModel(nn.Module):
 
     def forward(self, x: torch.tensor, target_scale: torch.tensor):
         y_hat = self.main(x)
-        y_hat = y_hat * target_scale
+        if target_scale is not None:
+            y_hat = y_hat * target_scale
         return y_hat
 
 

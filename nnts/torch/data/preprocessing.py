@@ -1,8 +1,11 @@
+from typing import List
+
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
 import nnts.data
+import nnts.data.preprocessing
 import nnts.experiments
 import nnts.models
 
@@ -28,6 +31,30 @@ def masked_mean_abs_scaling(
     return scale
 
 
+class StandardScaler(nnts.data.preprocessing.Transformation):
+    def __init__(self, mean=None, std=None):
+        self.mean = mean
+        self.std = std
+
+    def fit(self, data: pd.DataFrame):
+        numeric_data = data.select_dtypes(include=["number"])
+        self.mean = numeric_data.mean()
+        self.std = numeric_data.std()
+        return self
+
+    def transform(self, data: pd.DataFrame):
+        numeric_data = data.select_dtypes(include=["number"])
+        numeric_cols = numeric_data.columns
+        data[numeric_cols] = (numeric_data - self.mean) / self.std
+        return data
+
+    def inverse_transform(self, data: pd.DataFrame):
+        numeric_data = data.select_dtypes(include=["number"])
+        numeric_cols = numeric_data.columns
+        data[numeric_cols] = numeric_data * self.std + self.mean
+        return data
+
+
 class TorchTimeseriesDataLoaderFactory(nnts.data.DataLoaderFactory):
     def __call__(
         self,
@@ -36,7 +63,13 @@ class TorchTimeseriesDataLoaderFactory(nnts.data.DataLoaderFactory):
         scenario: nnts.experiments.CovariateScenario,
         params: nnts.models.Hyperparams,
         shuffle: bool,
+        transforms: List[nnts.data.preprocessing.Transformation] = None,
     ) -> DataLoader:
+
+        if transforms is not None:
+            for transform in transforms:
+                data = transform.transform(data)
+
         ts = datasets.TimeseriesDataset(
             data,
             conts=scenario.conts,

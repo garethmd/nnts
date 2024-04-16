@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 import torch
 
@@ -77,3 +78,89 @@ def test_should_raise_error_if_mask_and_seq_different_shapes():
     # Act / Assert
     with pytest.raises(ValueError):
         preprocessing.masked_mean_abs_scaling(seq, mask)
+
+
+def test_should_fit_standard_scalar():
+    # Arrange
+    data = pd.DataFrame(
+        {
+            "a": [1, 2, 3, 4],
+            "b": [4, 5, 6, 7],
+            "ds": ["2021-01-01", "2021-01-02", "2021-01-03", "2021-01-04"],
+            "unique_id": ["T1", "T1", "T2", "T2"],
+        }
+    )
+    scaler = preprocessing.StandardScaler()
+
+    # Act
+    result = scaler.fit(data)
+
+    # Assert
+    assert result.mean.equals(pd.Series({"a": 2.5, "b": 5.5}))
+    assert result.std.equals(
+        pd.Series({"a": 1.2909944487358056, "b": 1.2909944487358056})
+    )
+
+
+def test_should_transform_standard_scalar():
+    # Arrange
+    data = pd.DataFrame(
+        {
+            "a": [1, 2, 3, 4],
+            "b": [4, 5, 6, 7],
+            "ds": ["2021-01-01", "2021-01-02", "2021-01-03", "2021-01-04"],
+            "unique_id": ["T1", "T1", "T2", "T2"],
+        }
+    )
+    scaler = preprocessing.StandardScaler(
+        mean=pd.Series({"a": 2.5, "b": 5.5}),
+        std=pd.Series({"a": 1.0, "b": 1.0}),
+    )
+
+    # Act
+    result = scaler.transform(data)
+
+    # a -1.5 -0.5 0.5 1.5
+    # b  -1.5 -0.5 0.5 1.5
+    print(result)
+    # Assert
+    assert result.equals(
+        pd.DataFrame(
+            {
+                "a": [-1.5, -0.5, 0.5, 1.5],
+                "b": [-1.5, -0.5, 0.5, 1.5],
+                "ds": ["2021-01-01", "2021-01-02", "2021-01-03", "2021-01-04"],
+                "unique_id": ["T1", "T1", "T2", "T2"],
+            }
+        )
+    )
+
+
+def test_should_inverse_transform_standard_scalar():
+    # Arrange
+    data = pd.DataFrame(
+        {
+            "a": [-1.5, -0.5, 0.5, 1.5],
+            "b": [-1.5, -0.5, 0.5, 1.5],
+            "ds": ["2021-01-01", "2021-01-02", "2021-01-03", "2021-01-04"],
+            "unique_id": ["T1", "T1", "T2", "T2"],
+        }
+    )
+    scaler = preprocessing.StandardScaler(
+        mean=pd.Series({"a": 2.5, "b": 5.5}),
+        std=pd.Series({"a": 1.0, "b": 1.0}),
+    )
+
+    # Act
+    result = scaler.inverse_transform(data)
+    # Assert
+    assert result.equals(
+        pd.DataFrame(
+            {
+                "a": [1.0, 2.0, 3.0, 4.0],
+                "b": [4.0, 5.0, 6.0, 7.0],
+                "ds": ["2021-01-01", "2021-01-02", "2021-01-03", "2021-01-04"],
+                "unique_id": ["T1", "T1", "T2", "T2"],
+            }
+        )
+    )
