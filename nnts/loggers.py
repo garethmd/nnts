@@ -3,6 +3,7 @@ import os
 import shutil
 import timeit
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, Dict
 
 import numpy as np
@@ -31,6 +32,8 @@ def makedirs_if_not_exists(directory: str) -> None:
 def convert_np_float(obj):
     if isinstance(obj, np.float32):
         return float(obj)
+    if isinstance(obj, Enum):
+        return obj.value
     raise TypeError
 
 

@@ -1,4 +1,10 @@
 from dataclasses import dataclass
+from enum import Enum, auto
+
+
+class TrainingMethod(Enum):
+    TEACHER_FORCING = auto()
+    FREE_RUNNING = auto()
 
 
 @dataclass
@@ -18,3 +24,4 @@ class Hyperparams:
     early_stopper_patience = 30
     batches_per_epoch = 200
     weight_decay = 1e-8
+    training_method: TrainingMethod = TrainingMethod.TEACHER_FORCING

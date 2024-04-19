@@ -159,14 +159,19 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
 
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()
-        y_hat, y = self.net.teacher_forcing_output(batch)
 
-        # y_hat, y = validate(
-        #    self.net,
-        #    batch,
-        #    self.metadata.context_length,
-        #    self.metadata.prediction_length,
-        # )
+        if (
+            self.params.training_method
+            == nnts.models.hyperparams.TrainingMethod.FREE_RUNNING
+        ):
+            y_hat, y = validate(
+                self.net,
+                batch,
+                self.metadata.context_length,
+                self.metadata.prediction_length,
+            )
+        else:
+            y_hat, y = self.net.teacher_forcing_output(batch)
 
         # if i == 0 and self.state.epoch == 1 and self.logger is not None:
         # self.logger.log_outputs(
