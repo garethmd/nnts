@@ -30,20 +30,6 @@ class EarlyStopper:
         return False
 
 
-def teacher_forcing_output(net, data):
-    """
-    data: dict with keys "X" and "pad_mask"
-    """
-    x = data["X"]
-    pad_mask = data["pad_mask"]
-    y_hat = net(x[:, :-1, :], pad_mask[:, :-1])
-    y = x[:, 1:, :]
-
-    y_hat = y_hat[pad_mask[:, 1:]]
-    y = y[pad_mask[:, 1:]]
-    return y_hat, y
-
-
 def validate(net, batch, prediction_length, context_length):
     y = batch["X"][:, context_length : context_length + prediction_length, ...]
     y_hat = net.generate(
@@ -164,8 +150,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
             self.params.training_method
             == nnts.models.hyperparams.TrainingMethod.FREE_RUNNING
         ):
-            y_hat, y = validate(
-                self.net,
+            y_hat, y = self.net.free_running(
                 batch,
                 self.metadata.context_length,
                 self.metadata.prediction_length,

@@ -1,32 +1,14 @@
+from typing import Dict
+
 import torch
 import torch.nn as nn
 
 import nnts.models
 
 
-class LinearModel(nn.Module):
-    """
-    This model predicts a point predction for ordinal data.
-    """
-
-    def __init__(self, hidden_size: int, output_size: int):
-        super(LinearModel, self).__init__()
-        self.main = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, output_size),
-        )
-
-    def forward(self, x: torch.tensor, target_scale: torch.tensor):
-        y_hat = self.main(x)
-        if target_scale is not None:
-            y_hat = y_hat * target_scale
-        return y_hat
-
-
-class BaseLSTMDecoder(nn.Module):
+class UnrolledLSTMDecoder(nn.Module):
     def __init__(self, params: nnts.models.Hyperparams, output_dim: int):
-        super(BaseLSTMDecoder, self).__init__()
+        super(UnrolledLSTMDecoder, self).__init__()
         self.params = params
 
         if params.rnn_type == "gru":
@@ -59,13 +41,17 @@ class BaseLSTMDecoder(nn.Module):
         return hidden
 
     def forward(self, X: torch.tensor, hidden=None):
+        """
+        H: number of steps to unroll
+        """
         B, T, C = X.shape
         if hidden is None:
             hidden = self.init_hidden_zeros(B)
-        return self.rnn(X, hidden)
+        out, hidden = self.rnn(X, hidden)
+        return out, hidden
 
 
-class BaseLSTM(nn.Module):
+class UnrolledLSTM(nn.Module):
 
     def __init__(
         self,
@@ -74,22 +60,32 @@ class BaseLSTM(nn.Module):
         scaling_fn: callable,
         output_dim: int,
     ):
-        super(BaseLSTM, self).__init__()
+        super(UnrolledLSTM, self).__init__()
         self.scaling_fn = scaling_fn
-        self.decoder = BaseLSTMDecoder(params, output_dim)
+        self.decoder = UnrolledLSTMDecoder(params, output_dim)
         self.distribution = Distribution(params.hidden_dim, output_dim)
 
-    def forward(self, X: torch.tensor, pad_mask: torch.tensor) -> torch.tensor:
+    def forward(self, X: torch.tensor, pad_mask: torch.tensor, H: int) -> torch.tensor:
         X = X.clone()
         B, T, C = X.shape
+        y_hat = torch.zeros(B, T + H, C)
+
         target_scale = self.scaling_fn(X, pad_mask)
         conts = X / target_scale
         embedded = torch.cat(
             [conts, torch.log(target_scale[:, :, :1]).expand(B, T, 1)], 2
         )
-        out, _ = self.decoder(embedded)
-        distr = self.distribution(out, target_scale=target_scale)
-        return distr
+        out, hidden = self.decoder(embedded)
+        out = self.distribution(out, target_scale=None)
+        y_hat[:, :T, :] = out
+        for t in range(0, H):
+            embedded = torch.cat([out[:, -1:, :], torch.log(target_scale[:, :, :1])], 2)
+            out, hidden = self.decoder(embedded, hidden)
+            out = self.distribution(out, target_scale=None)
+            y_hat[:, T + t, :] = out[:, -1, :]
+
+        y_hat = y_hat * target_scale
+        return y_hat
 
     def generate(
         self,
@@ -98,25 +94,28 @@ class BaseLSTM(nn.Module):
         prediction_length: int,
         context_length: int,
     ) -> torch.tensor:
-        pred_list = []
-        while True:
-            pad_mask = pad_mask[:, -context_length:]
-            assert (
-                pad_mask.sum()
-                == X[:, -context_length:, :].shape[0]
-                * X[:, -context_length:, :].shape[1]
-            )
-            preds = self.forward(X[:, -context_length:, :], pad_mask)
-            # focus only on the last time step
-            preds = preds[:, -1:, :]  # becomes (B, 1, C)
-            pred_list.append(preds)
+        y_hat = self.forward(
+            X[:, -context_length:, :], pad_mask[:, -context_length:], prediction_length
+        )
+        y_hat = y_hat[:, -prediction_length:, :]
+        return y_hat
 
-            if len(pred_list) >= prediction_length:
-                break
-            y_hat = preds.detach().clone()
-            X = torch.cat((X, y_hat), dim=1)  # (B, T+1)
-            pad_mask = torch.cat((pad_mask, torch.ones_like(preds[:, :, 0])), dim=1)
-        return torch.cat(pred_list, 1)
+    def free_running(
+        self, data: Dict, context_length: int, prediction_length: int
+    ) -> torch.tensor:
+        x = data["X"]
+        pad_mask = data["pad_mask"]
+
+        y = x[:, 1:, :]
+
+        y_hat = self.forward(
+            x[:, :context_length, :],
+            pad_mask[:, :context_length],
+            prediction_length - 1,
+        )
+        y_hat = y_hat[pad_mask[:, 1:]]
+        y = y[pad_mask[:, 1:]]
+        return y_hat, y
 
     def teacher_forcing_output(self, data):
         """
@@ -124,9 +123,8 @@ class BaseLSTM(nn.Module):
         """
         x = data["X"]
         pad_mask = data["pad_mask"]
-        y_hat = self(x[:, :-1, :], pad_mask[:, :-1])
+        y_hat = self(x[:, :-1, :], pad_mask[:, :-1], H=0)
         y = x[:, 1:, :]
-
         y_hat = y_hat[pad_mask[:, 1:]]
         y = y[pad_mask[:, 1:]]
         return y_hat, y

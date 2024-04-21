@@ -7,6 +7,13 @@ import nnts.data.splitter as splitter
 import nnts.data.tsf as tsf
 
 
+def read_tsf_from_file(path: str, freq: str) -> pd.DataFrame:
+    datai = tsf.convert_tsf_to_dataframe(path)
+    df = pd.DataFrame(datai[0])
+    df = pd.concat([unpack(df.iloc[x], freq=freq) for x in range(len(df))])
+    return df
+
+
 def read_tsf(path: str, url: str):
     return pd.DataFrame(tsf.handle_zip_file_http_request(path, url, tsf.read_tsf))
 
