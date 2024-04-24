@@ -91,3 +91,7 @@ target/
 .mypy_cache/
 
 results/
+nb-results/
+script-results/
+
+*.tsf

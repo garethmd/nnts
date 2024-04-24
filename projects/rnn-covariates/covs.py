@@ -12,6 +12,7 @@ import nnts.data.metadata
 import nnts.experiments.scenarios
 import nnts.metrics
 import nnts.models.hyperparams
+import nnts.pandas
 import nnts.torch.data.preprocessing as preprocessing
 import nnts.torch.models
 
@@ -22,6 +23,13 @@ errors = {
     "hospital": np.linspace(0, 1.65, 8).tolist(),
     "electricity": np.linspace(0, 1.65, 8).tolist(),
     "traffic": np.linspace(0, 0.6, 8).tolist(),
+}
+
+data_paths = {
+    "traffic": "data/traffic_weekly_dataset.tsf",
+    "electricity": "data/electricity_hourly_dataset.tsf",
+    "tourism": "data/tourism_monthly_dataset.tsf",
+    "hospital": "data/hospital_dataset.tsf",
 }
 
 
@@ -153,14 +161,22 @@ def univariate_results(
 
 
 def plot_pcc_charts(
-    model_name: str, scenario_covariate: int, dataset_list: List[str], path: str = None
+    model_name: str,
+    scenario_covariate: int,
+    dataset_list: List[str],
+    path: str = None,
+    results_path: str = "nb-results",
+    metadata_path: str = "monash.json",
 ):
     fig, axes = plt.subplots(
         nrows=1, ncols=len(dataset_list), figsize=(20, 5), sharey=True
     )
-    for i, dataset in enumerate(dataset_list):
-        df_orig, metadata = nnts.data.load(dataset)
-        PATH = f"results/{model_name}/{metadata.dataset}"
+    for i, dataset_name in enumerate(dataset_list):
+        df_orig, metadata = nnts.pandas.load(
+            dataset_name,
+            metadata_path=metadata_path,
+        )
+        PATH = f"{results_path}/{model_name}/{metadata.dataset}"
         scenario_list: List[nnts.experiments.CovariateScenario] = []
         # Models for full forecast horizon with covariates
         scenario_list.append(

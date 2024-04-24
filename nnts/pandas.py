@@ -2,20 +2,16 @@ from typing import Tuple
 
 import pandas as pd
 
-import nnts.data.metadata as metadata
+import nnts.data.metadata
 import nnts.data.splitter as splitter
 import nnts.data.tsf as tsf
 
-
-def read_tsf_from_file(path: str, freq: str) -> pd.DataFrame:
-    datai = tsf.convert_tsf_to_dataframe(path)
-    df = pd.DataFrame(datai[0])
-    df = pd.concat([unpack(df.iloc[x], freq=freq) for x in range(len(df))])
-    return df
-
-
-def read_tsf(path: str, url: str):
-    return pd.DataFrame(tsf.handle_zip_file_http_request(path, url, tsf.read_tsf))
+FREQUENCY_MAP: dict = {
+    "weekly": "W",
+    "monthly": "M",
+    "hourly": "1H",
+    "daily": "D",
+}
 
 
 def unpack(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
@@ -29,10 +25,35 @@ def unpack(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
     return unpacked_df
 
 
+def read_tsf(path: str, url: str = None) -> pd.DataFrame:
+    (
+        all_data,
+        frequency,
+        forecast_horizon,
+        contain_missing_values,
+        contain_equal_length,
+    ) = tsf.read(path, url)
+    df = pd.DataFrame(all_data)
+    freq = FREQUENCY_MAP[frequency]
+    df = pd.concat([unpack(df.iloc[x], freq=freq) for x in range(len(df))])
+    return df, freq, forecast_horizon, contain_missing_values, contain_equal_length
+
+
+def load(
+    dataset_name: str, metadata_path: str
+) -> Tuple[pd.DataFrame, nnts.data.metadata.Metadata]:
+    metadata = nnts.data.metadata.load(dataset_name, path=metadata_path)
+    df, freq, forecast_horizon, *_ = read_tsf(metadata.path)
+    metadata.freq = freq
+    if forecast_horizon is not None:
+        metadata.prediction_length = forecast_horizon
+    return df, metadata
+
+
 class LastHorizonSplitter(splitter.Splitter):
 
     def split(
-        self, data: pd.DataFrame, metadata: metadata.Metadata, *args, **kwargs
+        self, data: pd.DataFrame, metadata: nnts.data.metadata.Metadata, *args, **kwargs
     ) -> splitter.SplitData:
         """
         Splits the data into train, validation, and test sets based on the provided metadata.
@@ -73,10 +94,3 @@ class FixedSizeSplitter(splitter.Splitter):
         )
         test = data.groupby("unique_id").tail(test_size)
         return splitter.SplitData(train=trn, validation=val, test=test)
-
-
-def load_data(m: metadata.Metadata) -> Tuple[pd.DataFrame]:
-    datai = tsf.convert_tsf_to_dataframe(m.path)
-    df = pd.DataFrame(datai[0])
-    df = pd.concat([tsf.unpack(df.iloc[x], freq=m.freq) for x in range(len(df))])
-    return df

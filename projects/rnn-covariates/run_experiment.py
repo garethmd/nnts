@@ -75,8 +75,8 @@ def run_experiment(
     results_path: str = "script-results",
     generate_metrics: bool = False,
 ):
-    metadata = nnts.data.loader.load_metadata(dataset_name, path="monash.json")
-    df_orig = nnts.pandas.read_tsf_from_file(data_path, metadata.freq)
+    metadata = nnts.data.metadata.load(dataset_name, path="monash.json")
+    df_orig, *_ = nnts.pandas.read_tsf(data_path)
 
     params = nnts.models.Hyperparams()
     splitter = nnts.data.PandasSplitter()
@@ -86,7 +86,7 @@ def run_experiment(
     scenario_list: List[nnts.experiments.CovariateScenario] = []
 
     # Add the baseline scenarios
-    for seed in [42, 43]:  # , 44, 45, 46]:
+    for seed in [42, 43, 44, 45, 46]:
         scenario_list.append(
             nnts.experiments.CovariateScenario(
                 metadata.prediction_length, error=0.0, covariates=0, seed=seed
@@ -94,13 +94,13 @@ def run_experiment(
         )
 
     # Models for full forecast horizon with covariates
-    # for covariates in [1, 2, 3]:
-    #    for error in covs.errors[metadata.dataset]:
-    #        scenario_list.append(
-    #            nnts.experiments.CovariateScenario(
-    #                metadata.prediction_length, error, covariates=covariates
-    #            )
-    #        )
+    for covariates in [1, 2, 3]:
+        for error in covs.errors[metadata.dataset]:
+            scenario_list.append(
+                nnts.experiments.CovariateScenario(
+                    metadata.prediction_length, error, covariates=covariates
+                )
+            )
 
     for scenario in scenario_list:
         run_scenario(scenario, df_orig, metadata, params, splitter, model_name, path)

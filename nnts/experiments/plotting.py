@@ -13,10 +13,8 @@ def subplot_forecast_horizon(
     loader_fn: callable,
 ):
     """plot forecast horizon for a given model and dataset"""
-    PATH = f"results/{model_name}/{dataset}"
-
     for scenario in selected_scenarios:
-        forecast_horizon_metrics = loader_fn(PATH, scenario.name)
+        forecast_horizon_metrics = loader_fn(f"{model_name}/{dataset}/{scenario.name}")
         ax.plot(forecast_horizon_metrics, label=scenario.name)
 
     ax.set_xlim(1, len(forecast_horizon_metrics))

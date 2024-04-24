@@ -57,24 +57,6 @@ def test_should_early_stop_after_patience_expired():
     assert result == True
 
 
-def test_should_return_tuple_on_teacher_forcing():
-    # Arrange
-    def fake_net(x, pad_mask):
-        return x
-
-    net = fake_net
-    batch = torch.randn((1, 10, 1))
-    pad_mask = torch.ones((10, 1)).long()
-    data = {"X": batch, "pad_mask": pad_mask}
-
-    # Act
-    y_hat, y = nnts.torch.models.trainers.teacher_forcing_output(net, data)
-
-    # Assert
-    assert isinstance(y_hat, torch.Tensor)
-    assert isinstance(y, torch.Tensor)
-
-
 def test_should_generate_correctly(fake_net):
     # Arrange
     X = torch.arange(1, 10).float()

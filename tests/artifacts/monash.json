@@ -1,6 +1,6 @@
 {
     "us_births": {
-        "path": "us_births_dataset.tsf",
+        "path": "tests/artifacts/us_births_dataset.tsf",
         "dataset": "us_births",
         "context_length": 9,
         "prediction_length": 30,
@@ -8,7 +8,7 @@
         "seasonality": 52
     },
     "tourism": {
-        "path": "tourism_monthly_dataset.tsf",
+        "path": "tests/artifacts/tourism_monthly_dataset.tsf",
         "dataset": "tourism",
         "context_length": 15,
         "prediction_length": 24,
@@ -16,7 +16,7 @@
         "seasonality": 12
     },
     "hospital": {
-        "path": "hospital_dataset.tsf",
+        "path": "tests/artifacts/hospital_dataset.tsf",
         "dataset": "hospital",
         "context_length": 15,
         "prediction_length": 12,
