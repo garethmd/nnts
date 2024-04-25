@@ -46,5 +46,13 @@
         "prediction_length": 8,
         "freq": "1W",
         "seasonality": 52
+    },
+    "traffic_hourly": {
+        "path": "data/traffic_hourly_dataset.tsf",
+        "dataset": "traffic_hourly",
+        "context_length": 30,
+        "prediction_length": 168,
+        "freq": "1H",
+        "seasonality": 24
     }
 }

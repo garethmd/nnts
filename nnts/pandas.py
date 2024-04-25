@@ -7,10 +7,15 @@ import nnts.data.splitter as splitter
 import nnts.data.tsf as tsf
 
 FREQUENCY_MAP: dict = {
-    "weekly": "W",
-    "monthly": "M",
+    "minutely": "1min",
+    "10_minutes": "10min",
+    "half_hourly": "30min",
     "hourly": "1H",
-    "daily": "D",
+    "daily": "1D",
+    "weekly": "1W",
+    "monthly": "1M",
+    "quarterly": "1Q",
+    "yearly": "1Y",
 }
 
 

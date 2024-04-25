@@ -174,7 +174,7 @@ def plot_pcc_charts(
     for i, dataset_name in enumerate(dataset_list):
         df_orig, metadata = nnts.pandas.load(
             dataset_name,
-            metadata_path=metadata_path,
+            metadata_path=f"{model_name}-{metadata_path}",
         )
         PATH = f"{results_path}/{model_name}/{metadata.dataset}"
         scenario_list: List[nnts.experiments.CovariateScenario] = []
@@ -264,15 +264,6 @@ def model_factory(
             scenario.covariates + 1,
         )
     elif model_name == "seg-lstm":
-        metadata.context_length = (
-            metadata.prediction_length * 8 + 1
-            if metadata.dataset == "traffic"
-            else metadata.prediction_length * 3 + 1
-        )
-        metadata.seasonality = (
-            8 if metadata.dataset == "traffic" else metadata.seasonality
-        )
-
         return nnts.torch.models.SegLSTM(
             nnts.torch.models.LinearModel,
             params,
