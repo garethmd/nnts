@@ -69,69 +69,118 @@ def run_scenario(
 
 
 def run_experiment(
-    dataset_name: str,
-    data_path: str,
-    model_name: str = "base-lstm",
+    model_names: List[str],
+    dataset_names: List[str],
+    data_path: str = "data",
     results_path: str = "script-results",
     generate_metrics: bool = False,
 ):
-    metadata = nnts.data.metadata.load(dataset_name, path=f"{model_name}-monash.json")
-    df_orig, *_ = nnts.pandas.read_tsf(data_path)
+    if "all" in dataset_names:
+        dataset_names = covs.list_available_datasets()
 
-    params = nnts.models.Hyperparams()
-    splitter = nnts.data.PandasSplitter()
-    path = f"{results_path}/{model_name}/{metadata.dataset}"
-    nnts.loggers.makedirs_if_not_exists(path)
+    if "all" in model_names:
+        model_names = covs.list_available_models()
 
-    scenario_list: List[nnts.experiments.CovariateScenario] = []
-
-    # Add the baseline scenarios
-    for seed in [42, 43, 44, 45, 46]:
-        scenario_list.append(
-            nnts.experiments.CovariateScenario(
-                metadata.prediction_length, error=0.0, covariates=0, seed=seed
+    for dataset_name in dataset_names:
+        for model_name in model_names:
+            metadata = nnts.data.metadata.load(
+                dataset_name, path=f"{model_name}-monash.json"
             )
-        )
+            df_orig, *_ = nnts.pandas.read_tsf(
+                f"{data_path}/{covs.file_map[dataset_name]}"
+            )
 
-    # Models for full forecast horizon with covariates
-    for covariates in [1, 2, 3]:
-        for error in covs.errors[metadata.dataset]:
+            params = nnts.models.Hyperparams()
+            splitter = nnts.data.PandasSplitter()
+            path = f"{results_path}/{model_name}/{metadata.dataset}"
+            nnts.loggers.makedirs_if_not_exists(path)
+
+            scenario_list: List[nnts.experiments.CovariateScenario] = []
+
+            # Add the baseline scenarios
+            for seed in [42, 43, 44, 45, 46]:
+                scenario_list.append(
+                    nnts.experiments.CovariateScenario(
+                        metadata.prediction_length, error=0.0, covariates=0, seed=seed
+                    )
+                )
+
+            # Models for full forecast horizon with covariates
+            for covariates in [1, 2, 3]:
+                for error in covs.errors[metadata.dataset]:
+                    scenario_list.append(
+                        nnts.experiments.CovariateScenario(
+                            metadata.prediction_length, error, covariates=covariates
+                        )
+                    )
+
             scenario_list.append(
                 nnts.experiments.CovariateScenario(
-                    metadata.prediction_length, error, covariates=covariates
+                    metadata.prediction_length, 0, covariates=3, skip=1
                 )
             )
 
-    for scenario in scenario_list:
-        run_scenario(scenario, df_orig, metadata, params, splitter, model_name, path)
-    csv_aggregator = covs.CSVFileAggregator(path, "results")
-    csv_aggregator()
+            for scenario in scenario_list:
+                run_scenario(
+                    scenario,
+                    df_orig,
+                    metadata,
+                    params,
+                    splitter,
+                    model_name,
+                    path,
+                )
+            csv_aggregator = covs.CSVFileAggregator(path, "results")
+            csv_aggregator()
 
-    if generate_metrics:
-        metric_generator.generate(
-            scenario_list, df_orig, metadata, params, model_name, path
-        )
+            if generate_metrics:
+                metric_generator.generate(
+                    scenario_list, df_orig, metadata, params, model_name, path
+                )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Run experiment with specified dataset name."
+        description="Run experiment with specified dataset names and model names."
     )
-    parser.add_argument("dataset_name", type=str, help="Name of the dataset")
-    parser.add_argument("data_path", type=str, help="File path to the dataset")
-    parser.add_argument("model_name", type=str, help="model name", default="base-lstm")
     parser.add_argument(
-        "results_path", type=str, help="results path", default="script-results"
+        "model_names",
+        nargs="+",
+        type=str,
+        help="Model names. Use 'all' to run for all models.",
+        default=["base-lstm"],
+    )
+    parser.add_argument(
+        "dataset_names",
+        nargs="+",
+        type=str,
+        help="Names of the datasets. Use 'all' to run for all datasets.",
+    )
+    parser.add_argument(
+        "--data_path",
+        type=str,
+        help="File path to the dataset (defaults: data)",
+        default="data",
+    )
+    parser.add_argument(
+        "--results_path",
+        type=str,
+        help="Results path (default: script-results)",
+        default="script-results",
     )
     parser.add_argument(
         "generate_metrics",
         type=bool,
-        help="flag to generate additional metrics from the test set",
+        help="Flag to generate additional metrics from the test set",
         default=False,
         nargs="?",
     )
 
     args = parser.parse_args()
     run_experiment(
-        args.dataset_name, args.data_path, args.model_name, args.results_path
+        args.model_names,
+        args.dataset_names,
+        args.data_path,
+        args.results_path,
+        args.generate_metrics,
     )

@@ -25,12 +25,21 @@ errors = {
     "traffic": np.linspace(0, 0.6, 8).tolist(),
 }
 
-data_paths = {
-    "traffic": "data/traffic_weekly_dataset.tsf",
-    "electricity": "data/electricity_hourly_dataset.tsf",
-    "tourism": "data/tourism_monthly_dataset.tsf",
-    "hospital": "data/hospital_dataset.tsf",
+
+file_map = {
+    "tourism": "tourism_monthly_dataset.tsf",
+    "hospital": "hospital_dataset.tsf",
+    "traffic": "traffic_weekly_dataset.tsf",
+    "electricity": "electricity_hourly_dataset.tsf",
 }
+
+
+def list_available_datasets() -> List[str]:
+    return ["traffic", "electricity", "tourism", "hospital"]
+
+
+def list_available_models() -> List[str]:
+    return ["base-lstm", "seg-lstm"]
 
 
 def calculate_pearson(df):
