@@ -6,8 +6,19 @@ This repository is the official implementation of [Evaluating the effectiveness 
 
 ## Requirements
 Ensure you have the following installed:
-
 - Python 3.x
+
+Clone the repository or copy the source code into a directory on your machine and cd into the root folder of the code
+
+Run venv to create a virtual environment
+``bash
+python -m venv venv
+```
+
+Activate the virtual environment
+``bash
+source venv/bin/activate
+```
 
 To install requirements:
 
@@ -15,17 +26,39 @@ To install requirements:
 pip install -r requirements.txt
 ```
 
->📋  Describe how to set up the environment, e.g. pip/conda/docker commands, download datasets, etc...
-
 ## Training
 
 To train the model(s) in the paper, run this command:
 
 ```bash
-python run_experiment.py dataset_name data_path [model_name] [results_path] [generate_metrics]
+python train.py dataset_name data_path [model_name] [results_path] [generate_metrics]
 ```
+Use the following options:
 
->📋  Describe how to train the models, with example commands on how to train the models in your paper, including the full training procedure and appropriate hyperparameters.
+- dataset_name
+    - hospital
+    - tourism
+    - traffic
+    - electricity
+
+- data_path
+    - data/hospital_dataset.tsf
+    - data/tourism_monthly_dataset.tsf
+    - data/traffic_weekly_dataset.tsf
+    - data/electricity_hourly_dataset.tsf
+
+- models
+    - base-lstm
+    - seg-lstm
+
+- results_path (eg results)
+
+- generate_metrics
+    - true
+    - false
+
+
+
 
 ## Evaluation
 

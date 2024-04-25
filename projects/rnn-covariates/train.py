@@ -75,7 +75,7 @@ def run_experiment(
     results_path: str = "script-results",
     generate_metrics: bool = False,
 ):
-    metadata = nnts.data.metadata.load(dataset_name, path="monash.json")
+    metadata = nnts.data.metadata.load(dataset_name, path=f"{model_name}-monash.json")
     df_orig, *_ = nnts.pandas.read_tsf(data_path)
 
     params = nnts.models.Hyperparams()
