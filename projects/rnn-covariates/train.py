@@ -1,4 +1,5 @@
 import argparse
+import os
 from typing import List
 
 import covs
@@ -54,7 +55,7 @@ def run_scenario(
         net,
         params,
         metadata,
-        f"{path}/{scenario.name}.pt",
+        os.path.join(path, f"{scenario.name}.pt"),
         logger=logger,
     )
     evaluator = trner.train(trn_dl, val_dl)
@@ -84,10 +85,10 @@ def run_experiment(
     for dataset_name in dataset_names:
         for model_name in model_names:
             metadata = nnts.data.metadata.load(
-                dataset_name, path=f"{model_name}-monash.json"
+                dataset_name, path=os.path.join(data_path, f"{model_name}-monash.json")
             )
             df_orig, *_ = nnts.pandas.read_tsf(
-                f"{data_path}/{covs.file_map[dataset_name]}"
+                os.path.join(data_path, covs.file_map[dataset_name])
             )
 
             params = nnts.models.Hyperparams()
