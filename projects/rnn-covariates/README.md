@@ -20,6 +20,13 @@ Activate the virtual environment
 source covenv/bin/activate
 ```
 
+Load the datasets
+```bash
+make sync_data_from_drive
+```
+
+
+
 ## Training
 To train the model(s) in the paper, run this command:
 ```bash

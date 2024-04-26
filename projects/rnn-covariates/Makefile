@@ -51,5 +51,5 @@ clean:
 	@echo "Cleanup complete."
 
 # Make all
-all: covenv activate install sync_data_from_drive
-	@echo "Virtual environment created, activated, requirements installed and datasets loaded"
+all: covenv activate install
+	@echo "Virtual environment created, activated, requirements installed"
