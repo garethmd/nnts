@@ -13,7 +13,7 @@ def sample_split_data():
 @pytest.fixture
 def sample_metadata():
     return nnts.data.Metadata(
-        path="fake_path",
+        filename="fake_path",
         dataset="fake_dataset",
         context_length=15,
         prediction_length=12,

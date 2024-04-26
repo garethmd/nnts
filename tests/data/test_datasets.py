@@ -28,7 +28,8 @@ def test_should_load_monash_metadata():
 def test_should_load_monash_metadata_and_data():
     response = nnts.pandas.load(
         "hospital",
-        metadata_path="tests/artifacts/monash.json",
+        data_path="tests/artifacts",
+        metadata_filename="monash.json",
     )
     assert isinstance(response[0], pd.DataFrame)
     assert isinstance(response[1], nnts.data.metadata.Metadata)

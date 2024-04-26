@@ -1,6 +1,6 @@
 {
     "weather": {
-        "path": "WTH.csv",
+        "filename": "WTH.csv",
         "dataset": "weather",
         "context_length": 505,
         "prediction_length": 168,

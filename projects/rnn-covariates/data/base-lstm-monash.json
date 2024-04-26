@@ -1,6 +1,6 @@
 {
     "us_births": {
-        "path": "us_births_dataset.tsf",
+        "filename": "us_births_dataset.tsf",
         "dataset": "us_births",
         "context_length": 9,
         "prediction_length": 30,
@@ -8,7 +8,7 @@
         "seasonality": 52
     },
     "tourism": {
-        "path": "tourism_monthly_dataset.tsf",
+        "filename": "tourism_monthly_dataset.tsf",
         "dataset": "tourism",
         "context_length": 15,
         "prediction_length": 24,
@@ -16,7 +16,7 @@
         "seasonality": 12
     },
     "hospital": {
-        "path": "hospital_dataset.tsf",
+        "filename": "hospital_dataset.tsf",
         "dataset": "hospital",
         "context_length": 15,
         "prediction_length": 12,
@@ -24,7 +24,7 @@
         "seasonality": 12
     },
     "solar": {
-        "path": "solar_weekly_dataset.tsf",
+        "filename": "solar_weekly_dataset.tsf",
         "dataset": "solar",
         "context_length": 15,
         "prediction_length": 6,
@@ -32,7 +32,7 @@
         "seasonality": 52
     },
     "electricity": {
-        "path": "electricity_hourly_dataset.tsf",
+        "filename": "electricity_hourly_dataset.tsf",
         "dataset": "electricity",
         "context_length": 30,
         "prediction_length": 168,
@@ -40,7 +40,7 @@
         "seasonality": 24
     },
     "traffic": {
-        "path": "traffic_weekly_dataset.tsf",
+        "filename": "traffic_weekly_dataset.tsf",
         "dataset": "traffic",
         "context_length": 65,
         "prediction_length": 8,
@@ -48,7 +48,7 @@
         "seasonality": 52
     },
     "traffic_hourly": {
-        "path": "traffic_hourly_dataset.tsf",
+        "filename": "traffic_hourly_dataset.tsf",
         "dataset": "traffic_hourly",
         "context_length": 30,
         "prediction_length": 168,

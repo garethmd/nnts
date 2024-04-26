@@ -175,7 +175,7 @@ def plot_pcc_charts(
     dataset_list: List[str],
     path: str = None,
     results_path: str = "nb-results",
-    metadata_path: str = "monash.json",
+    data_path: str = "data",
 ):
     fig, axes = plt.subplots(
         nrows=1, ncols=len(dataset_list), figsize=(20, 5), sharey=True
@@ -183,9 +183,10 @@ def plot_pcc_charts(
     for i, dataset_name in enumerate(dataset_list):
         df_orig, metadata = nnts.pandas.load(
             dataset_name,
-            metadata_path=f"{model_name}-{metadata_path}",
+            data_path,
+            metadata_filename=f"{model_name}-monash.json",
         )
-        PATH = f"{results_path}/{model_name}/{metadata.dataset}"
+        PATH = os.path.join(results_path, model_name, metadata.dataset)
         scenario_list: List[nnts.experiments.CovariateScenario] = []
         # Models for full forecast horizon with covariates
         scenario_list.append(

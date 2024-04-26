@@ -29,7 +29,7 @@ def sample_data():
 @pytest.fixture
 def sample_metadata():
     metadata = Metadata(
-        path="fake_path",
+        filename="fake_path",
         dataset="fake_dataset",
         context_length=15,
         prediction_length=12,

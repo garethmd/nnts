@@ -1,3 +1,4 @@
+import os
 from typing import Tuple
 
 import pandas as pd
@@ -45,10 +46,13 @@ def read_tsf(path: str, url: str = None) -> pd.DataFrame:
 
 
 def load(
-    dataset_name: str, metadata_path: str
+    dataset_name: str, data_path: str, metadata_filename: str
 ) -> Tuple[pd.DataFrame, nnts.data.metadata.Metadata]:
+
+    metadata_path = os.path.join(data_path, metadata_filename)
     metadata = nnts.data.metadata.load(dataset_name, path=metadata_path)
-    df, freq, forecast_horizon, *_ = read_tsf(metadata.path)
+    datafile_path = os.path.join(data_path, metadata.filename)
+    df, freq, forecast_horizon, *_ = read_tsf(datafile_path)
     metadata.freq = freq
     if forecast_horizon is not None:
         metadata.prediction_length = forecast_horizon
