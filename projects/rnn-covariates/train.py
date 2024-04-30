@@ -92,7 +92,7 @@ def run_experiment(
             )
 
             params = nnts.models.Hyperparams()
-            splitter = nnts.data.PandasSplitter()
+            splitter = nnts.pandas.LastHorizonSplitter()
             path = f"{results_path}/{model_name}/{metadata.dataset}"
             nnts.loggers.makedirs_if_not_exists(path)
 

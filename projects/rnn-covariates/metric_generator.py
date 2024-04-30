@@ -8,6 +8,7 @@ import nnts.data.metadata
 import nnts.experiments
 import nnts.metrics
 import nnts.models
+import nnts.pandas
 import nnts.torch.data.datasets
 import nnts.torch.models
 import nnts.torch.models.trainers
@@ -43,7 +44,7 @@ def generate(
     for scenario in scenario_list:
         nnts.torch.data.datasets.seed_everything(scenario.seed)
         df, scenario = covs.prepare(df_orig.copy(), scenario)
-        splitter = nnts.data.PandasSplitter()
+        splitter = nnts.pandas.LastHorizonSplitter()
         split_data = splitter.split(df, metadata)
         _, _, test_dl = nnts.data.map_to_dataloaders(
             split_data,
