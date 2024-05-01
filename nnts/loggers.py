@@ -48,7 +48,7 @@ class Handler(ABC):
         pass
 
 
-class PrintHandler:
+class PrintHandler(Handler):
     def handle(self, data: Any) -> None:
         print(data)
 
@@ -56,7 +56,7 @@ class PrintHandler:
         print(f"Artifact saved to {source_file}")
 
 
-class JsonFileHandler:
+class JsonFileHandler(Handler):
     def __init__(self, path, filename):
         self.path = path
         self.filename = filename
@@ -129,5 +129,25 @@ class ProjectRun(Run):
         print(f"Run {self.run} finished")
 
 
+import wandb
+
+
 class WandbRun(Run):
-    pass
+
+    def __init__(self, project: str, name: str, config: Dict[str, Any] = None):
+        self.project = project
+        self.name = name
+        self.static_data = config
+        self.run = wandb.init(
+            project=self.project, name=self.name, config=self.static_data
+        )
+
+    def log(self, data: Any) -> None:
+        self.run.log(data)
+
+    def log_model(self, source_file: str) -> None:
+        self.run.log_model(name=f"{self.name}-{self.run.id}", path=source_file)
+
+    def finish(self) -> None:
+        print(f"Run {self.name} finished")
+        self.run.finish()
