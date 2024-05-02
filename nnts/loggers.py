@@ -35,16 +35,16 @@ class Handler(ABC):
 
 
 class PrintHandler(Handler):
-    def handle(self, data: Any) -> None:
+    def handle(self, data: Dict[str, Any]) -> None:
         print(data)
 
 
 class JsonFileHandler(Handler):
     def __init__(self, path, filename):
         self.path = path
-        self.filename = filename
+        self.filename = filename + ".json"
 
-    def handle(self, data: Any) -> None:
+    def handle(self, data: Dict[str, Any]) -> None:
         makedirs_if_not_exists(self.path)
         with open(os.path.join(self.path, self.filename), "w") as json_file:
             json.dump(data, json_file, indent=4, default=convert_np_float)
@@ -80,6 +80,11 @@ class EpochEventMixin(nnts.events.Listener):
     def _(self, event: nnts.models.trainers.EpochBestModel) -> None:
         self.log_model(event.path)
 
+    def configure(self, evts: nnts.events.EventManager) -> None:
+        evts.add_listener(nnts.models.trainers.EpochTrainComplete, self)
+        evts.add_listener(nnts.models.trainers.EpochValidateComplete, self)
+        evts.add_listener(nnts.models.trainers.EpochBestModel, self)
+
 
 class Run(ABC):
 
@@ -95,13 +100,18 @@ class Run(ABC):
 class LocalFileRun(Run, EpochEventMixin):
 
     def __init__(
-        self, project: str, name: str, config: Dict[str, Any] = None, path: str = ""
+        self,
+        project: str,
+        name: str,
+        config: Dict[str, Any] = None,
+        path: str = "",
+        Handler: Handler = JsonFileHandler,
     ):
         self.project = project
         self.name = name
         self.static_data = config
         self.path = path
-        self.handler = JsonFileHandler(path=path, filename=f"{name}.json")
+        self.handler = Handler(path=path, filename=name)
         self.start_time = timeit.default_timer()
 
     def log(self, data: Any) -> None:
@@ -163,39 +173,6 @@ class PrintRun(Run, EpochEventMixin):
         run_time = timeit.default_timer() - self.start_time
         self.static_data["run_time"] = run_time
         print(self.static_data)
-        print(f"Run {self.name} finished")
-
-
-class ProjectRun(Run, EpochEventMixin):
-
-    def __init__(
-        self, handler: Handler, project: str, name: str, config: Dict[str, Any] = None
-    ):
-        self.project = project
-        self.name = name
-        self.static_data = config
-        self.handler = handler
-        self.start_time = timeit.default_timer()
-
-    def log(self, data: Any) -> None:
-        self.static_data = {**self.static_data, **data}
-
-    def log_model(self, source_file: str) -> None:
-        self.handler.artifact(source_file)
-
-    def log_outputs(self, data: Dict[str, Any]) -> None:
-        self.handler.handle_outputs(data)
-
-    def hook_fn(self, module, input, output):
-        # self.activation_values.append(output.detach().numpy())
-        self.handler.handle_outputs(
-            {"activations": input[0].detach().reshape(-1).numpy()}
-        )
-
-    def finish(self) -> None:
-        run_time = timeit.default_timer() - self.start_time
-        self.static_data["run_time"] = run_time
-        self.handler.handle(self.static_data)
         print(f"Run {self.name} finished")
 
 

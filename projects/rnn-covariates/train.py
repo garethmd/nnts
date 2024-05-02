@@ -38,15 +38,15 @@ def run_scenario(
         params,
         nnts.torch.data.TorchTimeseriesDataLoaderFactory(),
     )
-    logger = nnts.loggers.ProjectRun(
-        nnts.loggers.JsonFileHandler(path=path, filename=f"{scenario.name}.json"),
+    logger = nnts.loggers.LocalFileRun(
         project=f"{model_name}-{metadata.dataset}",
-        run=scenario.name,
+        name=scenario.name,
         config={
             **params.__dict__,
             **metadata.__dict__,
             **scenario.__dict__,
         },
+        path=path,
     )
 
     net = covs.model_factory(model_name, params, scenario, metadata)
@@ -56,8 +56,8 @@ def run_scenario(
         params,
         metadata,
         os.path.join(path, f"{scenario.name}.pt"),
-        logger=logger,
     )
+    logger.configure(trner.events)
     evaluator = trner.train(trn_dl, val_dl)
     y_hat, y = evaluator.evaluate(
         test_dl, scenario.prediction_length, metadata.context_length
@@ -93,7 +93,7 @@ def run_experiment(
 
             params = nnts.models.Hyperparams()
             splitter = nnts.pandas.LastHorizonSplitter()
-            path = f"{results_path}/{model_name}/{metadata.dataset}"
+            path = os.path.join(results_path, model_name, metadata.dataset)
             nnts.loggers.makedirs_if_not_exists(path)
 
             scenario_list: List[nnts.experiments.CovariateScenario] = []
