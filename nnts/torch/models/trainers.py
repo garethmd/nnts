@@ -73,29 +73,14 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         params: nnts.models.Hyperparams,
         metadata: nnts.data.Metadata,
         path: str,
-        logger: nnts.loggers.Run = None,
     ):
         super().__init__(state, params)
         self.net = net
         self.metadata = metadata
         self.path = path
-        self.logger = logger
 
     def before_train(self, train_dl):
         print(self.net)
-        # state_dict = self.net.state_dict()
-        # numpy_dict = {
-        #    key: value.numpy()
-        #    for key, value in state_dict.items()
-        #    if torch.numel(value) > 1
-        # }
-        # self.logger.log_outputs(numpy_dict)
-
-        # if self.logger is not None:
-        #    self.hook_handle = self.net.decoder.register_forward_hook(
-        #        self.logger.hook_fn
-        #    )
-
         self.optimizer = optim.AdamW(
             self.net.parameters(),
             lr=self.params.lr,
@@ -130,18 +115,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         if self.state.valid_loss < self.state.best_loss:
             torch.save(self.net.state_dict(), self.path)
             self.state.best_loss = self.state.valid_loss
-            if self.logger is not None:
-                self.logger.log_model(self.path)
-
-        elapsed_time = timeit.default_timer() - self.start_time
-        if self.logger is not None:
-            self.logger.log(
-                {
-                    "train_loss": self.state.train_loss.detach().item(),
-                    "valid_loss": self.state.valid_loss.detach().item(),
-                    "elapsed_time": elapsed_time,
-                }
-            )
+            self.events.notify(nnts.models.trainers.EpochBestModel(self.path))
 
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()
@@ -158,18 +132,10 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         else:
             y_hat, y = self.net.teacher_forcing_output(batch)
 
-        # if i == 0 and self.state.epoch == 1 and self.logger is not None:
-        # self.logger.log_outputs(
-        #    {
-        #        "y_hat": y_hat.detach().cpu().numpy(),
-        #        "y": y.detach().cpu().numpy(),
-        #    }
-        # )
         L = F.smooth_l1_loss(y_hat, y)
         L.backward()
         self.optimizer.step()
         self.scheduler.step()
-        # self.hook_handle.remove()
         return L
 
     def _validate_batch(self, i, batch):

@@ -4,6 +4,8 @@ from typing import Any, Iterable
 import numpy as np
 from pydantic import BaseModel, PositiveInt
 
+import nnts.events
+
 from .hyperparams import Hyperparams
 
 
@@ -33,11 +35,32 @@ class TrainerState(BaseModel):
     best_loss: float = np.inf
 
 
+class TrainerEvent:
+    def __init__(self, state: TrainerState):
+        self.state = state
+
+
+class EpochValidateComplete(TrainerEvent):
+    def __init__(self, state: TrainerState):
+        super().__init__(state)
+
+
+class EpochTrainComplete(TrainerEvent):
+    def __init__(self, state: TrainerState):
+        super().__init__(state)
+
+
+class EpochBestModel:
+    def __init__(self, path: str):
+        self.path = path
+
+
 class EpochTrainer(Trainer):
 
     def __init__(self, state: TrainerState, params: Hyperparams):
         self.state = state
         self.params = params
+        self.events = nnts.events.EventManager()
 
     def before_train(self, train_dl: Iterable) -> None:
         pass
@@ -66,6 +89,7 @@ class EpochTrainer(Trainer):
             loss += L
         loss /= len(train_dl)
         self.state.train_loss = loss
+        self.events.notify(EpochTrainComplete(self.state))
         return loss
 
     def before_validate_epoch(self) -> None:
@@ -83,6 +107,7 @@ class EpochTrainer(Trainer):
         loss /= len(valid_dl)
         self.state.valid_loss = loss
         self.after_validate_epoch()
+        self.events.notify(EpochValidateComplete(self.state))
         return loss
 
     @abstractmethod

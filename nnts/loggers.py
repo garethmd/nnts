@@ -4,24 +4,14 @@ import shutil
 import timeit
 from abc import ABC, abstractmethod
 from enum import Enum
+from functools import singledispatchmethod
 from typing import Any, Dict
 
 import numpy as np
+import wandb
 
-"""
-run = wandb.init(
-    project=f"06-rnn-covariates-{metadata.dataset}",
-    name=name,
-    config={
-        **params.__dict__,
-        **metadata.__dict__,
-        **scenario.__dict__,
-    },
-)
-
-def init(project:str, name: str, config: Dict[str, Any]) -> Run:
-    return PrintRun("test")
-"""
+import nnts.events
+import nnts.models.trainers
 
 
 def makedirs_if_not_exists(directory: str) -> None:
@@ -34,7 +24,7 @@ def convert_np_float(obj):
         return float(obj)
     if isinstance(obj, Enum):
         return obj.value
-    raise TypeError
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
 class Handler(ABC):
@@ -84,6 +74,37 @@ class JsonFileHandler(Handler):
             )  # Save the numpy array to a text file
 
 
+class EpochEventMixin(nnts.events.Listener):
+
+    @singledispatchmethod
+    def notify(self, event: Dict[str, Any]) -> None:
+        self.log(event)
+
+    @notify.register(nnts.models.trainers.EpochTrainComplete)
+    def _(self, event: nnts.models.trainers.EpochTrainComplete) -> None:
+        self.log(
+            {
+                "epoch": event.state.epoch,
+                "train_loss": event.state.train_loss.detach().item(),
+            }
+        )
+
+    @notify.register(nnts.models.trainers.EpochValidateComplete)
+    def _(self, event: nnts.models.trainers.EpochValidateComplete) -> None:
+        self.log(
+            {
+                "valid_loss": event.state.valid_loss.detach().item(),
+            }
+        )
+        print(
+            f"Epoch {event.state.epoch} train loss: {event.state.train_loss.detach().item()}, valid loss: {event.state.valid_loss.detach().item()}"
+        )
+
+    @notify.register(nnts.models.trainers.EpochBestModel)
+    def _(self, event: nnts.models.trainers.EpochBestModel) -> None:
+        self.log_model(event.path)
+
+
 class Run(ABC):
 
     @abstractmethod
@@ -95,19 +116,18 @@ class Run(ABC):
         pass
 
 
-class ProjectRun(Run):
+class ProjectRun(Run, EpochEventMixin):
 
     def __init__(
-        self, handler: Handler, project: str, run: str, config: Dict[str, Any] = None
+        self, handler: Handler, project: str, name: str, config: Dict[str, Any] = None
     ):
         self.project = project
-        self.run = run
+        self.name = name
         self.static_data = config
         self.handler = handler
         self.start_time = timeit.default_timer()
 
     def log(self, data: Any) -> None:
-        print(data)
         self.static_data = {**self.static_data, **data}
 
     def log_model(self, source_file: str) -> None:
@@ -126,13 +146,10 @@ class ProjectRun(Run):
         run_time = timeit.default_timer() - self.start_time
         self.static_data["run_time"] = run_time
         self.handler.handle(self.static_data)
-        print(f"Run {self.run} finished")
+        print(f"Run {self.name} finished")
 
 
-import wandb
-
-
-class WandbRun(Run):
+class WandbRun(Run, EpochEventMixin):
 
     def __init__(self, project: str, name: str, config: Dict[str, Any] = None):
         self.project = project
