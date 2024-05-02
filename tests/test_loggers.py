@@ -6,7 +6,7 @@ def test_should_log_info():
     run = nnts.loggers.ProjectRun(
         nnts.loggers.PrintHandler,
         project="fake_project",
-        run="test",
+        name="test",
         config={"config": 1},
     )
     data = {"data": 2}

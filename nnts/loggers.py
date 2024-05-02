@@ -33,17 +33,10 @@ class Handler(ABC):
     def handle(self, data: Any) -> None:
         pass
 
-    @abstractmethod
-    def artifact(self, source_file: str) -> None:
-        pass
-
 
 class PrintHandler(Handler):
     def handle(self, data: Any) -> None:
         print(data)
-
-    def artifact(self, source_file: str) -> None:
-        print(f"Artifact saved to {source_file}")
 
 
 class JsonFileHandler(Handler):
@@ -51,27 +44,10 @@ class JsonFileHandler(Handler):
         self.path = path
         self.filename = filename
 
-    def artifact(self, source_file: str) -> None:
-        print(f"Artifact saved to {source_file}")
-        try:
-            shutil.copy(source_file, self.path)
-        except shutil.SameFileError:
-            pass
-
     def handle(self, data: Any) -> None:
         makedirs_if_not_exists(self.path)
         with open(os.path.join(self.path, self.filename), "w") as json_file:
             json.dump(data, json_file, indent=4, default=convert_np_float)
-
-    def handle_outputs(self, data: Dict[str, np.array]) -> None:
-        makedirs_if_not_exists(self.path)
-        numpy_dict = {key: value for key, value in data.items()}
-        # Save each numpy array to a separate text file
-        for key, value in numpy_dict.items():
-            file_name = key + ".txt"  # You can use the key as the file name
-            np.savetxt(
-                os.path.join(self.path, file_name), value, fmt="%f"
-            )  # Save the numpy array to a text file
 
 
 class EpochEventMixin(nnts.events.Listener):
@@ -114,6 +90,80 @@ class Run(ABC):
     @abstractmethod
     def log_model(self, name: str, path: str) -> None:
         pass
+
+
+class LocalFileRun(Run, EpochEventMixin):
+
+    def __init__(
+        self, project: str, name: str, config: Dict[str, Any] = None, path: str = ""
+    ):
+        self.project = project
+        self.name = name
+        self.static_data = config
+        self.path = path
+        self.handler = JsonFileHandler(path=path, filename=f"{name}.json")
+        self.start_time = timeit.default_timer()
+
+    def log(self, data: Any) -> None:
+        self.static_data = {**self.static_data, **data}
+
+    def log_model(self, source_file: str) -> None:
+        print(f"Artifact saved to {source_file}")
+        try:
+            shutil.copy(source_file, self.path)
+        except shutil.SameFileError:
+            pass
+
+    def log_outputs(self, data: Dict[str, Any]) -> None:
+        makedirs_if_not_exists(self.path)
+        numpy_dict = {key: value for key, value in data.items()}
+        # Save each numpy array to a separate text file
+        for key, value in numpy_dict.items():
+            file_name = key + ".txt"  # You can use the key as the file name
+            np.savetxt(
+                os.path.join(self.path, file_name), value, fmt="%f"
+            )  # Save the numpy array to a text file
+
+    def hook_fn(self, module, input, output):
+        # self.activation_values.append(output.detach().numpy())
+        self.handler.handle_outputs(
+            {"activations": input[0].detach().reshape(-1).numpy()}
+        )
+
+    def finish(self) -> None:
+        run_time = timeit.default_timer() - self.start_time
+        self.static_data["run_time"] = run_time
+        self.handler.handle(self.static_data)
+        print(f"Run {self.name} finished")
+
+
+class PrintRun(Run, EpochEventMixin):
+
+    def __init__(self, project: str, name: str, config: Dict[str, Any] = None):
+        self.project = project
+        self.name = name
+        self.static_data = config
+        self.handler = PrintHandler()
+        self.start_time = timeit.default_timer()
+
+    def log(self, data: Any) -> None:
+        self.static_data = {**self.static_data, **data}
+
+    def log_model(self, source_file: str) -> None:
+        print(f"Artifact saved to {source_file}")
+
+    def log_outputs(self, data: Dict[str, Any]) -> None:
+        print(data)
+
+    def hook_fn(self, module, input, output):
+        print("input", input)
+        print("output", output)
+
+    def finish(self) -> None:
+        run_time = timeit.default_timer() - self.start_time
+        self.static_data["run_time"] = run_time
+        print(self.static_data)
+        print(f"Run {self.name} finished")
 
 
 class ProjectRun(Run, EpochEventMixin):
