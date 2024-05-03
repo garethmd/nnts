@@ -7,7 +7,9 @@ from enum import Enum
 from functools import singledispatchmethod
 from typing import Any, Dict
 
+import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import wandb
 
 import nnts.events
@@ -17,14 +19,6 @@ import nnts.models.trainers
 def makedirs_if_not_exists(directory: str) -> None:
     if not os.path.exists(directory):
         os.makedirs(directory)
-
-
-def convert_np_float(obj):
-    if isinstance(obj, np.float32):
-        return float(obj)
-    if isinstance(obj, Enum):
-        return obj.value
-    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
 class Handler(ABC):
@@ -37,6 +31,14 @@ class Handler(ABC):
 class PrintHandler(Handler):
     def handle(self, data: Dict[str, Any]) -> None:
         print(data)
+
+
+def convert_np_float(obj):
+    if isinstance(obj, np.float32):
+        return float(obj)
+    if isinstance(obj, Enum):
+        return obj.value
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
 class JsonFileHandler(Handler):
@@ -96,6 +98,27 @@ class Run(ABC):
     def log_model(self, name: str, path: str) -> None:
         pass
 
+    @abstractmethod
+    def log_activations(self, module, input, output) -> None:
+        pass
+
+
+class ActivationVisualizer:
+    def __init__(self):
+        self.activations = []
+
+    def save_heatmap(self, path):
+        if len(self.activations) > 0:
+            plt.figure(figsize=(10, 6))
+            sns.heatmap(self.activations, cmap="coolwarm", linewidths=0.5)
+            plt.savefig(path)
+
+    def append(self, output):
+        if isinstance(output, tuple):
+            output = output[0]
+        input_0 = output[0]
+        self.activations.append(input_0[:, -1].detach().cpu().numpy())
+
 
 class LocalFileRun(Run, EpochEventMixin):
 
@@ -113,6 +136,7 @@ class LocalFileRun(Run, EpochEventMixin):
         self.path = path
         self.handler = Handler(path=path, filename=name)
         self.start_time = timeit.default_timer()
+        self.activation_visualizer = ActivationVisualizer()
 
     def log(self, data: Any) -> None:
         self.static_data = {**self.static_data, **data}
@@ -134,16 +158,19 @@ class LocalFileRun(Run, EpochEventMixin):
                 os.path.join(self.path, file_name), value, fmt="%f"
             )  # Save the numpy array to a text file
 
-    def hook_fn(self, module, input, output):
-        # self.activation_values.append(output.detach().numpy())
-        self.handler.handle_outputs(
-            {"activations": input[0].detach().reshape(-1).numpy()}
-        )
+    def log_activations(self, module, input, output) -> None:
+        self.activation_visualizer.append(output)
 
     def finish(self) -> None:
         run_time = timeit.default_timer() - self.start_time
         self.static_data["run_time"] = run_time
         self.handler.handle(self.static_data)
+        try:
+            self.activation_visualizer.save_heatmap(
+                os.path.join(self.path, "activations.png")
+            )
+        except Exception as e:
+            print(f"Error saving activations: {e}")
         print(f"Run {self.name} finished")
 
 
@@ -165,7 +192,7 @@ class PrintRun(Run, EpochEventMixin):
     def log_outputs(self, data: Dict[str, Any]) -> None:
         print(data)
 
-    def hook_fn(self, module, input, output):
+    def log_activations(self, module, input, output) -> None:
         print("input", input)
         print("output", output)
 
@@ -178,13 +205,17 @@ class PrintRun(Run, EpochEventMixin):
 
 class WandbRun(Run, EpochEventMixin):
 
-    def __init__(self, project: str, name: str, config: Dict[str, Any] = None):
+    def __init__(
+        self, project: str, name: str, config: Dict[str, Any] = None, path: str = ""
+    ):
         self.project = project
         self.name = name
         self.static_data = config
         self.run = wandb.init(
             project=self.project, name=self.name, config=self.static_data
         )
+        self.path = path
+        self.activation_visualizer = ActivationVisualizer()
 
     def log(self, data: Any) -> None:
         self.run.log(data)
@@ -192,6 +223,17 @@ class WandbRun(Run, EpochEventMixin):
     def log_model(self, source_file: str) -> None:
         self.run.log_model(name=f"{self.name}-{self.run.id}", path=source_file)
 
+    def log_activations(self, module, input, output) -> None:
+        self.activation_visualizer.append(output)
+
     def finish(self) -> None:
         print(f"Run {self.name} finished")
+
+        try:
+            activation_image_path = os.path.join(self.path, "activations.png")
+            self.activation_visualizer.save_heatmap(activation_image_path)
+            self.run.log({"activations": wandb.Image(activation_image_path)})
+        except Exception as e:
+            print(f"Error saving activations: {e}")
+
         self.run.finish()

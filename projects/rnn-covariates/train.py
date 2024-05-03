@@ -29,7 +29,7 @@ def run_scenario(
     path: str,
 ):
     nnts.torch.data.datasets.seed_everything(scenario.seed)
-    df, scenario = covs.prepare(df_orig.copy(), scenario)
+    df, scenario = covs.prepare(df_orig.copy(), scenario.copy())
     split_data = splitter.split(df, metadata)
     trn_dl, val_dl, test_dl = nnts.data.map_to_dataloaders(
         split_data,
@@ -170,11 +170,10 @@ if __name__ == "__main__":
         default="script-results",
     )
     parser.add_argument(
-        "generate_metrics",
+        "--generate_metrics",
         type=bool,
         help="Flag to generate additional metrics from the test set",
         default=False,
-        nargs="?",
     )
 
     args = parser.parse_args()

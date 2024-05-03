@@ -1,4 +1,5 @@
 import timeit
+from typing import Any
 
 import numpy as np
 import torch
@@ -42,7 +43,7 @@ def validate(net, batch, prediction_length, context_length):
     return y_hat, y
 
 
-def eval(net, dl, prediction_length: int, context_length: int):
+def eval(net, dl, prediction_length: int, context_length: int, hooks: Any = None):
     net.eval()
     with torch.no_grad():
         y_list = []
@@ -51,6 +52,10 @@ def eval(net, dl, prediction_length: int, context_length: int):
             y_hat, y = validate(net, batch, prediction_length, context_length)
             y_list.append(y[:, :, :1])
             y_hat_list.append(y_hat[:, :, :1])
+
+            # TODO: improve this. Removing hook after first batch to make visualisation work
+            if hooks is not None:
+                hooks.remove()
 
         y = torch.cat(y_list, dim=0)
         y_hat = torch.cat(y_hat_list, dim=0)
@@ -61,8 +66,8 @@ class TorchEvaluator(nnts.models.Evaluator):
     def __init__(self, net):
         self.net = net
 
-    def evaluate(self, dl, prediction_length, context_length):
-        return eval(self.net, dl, prediction_length, context_length)
+    def evaluate(self, dl, prediction_length, context_length, hooks=None):
+        return eval(self.net, dl, prediction_length, context_length, hooks=hooks)
 
 
 class TorchEpochTrainer(nnts.models.EpochTrainer):

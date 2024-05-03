@@ -97,3 +97,5 @@ script-results/
 *.tsf
 
 wandb/
+
+06-base-lstm-activations.ipynb

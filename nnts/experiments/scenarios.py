@@ -12,6 +12,18 @@ class CovariateScenario:
     seed: int = 42
     skip: int = 0
 
+    def copy(self):
+        return CovariateScenario(
+            prediction_length=self.prediction_length,
+            error=self.error,
+            conts=self.conts.copy(),
+            pearson=self.pearson,
+            noise=self.noise,
+            covariates=self.covariates,
+            seed=self.seed,
+            skip=self.skip,
+        )
+
     @property
     def name(self):
         if self.skip == 1:

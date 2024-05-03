@@ -28,15 +28,18 @@ make sync_data_from_drive
 ## Training
 To train the model(s) in the paper, run this command:
 ```bash
-python train.py all data all
+python train.py all all
 ```
-
 
 Alternatively to train a specific model for a dataset, run this command
 ```bash
-python train.py dataset_name data_path [model_name] [results_path] [generate_metrics]
+python train.py model_name dataset_name [data_path] [results_path] [generate_metrics]
 ```
 Use the following options:
+
+- models
+    - base-lstm
+    - seg-lstm
 
 - dataset_name
     - hospital
@@ -44,21 +47,20 @@ Use the following options:
     - traffic
     - electricity
 
-- data_path
-    - data/hospital_dataset.tsf
-    - data/tourism_monthly_dataset.tsf
-    - data/traffic_weekly_dataset.tsf
-    - data/electricity_hourly_dataset.tsf
-
-- models
-    - base-lstm
-    - seg-lstm
+- data_path (default: data)
 
 - results_path (eg results)
 
 - generate_metrics
     - true
     - false
+
+For example
+```bash
+python train.py seg-lstm hospital --generate_metrics true
+```
+
+
 
 This will create a folder where the results of each model will be stored along with the state_dict of the pytorch model weights created during training. 
 Each execution of train creates a set of 24 models covering a range of scenarios:

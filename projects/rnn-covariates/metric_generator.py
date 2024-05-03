@@ -43,7 +43,7 @@ def generate(
 ):
     for scenario in scenario_list:
         nnts.torch.data.datasets.seed_everything(scenario.seed)
-        df, scenario = covs.prepare(df_orig.copy(), scenario)
+        df, scenario = covs.prepare(df_orig.copy(), scenario.copy())
         splitter = nnts.pandas.LastHorizonSplitter()
         split_data = splitter.split(df, metadata)
         _, _, test_dl = nnts.data.map_to_dataloaders(

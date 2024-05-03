@@ -281,5 +281,12 @@ def model_factory(
             scenario.covariates + 1,
             metadata.seasonality,
         )
+    elif model_name == "unrolled-lstm":
+        return nnts.torch.models.UnrolledLSTM(
+            nnts.torch.models.LinearModel,
+            params,
+            preprocessing.masked_mean_abs_scaling,
+            scenario.covariates + 1,
+        )
     else:
         raise ValueError(f"Model {model_name} not found.")
