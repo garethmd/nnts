@@ -97,7 +97,6 @@ class SegLSTM(nn.Module):
             x = X
         else:
             target_scale = self.scaling_fn(X, pad_mask)
-            # target_scale = self.scaling_fn(X[:, :, :1], pad_mask)
             x = X / target_scale
 
         x = x.reshape(B, -1, self.segment_length, C)  # B, T/12, 12, C

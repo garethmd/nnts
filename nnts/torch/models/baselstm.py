@@ -1,3 +1,5 @@
+from typing import Dict, Tuple
+
 import torch
 import torch.nn as nn
 
@@ -129,4 +131,107 @@ class BaseLSTM(nn.Module):
 
         y_hat = y_hat[pad_mask[:, 1:]]
         y = y[pad_mask[:, 1:]]
+        return y_hat, y
+
+
+class BaseFutureCovariateLSTM(nn.Module):
+
+    def __init__(
+        self,
+        Distribution: nn.Module,
+        params: nnts.models.Hyperparams,
+        scaling_fn: callable,
+        output_dim: int,
+        known_future_covariates: int,
+    ):
+        super(BaseFutureCovariateLSTM, self).__init__()
+        self.scaling_fn = scaling_fn
+        self.decoder = BaseLSTMDecoder(params, output_dim + known_future_covariates)
+        self.distribution = Distribution(params.hidden_dim, output_dim)
+        self.known_future_covariates = known_future_covariates
+        self.output_dim = output_dim
+
+    def forward(
+        self, X: torch.tensor, pad_mask: torch.tensor, conts_future: torch.tensor = None
+    ) -> torch.tensor:
+        X = X.clone()
+        B, T, _ = X.shape
+        target_scale = self.scaling_fn(X, pad_mask)
+        conts = X / target_scale
+        conts_list = [conts, torch.log(target_scale[:, :, :1]).expand(B, T, 1)]
+
+        if conts_future is not None:
+            conts_list.append(conts_future)
+
+        embedded = torch.cat(conts_list, 2)
+        out, _ = self.decoder(embedded)
+        distr = self.distribution(out, target_scale=target_scale)
+        return distr
+
+    def teacher_forcing_output(self, data: Dict) -> Tuple[torch.tensor, torch.tensor]:
+        x = data["X"]
+        conts_future = x[:, :, -self.known_future_covariates :]
+        x = x[:, :, : -self.known_future_covariates]
+
+        pad_mask = data["pad_mask"]
+        y_hat = self(
+            x[:, :-1, :], pad_mask[:, :-1], conts_future=conts_future[:, :-1, :]
+        )
+        y = x[:, 1:, :1]
+
+        y_hat = y_hat[pad_mask[:, 1:]]
+        y = y[pad_mask[:, 1:]]
+        return y_hat, y
+
+    def generate(
+        self,
+        X: torch.tensor,
+        pad_mask: torch.tensor,
+        prediction_length: int,
+        context_length: int,
+    ) -> torch.tensor:
+        y_hat = torch.zeros(X.shape[0], prediction_length, self.output_dim)
+        past_conts = X[:, :context_length, :]
+        past_pad_mask = pad_mask[:, :context_length]
+
+        future_conts = X[:, context_length:, -self.known_future_covariates :]
+        future_pad_mask = pad_mask[:, context_length:]
+
+        for x in range(prediction_length):
+            preds = self(
+                past_conts[:, :, : -self.known_future_covariates],
+                past_pad_mask,
+                conts_future=past_conts[:, :, -self.known_future_covariates :],
+            )
+            preds = preds[:, -1:, :].detach().clone()  # becomes (B, 1, C)
+            y_hat[:, x, :] = preds[:, 0, :]
+
+            # append the prediction to the past
+            past_conts[:, :, : -self.known_future_covariates] = torch.cat(
+                (past_conts[:, :, : -self.known_future_covariates], preds), dim=1
+            )[:, 1:, :]
+            past_conts[:, :, -self.known_future_covariates :] = torch.cat(
+                [
+                    past_conts[:, :, -self.known_future_covariates :],
+                    future_conts[:, x : x + 1, :],
+                ],
+                dim=1,
+            )[:, 1:, :]
+            past_pad_mask = torch.cat(
+                [past_pad_mask, future_pad_mask[:, x : x + 1]], dim=1
+            )[:, 1:]
+
+        return y_hat
+
+    def validate(self, batch, prediction_length, context_length):
+        y = batch["X"][
+            :, context_length : context_length + prediction_length, : self.output_dim
+        ]
+        y_hat = self.generate(
+            batch["X"],
+            batch["pad_mask"],
+            prediction_length=prediction_length,
+            context_length=context_length,
+        )
+        y_hat = y_hat[:, -prediction_length:, ...]
         return y_hat, y

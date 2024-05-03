@@ -263,7 +263,7 @@ def plot_pcc_charts(
 def model_factory(
     model_name: str,
     params: nnts.models.Hyperparams,
-    scenario: nnts.experiments.CovariateScenario,
+    scenario: nnts.experiments.Scenario,
     metadata: nnts.data.metadata.Metadata,
 ):
     if model_name == "base-lstm":
@@ -272,6 +272,14 @@ def model_factory(
             params,
             preprocessing.masked_mean_abs_scaling,
             scenario.covariates + 1,
+        )
+    elif model_name == "base-future-covariate-lstm":
+        return nnts.torch.models.BaseFutureCovariateLSTM(
+            nnts.torch.models.LinearModel,
+            params,
+            preprocessing.masked_mean_abs_scaling,
+            1,
+            known_future_covariates=scenario.covariates,
         )
     elif model_name == "seg-lstm":
         return nnts.torch.models.SegLSTM(

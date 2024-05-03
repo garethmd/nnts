@@ -1,3 +1,3 @@
-from .scenarios import CovariateScenario
+from .scenarios import CovariateScenario, Scenario
 
-__all__ = ["CovariateScenario"]
+__all__ = ["CovariateScenario", "Scenario"]

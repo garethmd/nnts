@@ -1,4 +1,3 @@
-import timeit
 from typing import Any
 
 import numpy as np
@@ -32,15 +31,18 @@ class EarlyStopper:
 
 
 def validate(net, batch, prediction_length, context_length):
-    y = batch["X"][:, context_length : context_length + prediction_length, ...]
-    y_hat = net.generate(
-        batch["X"][:, :context_length, ...],
-        batch["pad_mask"][:, :context_length],
-        prediction_length=prediction_length,
-        context_length=context_length,
-    )
-    y_hat = y_hat[:, -prediction_length:, ...]
-    return y_hat, y
+    if hasattr(net, "validate"):
+        return net.validate(batch, prediction_length, context_length)
+    else:
+        y = batch["X"][:, context_length : context_length + prediction_length, ...]
+        y_hat = net.generate(
+            batch["X"][:, :context_length, ...],
+            batch["pad_mask"][:, :context_length],
+            prediction_length=prediction_length,
+            context_length=context_length,
+        )
+        y_hat = y_hat[:, -prediction_length:, ...]
+        return y_hat, y
 
 
 def eval(net, dl, prediction_length: int, context_length: int, hooks: Any = None):
@@ -106,7 +108,6 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         self.best_loss = np.inf
 
     def before_train_epoch(self) -> None:
-        self.start_time = timeit.default_timer()
         self.net.train()
 
     def before_validate_epoch(self) -> None:

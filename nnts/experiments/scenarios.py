@@ -2,14 +2,46 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class CovariateScenario:
+class BaseScenario:
     prediction_length: int
-    error: int
     conts: list = field(default_factory=list)
+    seed: int = 42
+
+    def copy(self):
+        return self.__class__(
+            prediction_length=self.prediction_length,
+            conts=self.conts.copy(),
+            seed=self.seed,
+        )
+
+
+@dataclass
+class Scenario(BaseScenario):
+    covariates: int = field(init=False)
+
+    def __post_init__(self):
+        self.covariates = len(self.conts)
+
+    def copy(self):
+        return Scenario(
+            prediction_length=self.prediction_length,
+            conts=self.conts.copy(),
+            seed=self.seed,
+        )
+
+    @property
+    def name(self):
+        return (
+            f"cov-{self.covariates}-pl-{str(self.prediction_length)}-seed-{self.seed}"
+        )
+
+
+@dataclass
+class CovariateScenario(BaseScenario):
+    error: int = 0
     pearson: float = 0
     noise: float = 0
     covariates: int = 0
-    seed: int = 42
     skip: int = 0
 
     def copy(self):
