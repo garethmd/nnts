@@ -36,22 +36,62 @@ class StandardScaler(nnts.data.preprocessing.Transformation):
         self.mean = mean
         self.std = std
 
-    def fit(self, data: pd.DataFrame):
-        numeric_data = data.select_dtypes(include=["number"])
+    def fit(self, data: pd.DataFrame, cols=None):
+        numeric_data = (
+            data.select_dtypes(include=["number"]) if cols is None else data[cols]
+        )
         self.mean = numeric_data.mean()
         self.std = numeric_data.std()
         return self
 
-    def transform(self, data: pd.DataFrame):
-        numeric_data = data.select_dtypes(include=["number"])
+    def transform(self, data: pd.DataFrame, cols=None):
+        numeric_data = (
+            data.select_dtypes(include=["number"]).columns
+            if cols is None
+            else data[cols]
+        )
         numeric_cols = numeric_data.columns
         data[numeric_cols] = (numeric_data - self.mean) / self.std
         return data
 
-    def inverse_transform(self, data: pd.DataFrame):
-        numeric_data = data.select_dtypes(include=["number"])
+    def inverse_transform(self, data: pd.DataFrame, cols=None):
+        numeric_data = (
+            data.select_dtypes(include=["number"]) if cols is None else data[cols]
+        )
         numeric_cols = numeric_data.columns
         data[numeric_cols] = numeric_data * self.std + self.mean
+        return data
+
+
+class MaxMinScaler(nnts.data.preprocessing.Transformation):
+    def __init__(self, max=None, min=None):
+        self.max = max
+        self.min = min
+
+    def fit(self, data: pd.DataFrame, cols=None):
+        numeric_data = (
+            data.select_dtypes(include=["number"]) if cols is None else data[cols]
+        )
+        self.max = numeric_data.max()
+        self.min = numeric_data.min()
+        return self
+
+    def transform(self, data: pd.DataFrame, cols=None):
+        numeric_data = (
+            data.select_dtypes(include=["number"]).columns
+            if cols is None
+            else data[cols]
+        )
+        numeric_cols = numeric_data.columns
+        data[numeric_cols] = (numeric_data - self.min) / (self.max - self.min)
+        return data
+
+    def inverse_transform(self, data: pd.DataFrame, cols=None):
+        numeric_data = (
+            data.select_dtypes(include=["number"]) if cols is None else data[cols]
+        )
+        numeric_cols = numeric_data.columns
+        data[numeric_cols] = numeric_data * (self.max - self.min) + self.min
         return data
 
 

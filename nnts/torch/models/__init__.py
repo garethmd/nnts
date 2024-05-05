@@ -1,6 +1,6 @@
 from .baselstm import BaseFutureCovariateLSTM, BaseLSTM, LinearModel
 from .seglstm import SegLSTM
-from .unrolledlstm import UnrolledLSTM
+from .unrolledlstm import UnrolledFutureCovariateLSTM, UnrolledLSTM
 
 __all__ = [
     "LinearModel",
@@ -8,4 +8,5 @@ __all__ = [
     "SegLSTM",
     "UnrolledLSTM",
     "BaseFutureCovariateLSTM",
+    "UnrolledFutureCovariateLSTM",
 ]

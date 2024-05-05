@@ -296,5 +296,13 @@ def model_factory(
             preprocessing.masked_mean_abs_scaling,
             scenario.covariates + 1,
         )
+    elif model_name == "unrolled-future-covariate-lstm":
+        return nnts.torch.models.UnrolledFutureCovariateLSTM(
+            nnts.torch.models.LinearModel,
+            params,
+            preprocessing.masked_mean_abs_scaling,
+            1,
+            known_future_covariates=scenario.covariates,
+        )
     else:
         raise ValueError(f"Model {model_name} not found.")
