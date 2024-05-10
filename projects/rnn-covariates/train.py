@@ -62,9 +62,7 @@ def run_scenario(
     y_hat, y = evaluator.evaluate(
         test_dl, scenario.prediction_length, metadata.context_length
     )
-    test_metrics = nnts.metrics.calc_metrics(
-        y, y_hat, metadata.freq, metadata.seasonality
-    )
+    test_metrics = nnts.metrics.calc_metrics(y, y_hat, trn_dl, metadata)
     logger.log(test_metrics)
     logger.finish()
 
@@ -131,7 +129,7 @@ def run_experiment(
                     model_name,
                     path,
                 )
-            csv_aggregator = covs.CSVFileAggregator(path, "results")
+            csv_aggregator = nnts.pandas.CSVFileAggregator(path, "results")
             csv_aggregator()
 
             if generate_metrics:

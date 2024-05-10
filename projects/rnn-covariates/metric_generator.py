@@ -1,12 +1,12 @@
 from typing import List
 
 import covs
+import metrics_old
 import pandas as pd
 import torch
 
 import nnts.data.metadata
 import nnts.experiments
-import nnts.metrics
 import nnts.models
 import nnts.pandas
 import nnts.torch.data.datasets
@@ -26,7 +26,7 @@ def save_metrics(metrics, path, name):
 def calculate_forecast_horizon_metrics(y_hat, y, metadata, metric="mae"):
     forecast_horizon_metrics = []
     for i in range(0, metadata.prediction_length + 1):
-        metrics = nnts.metrics.calc_metrics(
+        metrics = metrics_old.calc_metrics(
             y[:, :i, :], y_hat[:, :i, :], metadata.freq, metadata.seasonality
         )
         forecast_horizon_metrics.append(metrics[metric])
@@ -60,7 +60,7 @@ def generate(
         y_hat, y = evaluator.evaluate(
             test_dl, scenario.prediction_length, metadata.context_length
         )
-        test_metrics = nnts.metrics.calc_metrics(
+        test_metrics = metrics_old.calc_metrics(
             y, y_hat, metadata.freq, metadata.seasonality
         )
         save_results(y_hat, y, path, scenario.name)

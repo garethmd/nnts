@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Tuple
 
@@ -123,3 +124,21 @@ class FixedSizeSplitter(splitter.Splitter):
         )
         test = data.groupby("unique_id").tail(test_size)
         return splitter.SplitData(train=trn, validation=val, test=test)
+
+
+class CSVFileAggregator:
+    def __init__(self, path: str, filename: str):
+        self.path = path
+        self.filename = filename
+
+    def __call__(self) -> pd.DataFrame:
+        data_list = []
+        for filename in os.listdir(self.path):
+            if filename.endswith(".json"):
+                with open(os.path.join(self.path, filename), "r") as file:
+                    data = json.load(file)
+                    data_list.append(data)
+        # Concatenate DataFrames if needed
+        results = pd.DataFrame(data_list)
+        results.to_csv(f"{self.path}/{self.filename}.csv", index=False)
+        return results

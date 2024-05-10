@@ -3,6 +3,7 @@ import os
 from typing import List
 
 import matplotlib.pyplot as plt
+import metrics_old
 import numpy as np
 import pandas as pd
 import scipy
@@ -10,7 +11,6 @@ import torch
 
 import nnts.data.metadata
 import nnts.experiments.scenarios
-import nnts.metrics
 import nnts.models.hyperparams
 import nnts.pandas
 import nnts.torch.data.preprocessing as preprocessing
@@ -95,24 +95,6 @@ def prepare(data, scenario):
     return data, scenario
 
 
-class CSVFileAggregator:
-    def __init__(self, path: str, filename: str):
-        self.path = path
-        self.filename = filename
-
-    def __call__(self) -> pd.DataFrame:
-        data_list = []
-        for filename in os.listdir(self.path):
-            if filename.endswith(".json"):
-                with open(os.path.join(self.path, filename), "r") as file:
-                    data = json.load(file)
-                    data_list.append(data)
-        # Concatenate DataFrames if needed
-        results = pd.DataFrame(data_list)
-        results.to_csv(f"{self.path}/{self.filename}.csv", index=False)
-        return results
-
-
 def add_y_hat(df, y_hat, prediction_length):
     i = 0
     df_list = []
@@ -122,23 +104,6 @@ def add_y_hat(df, y_hat, prediction_length):
         i += 1
         df_list.append(group)
     return df_list
-
-
-def plot(df_test, prediction_length, start_idx=0):
-    num_plots = min(len(df_test), 4)
-    fig, axes = plt.subplots(
-        nrows=num_plots // 2 + num_plots % 2, ncols=min(num_plots, 2), figsize=(20, 10)
-    )
-    axes = np.ravel(axes)  # Flatten the axes array
-
-    for idx, ax in enumerate(axes):
-        if idx < len(df_test):
-            df_test[start_idx + idx].set_index("ds").tail(prediction_length * 5)[
-                ["y", "y_hat"]
-            ].plot(ax=ax)
-        else:
-            ax.axis("off")  # Hide empty subplots if df_test length is less than 4
-    return fig
 
 
 def prepare_scenarios(
@@ -161,7 +126,7 @@ def univariate_results(
     y = torch.load(f"{path}/{scenario.name}_y.pt")
     y_hat = torch.load(f"{path}/{scenario.name}_y_hat.pt")
 
-    return nnts.metrics.calc_metrics(
+    return metrics_old.calc_metrics(
         y[:, :forecast_horizon, :],
         y_hat[:, :forecast_horizon, :],
         metadata.freq,
@@ -223,7 +188,7 @@ def plot_pcc_charts(
                 y = torch.load(f"{PATH}/{scenario.name}_y.pt")
                 y_hat = torch.load(f"{PATH}/{scenario.name}_y_hat.pt")
 
-                metrics = nnts.metrics.calc_metrics(
+                metrics = metrics_old.calc_metrics(
                     y[:, :forecast_horizon, :],
                     y_hat[:, :forecast_horizon, :],
                     metadata.freq,

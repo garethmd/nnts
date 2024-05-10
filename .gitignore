@@ -99,4 +99,6 @@ script-results/
 
 wandb/
 
+projects/*/data
+
 06-base-lstm-activations.ipynb

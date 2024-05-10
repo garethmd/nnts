@@ -1,6 +1,7 @@
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from . import CovariateScenario
 
@@ -62,3 +63,20 @@ def plot_forecast_horizon_trajectories(
         plt.show()
 
     return plt
+
+
+def plot(df_test, prediction_length, start_idx=0):
+    num_plots = min(len(df_test), 4)
+    fig, axes = plt.subplots(
+        nrows=num_plots // 2 + num_plots % 2, ncols=min(num_plots, 2), figsize=(20, 10)
+    )
+    axes = np.ravel(axes)  # Flatten the axes array
+
+    for idx, ax in enumerate(axes):
+        if idx < len(df_test):
+            df_test[start_idx + idx].set_index("ds").tail(prediction_length * 5)[
+                ["y", "y_hat"]
+            ].plot(ax=ax)
+        else:
+            ax.axis("off")  # Hide empty subplots if df_test length is less than 4
+    return fig
