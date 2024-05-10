@@ -80,11 +80,13 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         params: nnts.models.Hyperparams,
         metadata: nnts.data.Metadata,
         path: str,
+        loss_fn=F.smooth_l1_loss,
     ):
         super().__init__(state, params)
         self.net = net
         self.metadata = metadata
         self.path = path
+        self.loss_fn = loss_fn
 
     def before_train(self, train_dl):
         print(self.net)
@@ -138,7 +140,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         else:
             y_hat, y = self.net.teacher_forcing_output(batch)
 
-        L = F.smooth_l1_loss(y_hat, y)
+        L = self.loss_fn(y_hat, y)
         L.backward()
         self.optimizer.step()
         self.scheduler.step()
@@ -152,7 +154,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
                 self.metadata.prediction_length,
                 self.metadata.context_length,
             )
-            L = F.smooth_l1_loss(y_hat, y)
+            L = self.loss_fn(y_hat, y)
         return L
 
     def create_evaluator(self) -> nnts.models.Evaluator:
