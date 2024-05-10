@@ -95,6 +95,7 @@ nb-results/
 script-results/
 
 *.tsf
+*.csv
 
 wandb/
 
