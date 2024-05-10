@@ -46,9 +46,7 @@ class StandardScaler(nnts.data.preprocessing.Transformation):
 
     def transform(self, data: pd.DataFrame, cols=None):
         numeric_data = (
-            data.select_dtypes(include=["number"]).columns
-            if cols is None
-            else data[cols]
+            data.select_dtypes(include=["number"]) if cols is None else data[cols]
         )
         numeric_cols = numeric_data.columns
         data[numeric_cols] = (numeric_data - self.mean) / self.std
@@ -78,12 +76,10 @@ class MaxMinScaler(nnts.data.preprocessing.Transformation):
 
     def transform(self, data: pd.DataFrame, cols=None):
         numeric_data = (
-            data.select_dtypes(include=["number"]).columns
-            if cols is None
-            else data[cols]
+            data.select_dtypes(include=["number"]) if cols is None else data[cols]
         )
         numeric_cols = numeric_data.columns
-        data[numeric_cols] = (numeric_data - self.min) / (self.max - self.min)
+        data[numeric_cols] = ((numeric_data - self.min) / (self.max - self.min)) - 0.5
         return data
 
     def inverse_transform(self, data: pd.DataFrame, cols=None):
