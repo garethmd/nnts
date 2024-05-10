@@ -85,6 +85,26 @@ class LastHorizonSplitter(splitter.Splitter):
         )
         return splitter.SplitData(train=trn, validation=val, test=test)
 
+    def split_test_train(
+        self, data: pd.DataFrame, metadata: nnts.data.metadata.Metadata, *args, **kwargs
+    ) -> splitter.SplitTrainTest:
+        """
+        Splits the data into train and test sets based on the provided metadata.
+
+        Args:
+            data (pd.DataFrame): The input DataFrame containing the data to be split.
+            metadata (metadata.Metadata): The metadata object containing information about the split.
+
+        Returns:
+            splitter.SplitTrainTest: An object containing the train and test sets.
+        """
+
+        trn = data.groupby("unique_id").head(-metadata.prediction_length)
+        test = data.groupby("unique_id").tail(
+            metadata.context_length + metadata.prediction_length
+        )
+        return splitter.SplitTrainTest(train=trn, test=test)
+
 
 def slice_rows(group: pd.DataFrame, start, end) -> pd.DataFrame:
     return group.iloc[start:end]

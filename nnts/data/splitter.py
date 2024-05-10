@@ -6,6 +6,7 @@ import pandas as pd
 from . import metadata
 
 SplitData = namedtuple("SplitData", ["train", "validation", "test"])
+SplitTrainTest = namedtuple("SplitTrainTest", ["train", "test"])
 
 
 class Splitter(ABC):
