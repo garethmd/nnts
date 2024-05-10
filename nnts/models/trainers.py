@@ -65,18 +65,22 @@ class EpochTrainer(Trainer):
     def before_train(self, train_dl: Iterable) -> None:
         pass
 
-    def train(self, train_dl, valid_dl) -> Evaluator:
+    def train(self, train_dl, valid_dl=None) -> Evaluator:
         self.before_train(train_dl)
         for epoch in range(1, self.params.epochs + 1):
             if self.state.stop:
                 break
             self.state.epoch = epoch
             self._train_epoch(train_dl)
-            self._validate_epoch(valid_dl)
+            if valid_dl:
+                self._validate_epoch(valid_dl)
 
         return self.create_evaluator()
 
     def before_train_epoch(self) -> None:
+        pass
+
+    def after_train_epoch(self) -> None:
         pass
 
     def _train_epoch(self, train_dl: Iterable) -> Any:
@@ -89,6 +93,7 @@ class EpochTrainer(Trainer):
             loss += L
         loss /= len(train_dl)
         self.state.train_loss = loss
+        self.after_train_epoch()
         self.events.notify(EpochTrainComplete(self.state))
         return loss
 
