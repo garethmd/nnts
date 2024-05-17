@@ -59,12 +59,7 @@ make sync_data_from_drive
 ## Training
 To train the model(s) in the paper, run this command:
 ```bash
-python deepar.py all all
-```
-
-Alternatively to train a specific model for a dataset, run this command
-```bash
-python train.py model_name dataset_name [data_path] [results_path] [generate_metrics]
+python deepar.py deepar dataset_name [data_path] [results_path] 
 ```
 Use the following options:
 
@@ -72,22 +67,16 @@ Use the following options:
     - deepar
 
 - dataset_name
-    - hospital
     - tourism
-    - traffic
     - electricity
 
 - data_path (default: data)
 
 - results_path (eg results)
 
-- generate_metrics
-    - true
-    - false
-
 For example
 ```bash
-python deepar.py deepar hospital 
+python deepar.py deepar tourism 
 ```
 
 This will create a folder where the results of each model will be stored along with the state_dict of the pytorch model weights created during training. 
@@ -106,7 +95,7 @@ If you choose to generate metrics a selection of plots used in the paper as well
 ## Naming Convention
 The artifacts that are created in the results directory follow a specific naming convention:
 
-scenario name: cov-{k}-lags-{l}-pl-{H}-[skip-1]-seed-{s}
+scenario name: cov-{k}-lags-{l}-pl-{H}-seed-{s}
 
 Where:  
 k - are the covariate names
