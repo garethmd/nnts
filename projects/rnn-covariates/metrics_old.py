@@ -24,7 +24,9 @@ def calc_metrics(y, y_hat, period="M", seasonality=12):
     mape = metrics.mape(y.numpy(), y_hat.numpy())
     smape = metrics.smape(y.numpy(), y_hat.numpy())
     abs_error = metrics.abs_error(y.numpy(), y_hat.numpy())
-    seasonal_error = metrics.calculate_seasonal_error(y.numpy(), period, seasonality)
+    seasonal_error = metrics.calculate_seasonal_error(
+        y.numpy(), period, seasonality
+    )  # needs to be prior history
     mase = metrics.mase(y.numpy(), y_hat.numpy(), seasonal_error)
     test_rmse = rmse(y, y_hat).mean().item()
 

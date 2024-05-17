@@ -12,7 +12,7 @@ class DataLoaderFactory:
         self,
         data: Any,
         metadata: metadata.Metadata,
-        scenario: nnts.experiments.CovariateScenario,
+        scenario: nnts.experiments.Scenario,
         params: nnts.models.Hyperparams,
         shuffle: bool,
         transforms: List[preprocessing.Transformation] = None,
@@ -23,7 +23,7 @@ class DataLoaderFactory:
 def map_to_dataloaders(
     split_data: splitter.SplitData,
     metadata: metadata.Metadata,
-    scenario: nnts.experiments.CovariateScenario,
+    scenario: nnts.experiments.Scenario,
     params: nnts.models.Hyperparams,
     dataloader_factory: DataLoaderFactory,
     transforms: List[preprocessing.Transformation] = None,
