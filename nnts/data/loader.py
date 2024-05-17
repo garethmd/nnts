@@ -20,7 +20,7 @@ class DataLoaderFactory:
         raise NotImplementedError
 
 
-def map_to_dataloaders(
+def create_trn_val_test_dataloaders(
     split_data: splitter.SplitData,
     metadata: metadata.Metadata,
     scenario: nnts.experiments.Scenario,
@@ -33,7 +33,7 @@ def map_to_dataloaders(
     Args:
         split_data (nnts.data.SplitData):
         metadata (nnts.data.Metadata): metadata for the dataset
-        scenario (nnts.experiments.CovariateScenario): scenario for the experiment
+        scenario (nnts.experiments.Scenario): scenario for the experiment
         params (nnts.models.Hyperparams): hyperparameters for the model
         dataloader_factory (callable, optional): function to create the dataloader. Defaults to pytorch_timeseries_dataloader_factory.
 
@@ -75,7 +75,7 @@ def map_to_dataloaders(
     return trn_dl, val_dl, test_dl
 
 
-def train_test_to_dataloaders(
+def create_trn_test_dataloaders(
     split_data: splitter.SplitTrainTest,
     metadata: metadata.Metadata,
     scenario: nnts.experiments.Scenario,
@@ -83,7 +83,7 @@ def train_test_to_dataloaders(
     dataloader_factory: DataLoaderFactory,
     transforms: List[preprocessing.Transformation] = None,
 ) -> Tuple[Iterable, Iterable, Iterable]:
-    """Generate Iterable dataloaders for training, validation, and testing.
+    """Generate Iterable dataloaders for training, and testing.
 
     Args:
         split_data (nnts.data.SplitTrainTest):
@@ -93,7 +93,7 @@ def train_test_to_dataloaders(
         dataloader_factory (callable, optional): function to create the dataloader. Defaults to pytorch_timeseries_dataloader_factory.
 
     Returns:
-        Tuple[DataLoader, DataLoader, DataLoader]: training, validation, and testing dataloaders
+        Tuple[DataLoader, DataLoader]: training, and testing dataloaders
     """
     if transforms is not None:
         transforms = [

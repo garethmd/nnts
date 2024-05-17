@@ -1,10 +1,13 @@
 import argparse
 import os
+from dataclasses import dataclass, field
 from typing import List
 
 import gluonts
+import numpy as np
 import pandas as pd
 import torch
+import trainers
 
 import nnts
 import nnts.data
@@ -17,7 +20,113 @@ import nnts.torch.data
 import nnts.torch.data.datasets
 import nnts.torch.data.preprocessing
 import nnts.torch.models
-import nnts.torch.models.trainers as trainers
+
+
+def create_time_features(df_orig: pd.DataFrame):
+    next_month = df_orig["ds"]  # + pd.DateOffset(days=1)
+    df_orig["day_of_week"] = next_month.dt.day_of_week
+
+    next_month = df_orig["ds"]
+    df_orig["hour"] = next_month.dt.hour
+
+    next_month = df_orig["ds"]  # + pd.DateOffset(weeks=1)
+    df_orig["week"] = next_month.dt.isocalendar().week
+    df_orig["week"] = df_orig["week"].astype(np.float32)
+
+    next_month = df_orig["ds"]  # + pd.DateOffset(months=1)
+    df_orig["month"] = next_month.dt.month
+
+    df_orig["unix_timestamp"] = np.log10(2.0 + df_orig.groupby("unique_id").cumcount())
+    return df_orig
+
+
+@dataclass
+class Scenario(nnts.experiments.scenarios.BaseScenario):
+    # covariates: int = field(init=False)
+    dataset: str = ""
+    lag_seq: List[int] = field(default_factory=list)
+    scaled_covariates: List[str] = field(default_factory=list)
+
+    # def __post_init__(self):
+    #    self.covariates = len(self.conts)
+
+    def copy(self):
+        return Scenario(
+            prediction_length=self.prediction_length,
+            conts=self.conts.copy(),
+            seed=self.seed,
+            lag_seq=self.lag_seq.copy(),
+            scaled_covariates=self.scaled_covariates.copy(),
+        )
+
+    def scaled_covariate_names(self):
+        return "-".join(self.scaled_covariates)
+
+    @property
+    def name(self):
+        return f"cov-{self.scaled_covariate_names()}-lags-{len(self.lag_seq)}-ds-{self.dataset}-seed-{self.seed}"
+
+
+def create_scenarios(metadata, lag_seq):
+    scaled_covariates = ["month", "unix_timestamp", nnts.torch.models.deepar.FEAT_SCALE]
+    scaled_covariate_selection_matrix = [
+        [0, 0, 1],
+        [0, 1, 0],
+        [0, 1, 1],
+        [1, 0, 0],
+        [1, 0, 1],
+        [1, 1, 0],
+        [1, 1, 1],
+    ]
+
+    scenario_list: List[nnts.experiments.Scenario] = []
+
+    for seed in [42, 43, 44, 45, 46]:
+        for row in scaled_covariate_selection_matrix:
+            selected_combination = [
+                covariate
+                for covariate, select in zip(scaled_covariates, row)
+                if select == 1
+            ]
+            scenario_list.append(
+                Scenario(
+                    metadata.prediction_length,
+                    conts=[
+                        cov
+                        for cov in selected_combination
+                        if cov != nnts.torch.models.deepar.FEAT_SCALE
+                    ],
+                    scaled_covariates=selected_combination,
+                    lag_seq=lag_seq,
+                    seed=seed,
+                    dataset=metadata.dataset,
+                )
+            )
+    return scenario_list
+
+
+def create_lag_scenarios(metadata, lag_seq):
+    scaled_covariates = ["month", "unix_timestamp", nnts.torch.models.deepar.FEAT_SCALE]
+
+    scenario_list: List[nnts.experiments.Scenario] = []
+
+    for seed in [42, 43, 44, 45, 46]:
+        for lags in range(1, len(lag_seq) + 1):
+            scenario_list.append(
+                Scenario(
+                    metadata.prediction_length,
+                    conts=[
+                        cov
+                        for cov in scaled_covariates
+                        if cov != nnts.torch.models.deepar.FEAT_SCALE
+                    ],
+                    scaled_covariates=scaled_covariates,
+                    lag_seq=lag_seq[:lags],
+                    seed=seed,
+                    dataset=metadata.dataset,
+                )
+            )
+    return scenario_list
 
 
 def main(
@@ -48,54 +157,51 @@ def main(
     params.batches_per_epoch = 50
 
     # Calculate next month and unix timestamp
-    next_month = df_orig["ds"] + pd.DateOffset(months=1)
-    df_orig["month"] = next_month.dt.month
-    df_orig["unix_timestamp"] = (
-        df_orig["ds"] - pd.Timestamp("1970-01-01")
-    ) // pd.Timedelta("1s")
+    df_orig = create_time_features(df_orig)
 
     # Normalize data
     max_min_scaler = nnts.torch.data.preprocessing.MaxMinScaler()
-    max_min_scaler.fit(df_orig, ["month", "unix_timestamp"])
-    df_orig = max_min_scaler.transform(df_orig, ["month", "unix_timestamp"])
+    max_min_scaler.fit(df_orig, ["month"])
+    df_orig = max_min_scaler.transform(df_orig, ["month"])
 
     lag_seq = gluonts.time_feature.lag.get_lags_for_frequency(metadata.freq)
-
-    df_orig, lag_conts = prepare_lags(df_orig, lag_seq)
-    df_orig = df_orig.dropna()
-
-    scenario_list: List[nnts.experiments.Scenario] = []
-
-    # Add the baseline scenarios
-    for seed in [42]:
-        scenario_list.append(
-            nnts.experiments.Scenario(
-                metadata.prediction_length,
-                conts=lag_conts + ["month", "unix_timestamp"],
-                seed=seed,
-            )
-        )
-
-    params.training_method = nnts.models.hyperparams.TrainingMethod.TEACHER_FORCING
     lag_seq = [lag - 1 for lag in lag_seq if lag > 1]
 
-    for scenario in scenario_list[:1]:
+    scenario_list = create_lag_scenarios(metadata, lag_seq)
+
+    params.training_method = nnts.models.hyperparams.TrainingMethod.TEACHER_FORCING
+
+    for scenario in scenario_list:
         nnts.torch.data.datasets.seed_everything(scenario.seed)
         df = df_orig.copy()
-        split_data = splitter.split_test_train(df, metadata)
-        trn_dl, test_dl = nnts.data.train_test_to_dataloaders(
+        context_length = metadata.context_length + max(scenario.lag_seq)
+        split_data = nnts.pandas.split_test_train_last_horizon(
+            df, context_length, metadata.prediction_length
+        )
+        trn_dl, test_dl = nnts.data.create_trn_test_dataloaders(
             split_data,
             metadata,
             scenario,
             params,
-            nnts.torch.data.TorchTimeseriesDataLoaderFactory(),
+            nnts.torch.data.preprocessing.TorchTimeseriesLagsDataLoaderFactory(),
         )
-        net = nnts.torch.models.UnrolledFutureCovariateLSTM(
+        logger = nnts.loggers.WandbRun(
+            project=f"{model_name}-{metadata.dataset}",
+            name=scenario.name,
+            config={
+                **params.__dict__,
+                **metadata.__dict__,
+                **scenario.__dict__,
+            },
+            path=PATH,
+        )
+        net = nnts.torch.models.DeepAR(
             nnts.torch.models.LinearModel,
             params,
             nnts.torch.data.preprocessing.masked_mean_abs_scaling,
             1,
-            lag_seq=lag_seq,
+            lag_seq=scenario.lag_seq,
+            scaled_features=scenario.scaled_covariates,
         )
         trner = trainers.TorchEpochTrainer(
             nnts.models.TrainerState(),
@@ -104,6 +210,7 @@ def main(
             metadata,
             os.path.join(PATH, f"{scenario.name}.pt"),
         )
+        logger.configure(trner.events)
 
         evaluator = trner.train(trn_dl)
         y_hat, y = evaluator.evaluate(
@@ -111,15 +218,8 @@ def main(
         )
         test_metrics = nnts.metrics.calc_metrics(y, y_hat, trn_dl, metadata)
         print(test_metrics)
-
-
-def prepare_lags(data, lag_seq):
-    data = data.copy()
-    conts = []
-    for lag in range(1, max(lag_seq)):
-        data[f"y_lag_{lag}"] = data[["y", "unique_id"]].groupby("unique_id").shift(lag)
-        conts.append(f"y_lag_{lag}")
-    return data, conts
+        logger.log(test_metrics)
+        logger.finish()
 
 
 def add_y_hat(df, y_hat, prediction_length):
@@ -143,14 +243,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model-name",
         type=str,
-        default="unrolled-future-covariate-lstm",
+        default="deepar",
         help="Name of the model.",
     )
     parser.add_argument(
         "--base-model-name", type=str, default="base-lstm", help="Base model name."
     )
     parser.add_argument(
-        "--dataset-name", type=str, default="tourism", help="Name of the dataset."
+        "--dataset-name", type=str, default="electricity", help="Name of the dataset."
     )
     parser.add_argument(
         "--results-path",

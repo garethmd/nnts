@@ -14,6 +14,14 @@ import nnts.torch.models.trainers
 
 
 class TorchEpochTrainer(nnts.models.EpochTrainer):
+    """A GluonTS like trainer that mimics the default behaviour of a GluonTS estimator.
+    In particular it uses:
+        No validation set
+        Adam optimizer
+        ReduceLROnPlateau scheduler.
+        A smooth L1 loss function (for point predictions)
+    """
+
     def __init__(
         self,
         state: nnts.models.TrainerState,
@@ -51,6 +59,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
             self.state.best_loss = self.state.train_loss
             self.events.notify(nnts.models.trainers.EpochBestModel(self.path))
 
+        print(f"Train Loss: {self.state.train_loss}")
         self.scheduler.step(self.state.train_loss)
 
     def before_validate_epoch(self) -> None:

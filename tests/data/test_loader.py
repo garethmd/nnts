@@ -34,7 +34,7 @@ def sample_params():
     return nnts.models.Hyperparams(batch_size=2, epochs=10, lr=0.01)
 
 
-def test_should_map_to_dataloaders(
+def test_should_create_trn_val_test_dataloaders(
     sample_split_data, sample_metadata, sample_scenario, sample_params
 ):
     # Arrange
@@ -45,7 +45,7 @@ def test_should_map_to_dataloaders(
     mock_factory = MockDataLoaderFactory()
 
     # Act
-    trn_dl, val_dl, test_dl = nnts.data.loader.map_to_dataloaders(
+    trn_dl, val_dl, test_dl = nnts.data.loader.create_trn_val_test_dataloaders(
         sample_split_data,
         sample_metadata,
         sample_scenario,

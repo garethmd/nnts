@@ -31,7 +31,7 @@ def run_scenario(
     nnts.torch.data.datasets.seed_everything(scenario.seed)
     df, scenario = covs.prepare(df_orig.copy(), scenario.copy())
     split_data = splitter.split(df, metadata)
-    trn_dl, val_dl, test_dl = nnts.data.map_to_dataloaders(
+    trn_dl, val_dl, test_dl = nnts.data.create_trn_val_test_dataloaders(
         split_data,
         metadata,
         scenario,
