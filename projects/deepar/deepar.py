@@ -23,35 +23,32 @@ import nnts.torch.models
 
 
 def create_time_features(df_orig: pd.DataFrame):
-    next_month = df_orig["ds"]  # + pd.DateOffset(days=1)
-    df_orig["day_of_week"] = next_month.dt.day_of_week
-
-    next_month = df_orig["ds"]
-    df_orig["hour"] = next_month.dt.hour
-
-    next_month = df_orig["ds"]  # + pd.DateOffset(weeks=1)
-    df_orig["week"] = next_month.dt.isocalendar().week
+    df_orig["day_of_week"] = df_orig["ds"].dt.day_of_week
+    df_orig["hour"] = df_orig["ds"].dt.hour
+    df_orig["week"] = df_orig["ds"].dt.isocalendar().week
     df_orig["week"] = df_orig["week"].astype(np.float32)
 
-    next_month = df_orig["ds"]  # + pd.DateOffset(months=1)
-    df_orig["month"] = next_month.dt.month
+    # GluonTS uses the following code to generate the age covariate
+    # age = np.log10(2.0 + np.arange(length, dtype=self.dtype))
+    # length = the length of the time series. In GluonTS this length depends on the length of the training set and test set.
+    # but we do it once on the complete dataset.
+    # Also note that this doesn't align to the most recent time point, but to the first time point which
+    # intuitively doesn't make sense.
+    df_orig["month"] = df_orig["ds"].dt.month
 
     df_orig["unix_timestamp"] = np.log10(2.0 + df_orig.groupby("unique_id").cumcount())
     return df_orig
 
 
 @dataclass
-class Scenario(nnts.experiments.scenarios.BaseScenario):
+class LagScenario(nnts.experiments.scenarios.BaseScenario):
     # covariates: int = field(init=False)
     dataset: str = ""
     lag_seq: List[int] = field(default_factory=list)
     scaled_covariates: List[str] = field(default_factory=list)
 
-    # def __post_init__(self):
-    #    self.covariates = len(self.conts)
-
     def copy(self):
-        return Scenario(
+        return LagScenario(
             prediction_length=self.prediction_length,
             conts=self.conts.copy(),
             seed=self.seed,
@@ -79,7 +76,7 @@ def create_scenarios(metadata, lag_seq):
         [1, 1, 1],
     ]
 
-    scenario_list: List[nnts.experiments.Scenario] = []
+    scenario_list: List[LagScenario] = []
 
     for seed in [42, 43, 44, 45, 46]:
         for row in scaled_covariate_selection_matrix:
@@ -89,7 +86,7 @@ def create_scenarios(metadata, lag_seq):
                 if select == 1
             ]
             scenario_list.append(
-                Scenario(
+                LagScenario(
                     metadata.prediction_length,
                     conts=[
                         cov
@@ -108,12 +105,12 @@ def create_scenarios(metadata, lag_seq):
 def create_lag_scenarios(metadata, lag_seq):
     scaled_covariates = ["month", "unix_timestamp", nnts.torch.models.deepar.FEAT_SCALE]
 
-    scenario_list: List[nnts.experiments.Scenario] = []
+    scenario_list: List[LagScenario] = []
 
     for seed in [42, 43, 44, 45, 46]:
         for lags in range(1, len(lag_seq) + 1):
             scenario_list.append(
-                Scenario(
+                LagScenario(
                     metadata.prediction_length,
                     conts=[
                         cov
@@ -130,14 +127,13 @@ def create_lag_scenarios(metadata, lag_seq):
 
 
 def main(
-    data_path: str,
     model_name: str,
-    base_model_name: str,
     dataset_name: str,
+    data_path: str,
+    base_model_name: str,
     results_path: str,
 ):
     # Set up paths and load metadata
-    data_path = "projects/rnn-covariates/data/"
 
     metadata_path = os.path.join(data_path, f"{base_model_name}-monash.json")
     metadata = nnts.data.metadata.load(dataset_name, path=metadata_path)
@@ -185,7 +181,7 @@ def main(
             params,
             nnts.torch.data.preprocessing.TorchTimeseriesLagsDataLoaderFactory(),
         )
-        logger = nnts.loggers.WandbRun(
+        logger = nnts.loggers.LocalFileRun(
             project=f"{model_name}-{metadata.dataset}",
             name=scenario.name,
             config={
@@ -238,20 +234,18 @@ if __name__ == "__main__":
         description="Run the model training and evaluation script."
     )
     parser.add_argument(
-        "--data-path", type=str, default="data", help="Path to the data directory."
-    )
-    parser.add_argument(
-        "--model-name",
+        "--model",
         type=str,
         default="deepar",
         help="Name of the model.",
     )
     parser.add_argument(
-        "--base-model-name", type=str, default="base-lstm", help="Base model name."
+        "--dataset", type=str, default="tourism", help="Name of the dataset."
     )
     parser.add_argument(
-        "--dataset-name", type=str, default="electricity", help="Name of the dataset."
+        "--data-path", type=str, default="data", help="Path to the data directory."
     )
+
     parser.add_argument(
         "--results-path",
         type=str,
@@ -261,9 +255,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(
+        args.model,
+        args.dataset,
         args.data_path,
-        args.model_name,
-        args.base_model_name,
-        args.dataset_name,
+        "base-lstm",
         args.results_path,
     )
