@@ -68,6 +68,16 @@ def split_test_train_last_horizon(
     return splitter.SplitTrainTest(train=trn, test=test)
 
 
+def split_test_val_train_last_horizon(
+    data: pd.DataFrame, context_length: int, prediction_length: int
+) -> splitter.SplitTrainTest:
+    trn_val = data.groupby("unique_id").head(-prediction_length)
+    trn = trn_val.groupby("unique_id").head(-prediction_length)
+    val = trn_val.groupby("unique_id").tail(context_length + prediction_length)
+    test = data.groupby("unique_id").tail(context_length + prediction_length)
+    return splitter.SplitData(train=trn, validation=val, test=test)
+
+
 class LastHorizonSplitter(splitter.Splitter):
 
     def split(

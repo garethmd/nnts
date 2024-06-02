@@ -6,7 +6,7 @@
 
 PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 PROFILE = default
-PROJECT_NAME = rnn-convariates
+PROJECT_NAME = deepar
 PYTHON_INTERPRETER = python3
 
 ifeq (,$(shell which conda))

@@ -1,4 +1,4 @@
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Iterable, List, Tuple, Type
 
 import nnts.experiments
 import nnts.models
@@ -16,6 +16,7 @@ class DataLoaderFactory:
         params: nnts.models.Hyperparams,
         shuffle: bool,
         transforms: List[preprocessing.Transformation] = None,
+        Sampler: Type = None,
     ) -> Iterable:
         raise NotImplementedError
 
@@ -27,6 +28,7 @@ def create_trn_val_test_dataloaders(
     params: nnts.models.Hyperparams,
     dataloader_factory: DataLoaderFactory,
     transforms: List[preprocessing.Transformation] = None,
+    Sampler: Type = None,
 ) -> Tuple[Iterable, Iterable, Iterable]:
     """Generate Iterable dataloaders for training, validation, and testing.
 
@@ -55,6 +57,7 @@ def create_trn_val_test_dataloaders(
         params,
         True,
         transforms=transforms,
+        Sampler=Sampler,
     )
     val_dl = dataloader_factory(
         split_data.validation,
@@ -63,6 +66,7 @@ def create_trn_val_test_dataloaders(
         params,
         False,
         transforms=transforms,
+        Sampler=Sampler,
     )
     test_dl = dataloader_factory(
         split_data.test,
@@ -71,6 +75,7 @@ def create_trn_val_test_dataloaders(
         params,
         False,
         transforms=transforms,
+        Sampler=Sampler,
     )
     return trn_dl, val_dl, test_dl
 
@@ -82,6 +87,7 @@ def create_trn_test_dataloaders(
     params: nnts.models.Hyperparams,
     dataloader_factory: DataLoaderFactory,
     transforms: List[preprocessing.Transformation] = None,
+    Sampler: Type = None,
 ) -> Tuple[Iterable, Iterable, Iterable]:
     """Generate Iterable dataloaders for training, and testing.
 
@@ -110,6 +116,7 @@ def create_trn_test_dataloaders(
         params,
         True,
         transforms=transforms,
+        Sampler=Sampler,
     )
     test_dl = dataloader_factory(
         split_data.test,
@@ -118,5 +125,6 @@ def create_trn_test_dataloaders(
         params,
         False,
         transforms=transforms,
+        Sampler=Sampler,
     )
     return trn_dl, test_dl

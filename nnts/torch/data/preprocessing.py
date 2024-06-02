@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Type
 
 import pandas as pd
 import torch
@@ -125,6 +125,7 @@ class TorchTimeseriesLagsDataLoaderFactory(nnts.data.DataLoaderFactory):
         params: nnts.models.Hyperparams,
         shuffle: bool,
         transforms: List[nnts.data.preprocessing.Transformation] = None,
+        Sampler: Type = None,
     ) -> DataLoader:
 
         if transforms is not None:
@@ -139,4 +140,6 @@ class TorchTimeseriesLagsDataLoaderFactory(nnts.data.DataLoaderFactory):
             lag_seq=scenario.lag_seq,
         ).build()
 
+        if Sampler is not None:
+            return DataLoader(ts, batch_size=params.batch_size, sampler=Sampler(ts))
         return DataLoader(ts, batch_size=params.batch_size, shuffle=shuffle)

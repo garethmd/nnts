@@ -10,10 +10,10 @@ from typing import Any, Dict
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-import wandb
 
 import nnts.events
 import nnts.models.trainers
+import wandb
 
 
 def makedirs_if_not_exists(directory: str) -> None:
@@ -38,6 +38,8 @@ def convert_np_float(obj):
         return float(obj)
     if isinstance(obj, Enum):
         return obj.value
+    if isinstance(obj, type):
+        return obj.__name__
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 

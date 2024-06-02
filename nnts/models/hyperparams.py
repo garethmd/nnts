@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
+from typing import Any
 
 
 class TrainingMethod(Enum):
@@ -21,7 +22,8 @@ class Hyperparams:
     epochs: int = 100
     patience: int = 10
     rnn_type: str = "lstm"
-    early_stopper_patience = 30
-    batches_per_epoch = 200
-    weight_decay = 1e-8
+    early_stopper_patience: int = 30
+    batches_per_epoch: int = 200
+    weight_decay: float = 1e-8
     training_method: TrainingMethod = TrainingMethod.TEACHER_FORCING
+    optimizer: Any = None
