@@ -47,7 +47,12 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode="min", factor=0.5, patience=10
         )
-
+        # self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        #    self.optimizer,
+        #    max_lr=self.params.lr * 3,
+        #    steps_per_epoch=len(train_dl),
+        #    epochs=self.params.epochs,
+        # )
         self.best_loss = np.inf
 
     def before_train_epoch(self) -> None:
@@ -59,8 +64,9 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
             self.state.best_loss = self.state.train_loss
             self.events.notify(nnts.models.trainers.EpochBestModel(self.path))
 
-        print(f"Train Loss: {self.state.train_loss}")
         self.scheduler.step(self.state.train_loss)
+
+        print(f"Epoch {self.state.epoch} Train Loss: {self.state.train_loss}")
 
     def before_validate_epoch(self) -> None:
         self.net.eval()
@@ -94,7 +100,9 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
 
         L = self.loss_fn(y_hat, y)
         L.backward()
+        torch.nn.utils.clip_grad_value_(self.net.parameters(), 10.0)
         self.optimizer.step()
+        # self.scheduler.step() # This is required for OneCycleLR
         return L
 
     def _validate_batch(self, i, batch):
@@ -109,6 +117,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         return L
 
     def create_evaluator(self) -> nnts.models.Evaluator:
-        state_dict = torch.load(self.path, map_location=torch.device("cpu"))
+        state_dict = torch.load(self.path)
         self.net.load_state_dict(state_dict)
+        print(f"Best model loaded from {self.path}")
         return nnts.torch.models.trainers.TorchEvaluator(self.net)

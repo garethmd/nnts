@@ -92,6 +92,7 @@ class MaxMinScaler(nnts.data.preprocessing.Transformation):
 
 
 class TorchTimeseriesDataLoaderFactory(nnts.data.DataLoaderFactory):
+
     def __call__(
         self,
         data: pd.DataFrame,
@@ -100,6 +101,7 @@ class TorchTimeseriesDataLoaderFactory(nnts.data.DataLoaderFactory):
         params: nnts.models.Hyperparams,
         shuffle: bool,
         transforms: List[nnts.data.preprocessing.Transformation] = None,
+        Sampler: Type = None,
     ) -> DataLoader:
 
         if transforms is not None:
@@ -113,6 +115,8 @@ class TorchTimeseriesDataLoaderFactory(nnts.data.DataLoaderFactory):
             prediction_length=metadata.prediction_length,
         ).build()
 
+        if Sampler is not None:
+            return DataLoader(ts, batch_size=params.batch_size, sampler=Sampler(ts))
         return DataLoader(ts, batch_size=params.batch_size, shuffle=shuffle)
 
 

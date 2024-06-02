@@ -229,7 +229,7 @@ class DistrDeepAR(nn.Module):
         )
         self.lag_seq = torch.tensor(lag_seq) - 1
         self.decoder = models.unrolledlstm.UnrolledLSTMDecoder(
-            params, self.n_scaled_features + len(self.lag_seq)
+            params, self.n_scaled_features + len(self.lag_seq) + 1
         )
         self.distribution = Distribution(params.hidden_dim, output_dim)
         self.embbeder = nn.Embedding(1, self.output_dim)

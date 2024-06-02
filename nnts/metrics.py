@@ -1,3 +1,5 @@
+from typing import Iterable
+
 import gluonts.evaluation.metrics as gluon_metrics
 import torch
 import torch.nn.functional as F
@@ -66,17 +68,7 @@ def nd(y_hat, y, dim=1):
     return abs_error(y_hat, y, dim=dim) / abs_target_sum(y, dim=dim)
 
 
-def get_metrics_per_ts(y_hat, y, trn_dl, metadata):
-    seasonal_error = calculate_seasonal_error(trn_dl, metadata)
-    mse(y_hat, y)
-    abs_error(y_hat, y)
-    abs_target_sum(y)
-    abs_target_mean(y)
-    mase(y_hat, y, seasonal_error)
-    mape(y_hat, y)
-    smape(y_hat, y)
-    nd(y_hat, y)
-    mae(y_hat, y)
+def get_metrics_per_ts(y_hat, y, seasonal_error):
     return {
         "mse": mse(y_hat, y),
         "abs_error": abs_error(y_hat, y),
@@ -88,6 +80,7 @@ def get_metrics_per_ts(y_hat, y, trn_dl, metadata):
         "nd": nd(y_hat, y),
         "mae": mae(y_hat, y),
         "rmse": mse(y_hat, y).sqrt(),
+        "seasonal_error": seasonal_error,
     }
 
 
@@ -103,10 +96,11 @@ def aggregate_metrics(metrics_per_ts):
         "nd": "mean",
         "mae": "mean",
         "rmse": "mean",
+        "seasonal_error": "mean",
     }
     return {k: getattr(v, aggregate_map[k])().item() for k, v in metrics_per_ts.items()}
 
 
-def calc_metrics(y_hat, y, trn_dl, metadata):
-    metrics_per_ts = get_metrics_per_ts(y_hat, y, trn_dl, metadata)
+def calc_metrics(y_hat, y, seasonal_error):
+    metrics_per_ts = get_metrics_per_ts(y_hat, y, seasonal_error)
     return aggregate_metrics(metrics_per_ts)
