@@ -1,17 +1,23 @@
-from typing import List
+from typing import Iterator, List, Optional, Sized
 
 import pandas as pd
 import torch
+from torch.utils.data import Sampler
 
 
-def right_pad_sequence(seq: list[torch.Tensor], padding_value: int = 0):
+def right_pad_sequence(
+    seq: list[torch.Tensor], padding_value: int = 0, min_length: int = 0
+):
     """Pads a list of 2D tensors to the right with a given padding value."""
     max_lengths = max([t.shape[0] for t in seq])
-    padded_tensor = torch.zeros(len(seq), max_lengths, seq[0].shape[1]) * padding_value
+    padded_tensor = torch.zeros(len(seq), max_lengths, seq[0].shape[1]) + padding_value
     padded_mask = torch.zeros(len(seq), max_lengths).bool()
+    padded_mask[:, :min_length] = True
     for i in range(len(seq)):
-        padded_tensor[i, : seq[i].shape[0], ...] = seq[i]
-        padded_mask[i, : seq[i].shape[0]] = True
+        start = min_length - seq[i].shape[0]
+        start = max(0, start)
+        padded_tensor[i, start : start + seq[i].shape[0], ...] = seq[i]
+        padded_mask[i, start : start + seq[i].shape[0]] = True
 
     return padded_tensor, padded_mask
 
@@ -113,19 +119,20 @@ class TimeseriesLagsDataset(torch.utils.data.Dataset):
             - prediction_length
             - self.lag_length
             + 1  # we return x and y so add 1 for teacher forcing
-        )
+        ).clip(1)
         cum_lengths = lengths.cumsum()
         self.shifted_cum_lengths = torch.tensor(
             cum_lengths.shift().fillna(0).astype(int).values
         )
         self.len = lengths.sum()
+        self.min_length = context_length + prediction_length + self.lag_length
+        self.lengths = lengths
 
     def build(self):
         ts = []
         for unique_id, grp in self.df.groupby("unique_id", sort=False):
             ts.append(torch.from_numpy(grp[["y"] + self.conts].values))
-        ts, mask = right_pad_sequence(ts)
-        mask = torch.ones_like(mask).bool()
+        ts, mask = right_pad_sequence(ts, min_length=self.min_length)
         self.X = ts[:, :, :]
         self.pad_mask = mask
         return self
@@ -157,3 +164,34 @@ class TimeseriesLagsDataset(torch.utils.data.Dataset):
             "X": X,
             "pad_mask": pad_mask,
         }
+
+
+class TimeSeriesSampler(Sampler[int]):
+
+    data_source: Sized
+
+    def __init__(self, data_source: Sized, num_samples: Optional[int] = None):
+        self.data_source = data_source
+        self._num_samples = len(data_source) if num_samples is None else num_samples
+
+        to = torch.cat(
+            [
+                data_source.shifted_cum_lengths,
+                torch.tensor([len(data_source)]),
+            ]
+        )[1:]
+        self.ranges = torch.stack([data_source.shifted_cum_lengths, to]).T
+
+    def __iter__(self) -> Iterator[int]:
+        count = 0
+        while True:
+            for i in range(self.ranges.shape[0]):
+                count += 1
+                if count > self._num_samples:
+                    return
+                start, end = self.ranges[i]
+                val = torch.randint(start, end, size=(1,))
+                yield val
+
+    def __len__(self) -> int:
+        return self._num_samples

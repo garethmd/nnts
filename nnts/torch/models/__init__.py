@@ -1,5 +1,5 @@
 from .baselstm import BaseFutureCovariateLSTM, BaseLSTM, LinearModel
-from .deepar import DeepAR, DistrDeepAR
+from .deepar import DeepARPoint, DistrDeepAR
 from .seglstm import SegLSTM
 from .unrolledlstm import UnrolledLSTM
 
@@ -9,6 +9,6 @@ __all__ = [
     "SegLSTM",
     "UnrolledLSTM",
     "BaseFutureCovariateLSTM",
-    "DeepAR",
+    "DeepARPoint",
     "DistrDeepAR",
 ]

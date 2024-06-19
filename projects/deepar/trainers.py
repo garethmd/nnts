@@ -19,7 +19,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         No validation set
         Adam optimizer
         ReduceLROnPlateau scheduler.
-        A smooth L1 loss function (for point predictions)
+        A l1_loss loss function (for point predictions)
     """
 
     def __init__(
@@ -29,7 +29,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         params: nnts.models.Hyperparams,
         metadata: nnts.data.Metadata,
         path: str,
-        loss_fn=F.smooth_l1_loss,
+        loss_fn=F.l1_loss,
     ):
         super().__init__(state, params)
         self.net = net
@@ -44,15 +44,20 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
             lr=self.params.lr,
             weight_decay=self.params.weight_decay,
         )
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode="min", factor=0.5, patience=10
-        )
-        # self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
-        #    self.optimizer,
-        #    max_lr=self.params.lr * 3,
-        #    steps_per_epoch=len(train_dl),
-        #    epochs=self.params.epochs,
-        # )
+        if (
+            self.params.scheduler
+            == nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+        ):
+            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer, mode="min", factor=0.5, patience=10
+            )
+        elif self.params.scheduler == nnts.models.hyperparams.Scheduler.ONE_CYCLE:
+            self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                self.optimizer,
+                max_lr=self.params.lr * 3,
+                steps_per_epoch=self.params.batches_per_epoch,
+                epochs=self.params.epochs + 2,
+            )
         self.best_loss = np.inf
 
     def before_train_epoch(self) -> None:
@@ -64,7 +69,11 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
             self.state.best_loss = self.state.train_loss
             self.events.notify(nnts.models.trainers.EpochBestModel(self.path))
 
-        self.scheduler.step(self.state.train_loss)
+        if (
+            self.params.scheduler
+            == nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+        ):
+            self.scheduler.step(self.state.train_loss)
 
         print(f"Epoch {self.state.epoch} Train Loss: {self.state.train_loss}")
 
@@ -77,7 +86,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
             self.state.best_loss = self.state.valid_loss
             self.events.notify(nnts.models.trainers.EpochBestModel(self.path))
 
-        self.scheduler.step(self.state.valid_loss)
+        # self.scheduler.step(self.state.valid_loss)
 
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()
@@ -102,7 +111,9 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         L.backward()
         torch.nn.utils.clip_grad_value_(self.net.parameters(), 10.0)
         self.optimizer.step()
-        # self.scheduler.step() # This is required for OneCycleLR
+
+        if self.params.scheduler == nnts.models.hyperparams.Scheduler.ONE_CYCLE:
+            self.scheduler.step()  # This is required for OneCycleLR
         return L
 
     def _validate_batch(self, i, batch):

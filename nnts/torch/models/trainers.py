@@ -80,27 +80,36 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         params: nnts.models.Hyperparams,
         metadata: nnts.data.Metadata,
         path: str,
-        loss_fn=F.smooth_l1_loss,
+        loss_fn=F.l1_loss,
     ):
         super().__init__(state, params)
         self.net = net
         self.metadata = metadata
         self.path = path
         self.loss_fn = loss_fn
+        self.Optimizer = params.optimizer or torch.optim.AdamW
 
     def before_train(self, train_dl):
         print(self.net)
-        self.optimizer = optim.AdamW(
+        self.optimizer = self.Optimizer(
             self.net.parameters(),
             lr=self.params.lr,
             weight_decay=self.params.weight_decay,
         )
-        self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            self.optimizer,
-            max_lr=self.params.lr * 3,
-            steps_per_epoch=len(train_dl),
-            epochs=self.params.epochs,
-        )
+        if (
+            self.params.scheduler
+            == nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+        ):
+            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer, mode="min", factor=0.5, patience=10
+            )
+        elif self.params.scheduler == nnts.models.hyperparams.Scheduler.ONE_CYCLE:
+            self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                self.optimizer,
+                max_lr=self.params.lr * 3,
+                steps_per_epoch=self.params.batches_per_epoch,
+                epochs=self.params.epochs + 2,
+            )
         self.early_stopper = (
             None
             if self.params.early_stopper_patience is None
@@ -125,6 +134,12 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
             self.state.best_loss = self.state.valid_loss
             self.events.notify(nnts.models.trainers.EpochBestModel(self.path))
 
+        if (
+            self.params.scheduler
+            == nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+        ):
+            self.scheduler.step(self.state.valid_loss)
+
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()
 
@@ -138,12 +153,15 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
                 self.metadata.prediction_length,
             )
         else:
-            y_hat, y = self.net.teacher_forcing_output(batch)
+            y_hat, y = self.net.teacher_forcing_output(
+                batch, self.metadata.context_length, self.metadata.prediction_length
+            )
 
         L = self.loss_fn(y_hat, y)
         L.backward()
         self.optimizer.step()
-        self.scheduler.step()
+        if self.params.scheduler == nnts.models.hyperparams.Scheduler.ONE_CYCLE:
+            self.scheduler.step()  # This is required for OneCycleLR
         return L
 
     def _validate_batch(self, i, batch):
@@ -154,10 +172,11 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
                 self.metadata.prediction_length,
                 self.metadata.context_length,
             )
-            L = self.loss_fn(y_hat, y)
+            # L = self.loss_fn(y_hat, y)
+            L = F.l1_loss(y_hat, y)
         return L
 
     def create_evaluator(self) -> nnts.models.Evaluator:
-        state_dict = torch.load(self.path, map_location=torch.device("cpu"))
+        state_dict = torch.load(self.path)
         self.net.load_state_dict(state_dict)
         return TorchEvaluator(self.net)

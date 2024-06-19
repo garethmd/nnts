@@ -32,11 +32,16 @@ def masked_mean_abs_scaling(
 
 
 class StandardScaler(nnts.data.preprocessing.Transformation):
-    def __init__(self, mean=None, std=None):
+
+    def __init__(self, mean=None, std=None, cols=None):
         self.mean = mean
         self.std = std
+        self.cols = cols
 
     def fit(self, data: pd.DataFrame, cols=None):
+        if self.cols is not None:
+            cols = self.cols
+
         numeric_data = (
             data.select_dtypes(include=["number"]) if cols is None else data[cols]
         )
@@ -45,6 +50,9 @@ class StandardScaler(nnts.data.preprocessing.Transformation):
         return self
 
     def transform(self, data: pd.DataFrame, cols=None):
+        if self.cols is not None:
+            cols = self.cols
+
         numeric_data = (
             data.select_dtypes(include=["number"]) if cols is None else data[cols]
         )
@@ -53,6 +61,8 @@ class StandardScaler(nnts.data.preprocessing.Transformation):
         return data
 
     def inverse_transform(self, data: pd.DataFrame, cols=None):
+        if self.cols is not None:
+            cols = self.cols
         numeric_data = (
             data.select_dtypes(include=["number"]) if cols is None else data[cols]
         )
@@ -62,11 +72,14 @@ class StandardScaler(nnts.data.preprocessing.Transformation):
 
 
 class MaxMinScaler(nnts.data.preprocessing.Transformation):
-    def __init__(self, max=None, min=None):
+    def __init__(self, max=None, min=None, cols=None):
         self.max = max
         self.min = min
+        self.cols = cols
 
     def fit(self, data: pd.DataFrame, cols=None):
+        if self.cols is not None:
+            cols = self.cols
         numeric_data = (
             data.select_dtypes(include=["number"]) if cols is None else data[cols]
         )
@@ -75,6 +88,8 @@ class MaxMinScaler(nnts.data.preprocessing.Transformation):
         return self
 
     def transform(self, data: pd.DataFrame, cols=None):
+        if self.cols is not None:
+            cols = self.cols
         numeric_data = (
             data.select_dtypes(include=["number"]) if cols is None else data[cols]
         )
@@ -83,6 +98,8 @@ class MaxMinScaler(nnts.data.preprocessing.Transformation):
         return data
 
     def inverse_transform(self, data: pd.DataFrame, cols=None):
+        if self.cols is not None:
+            cols = self.cols
         numeric_data = (
             data.select_dtypes(include=["number"]) if cols is None else data[cols]
         )
@@ -147,3 +164,29 @@ class TorchTimeseriesLagsDataLoaderFactory(nnts.data.DataLoaderFactory):
         if Sampler is not None:
             return DataLoader(ts, batch_size=params.batch_size, sampler=Sampler(ts))
         return DataLoader(ts, batch_size=params.batch_size, shuffle=shuffle)
+
+
+def create_lags(
+    n_timesteps: int, past_target: torch.tensor, lag_seq: List[int]
+) -> torch.tensor:
+    lag_features = []
+    for t in range(0, n_timesteps):
+        lag_seq = lag_seq + 1
+        lag_for_step = past_target.index_select(1, lag_seq)
+        lag_features.append(lag_for_step)
+    return torch.stack(lag_features, dim=1).flip(1)
+
+
+class LagProcessor:
+
+    def __init__(self, lag_seq: List[int]):
+        self.lag_seq = torch.tensor(lag_seq)
+
+    def create(self, n_timesteps: int, past_target: torch.tensor):
+        return create_lags(n_timesteps, past_target, self.lag_seq - 1)
+
+    def __len__(self):
+        return len(self.lag_seq)
+
+    def max(self):
+        return max(self.lag_seq)

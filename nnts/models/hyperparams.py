@@ -8,6 +8,11 @@ class TrainingMethod(Enum):
     FREE_RUNNING = auto()
 
 
+class Scheduler(Enum):
+    ONE_CYCLE = auto()
+    REDUCE_LR_ON_PLATEAU = auto()
+
+
 @dataclass
 class Hyperparams:
     """Class for keeping track of training and model params."""
@@ -27,3 +32,4 @@ class Hyperparams:
     weight_decay: float = 1e-8
     training_method: TrainingMethod = TrainingMethod.TEACHER_FORCING
     optimizer: Any = None
+    scheduler: Scheduler = Scheduler.ONE_CYCLE

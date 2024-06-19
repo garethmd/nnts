@@ -28,6 +28,12 @@ from gluonts.transform import (
     VstackFeatures,
 )
 
+"""
+This module creates dataloaders from the GluonTS library which
+is particularly useful to generate training data in an identical
+fashion as GluonTS and using the GluonTS sampling mechanism
+"""
+
 
 def create_transformation(prediction_length: int = 24) -> Transformation:
     num_feat_static_cat = 0
@@ -96,6 +102,10 @@ def create_transformation(prediction_length: int = 24) -> Transformation:
     )
 
 
+CONTEXT_LENGTH = 30
+MAX_LAGS = 720
+
+
 def create_training_data_loader(
     data: Dataset,
     shuffle_buffer_length: Optional[int] = None,
@@ -131,7 +141,7 @@ def create_training_data_loader(
         start_field=FieldName.START,
         forecast_start_field=FieldName.FORECAST_START,
         instance_sampler=instance_sampler,
-        past_length=15 + 36,  # context length + max lags
+        past_length=CONTEXT_LENGTH + MAX_LAGS,  # context length + max lags
         future_length=prediction_length,
         time_series_fields=[
             FieldName.FEAT_TIME,
@@ -224,10 +234,11 @@ class DecoratedDataLoader:
             yield self.decorator_fn(batch)
 
 
-dataset = get_dataset("tourism_monthly")
+dataset = get_dataset("traffic")
 
 trn_dl = DecoratedDataLoader(
-    create_training_data_loader(dataset.train, batch_size=32), gluonts_to_nnts
+    create_training_data_loader(dataset.train, batch_size=32, prediction_length=168),
+    gluonts_to_nnts,
 )
 # test_dl = create_inference_data_loader(dataset.test, batch_size=32)
 
@@ -240,3 +251,22 @@ def get_test_dataloader():
 
 
 test_dl = get_test_dataloader()
+
+
+def load_gluonts_weights(net):
+    def remove_prefix(s, prefix):
+        return s[len(prefix) :] if s.startswith(prefix) else s
+
+    state_dict = torch.load(
+        "/Users/garethdavies/Development/workspaces/nnts/projects/deepar/gluonts.pt"
+    )
+    rnn = {k: v for k, v in state_dict.items() if k.startswith("rnn")}
+    net.decoder.load_state_dict(rnn)
+    net.embbeder.load_state_dict({"weight": state_dict["embedder._embedders.0.weight"]})
+    proj = {
+        remove_prefix(k, "param_proj.proj."): v
+        for k, v in state_dict.items()
+        if k.startswith("param_proj")
+    }
+    net.distribution.main.load_state_dict(proj)
+    return net

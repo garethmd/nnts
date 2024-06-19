@@ -104,3 +104,53 @@ H - Is the forecast horizon (prediction length)
 s - Is the seed number.  
 
 
+## Performance Comparison
+
+Electricity Hourly H=168:
+
+| Metric                         | DeepAR (GluonTS) | Our DeepAR |
+|------------------------------- |------------------|------------|
+| abs_error                      | 15846326.248     | 14274639.8 |
+| abs_target_sum                 | 108163005.000    | 108163008  |
+| abs_target_mean                | 2005.693         | 2005.693   |
+| seasonal_error                 | 190.817          | 190.817    |
+| MASE                           | 1.697            | 1.558      |
+| MAPE                           | 0.205            | inf        |
+| sMAPE                          | 0.205            | 0.1953     |
+
+
+Hospital Monthly H=12:
+
+| Metric                         | DeepAR (GluonTS) | Our DeepAR  |
+|------------------------------- |------------------|-------------|
+| abs_error                      | 180862.665       | 164709.987  |
+| abs_target_sum                 | 2535375.000      | 2535375.000 |
+| abs_target_mean                | 275.464          | 275.464     |
+| seasonal_error                 | 27.851           | 27.851      |
+| MASE                           | 0.784            | 0.763       |
+| MAPE                           | 0.205            | 0.199       |
+| sMAPE                          | 0.177            | 0.174       |
+
+
+Tourism Monthly H=24:
+
+| Metric                         | DeepAR (GluonTS) | Our DeepAR      |
+|------------------------------- |------------------|-----------------|
+| abs_error                      | 19413513.541       | 16912486.200  |
+| abs_target_sum                 | 166958474.898      | 166958480.000 |
+| abs_target_mean                | 19007.112          | 19007.113     |
+| seasonal_error                 | 1542.987           | 1543.219      |
+| MASE                           | 1.432              | 1.423         |
+| MAPE                           | 0.211              | 0.213         |
+| sMAPE                          | 0.183              | 0.182         |
+
+Traffic Hourly H=168
+| Metric                         | DeepAR (GluonTS) | Our DeepAR      |
+|------------------------------- |------------------|-----------------|
+| abs_error                      | 1669.322         | 2474.341        |
+| abs_target_sum                 | 6186.671         | 6186.671        |
+| abs_target_mean                | 0.043            | 0.043           |
+| seasonal_error                 | 0.015            |  0.015          |
+| MASE                           | 0.774            | 1.087           |
+| MAPE                           | 0.404            | inf             |
+| sMAPE                          | 0.389            | 0.399           |
