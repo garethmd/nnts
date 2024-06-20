@@ -87,11 +87,9 @@ class EpochTrainer(Trainer):
         self.before_train_epoch()
         loss = 0
         for i, batch in enumerate(train_dl):
-            if i > self.params.batches_per_epoch:
-                break
             L = self._train_batch(i, batch)
             loss += L
-        loss /= self.params.batches_per_epoch  # len(train_dl)
+        loss /= len(train_dl)
         self.state.train_loss = loss
         self.after_train_epoch()
         self.events.notify(EpochTrainComplete(self.state))

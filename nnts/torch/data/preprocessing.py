@@ -2,14 +2,11 @@ from typing import List, Type
 
 import pandas as pd
 import torch
-from torch.utils.data import DataLoader
 
 import nnts.data
 import nnts.data.preprocessing
 import nnts.experiments
 import nnts.models
-
-from . import datasets
 
 
 def masked_mean_abs_scaling(
@@ -106,64 +103,6 @@ class MaxMinScaler(nnts.data.preprocessing.Transformation):
         numeric_cols = numeric_data.columns
         data[numeric_cols] = numeric_data * (self.max - self.min) + self.min
         return data
-
-
-class TorchTimeseriesDataLoaderFactory(nnts.data.DataLoaderFactory):
-
-    def __call__(
-        self,
-        data: pd.DataFrame,
-        metadata: nnts.data.Metadata,
-        scenario: nnts.experiments.Scenario,
-        params: nnts.models.Hyperparams,
-        shuffle: bool,
-        transforms: List[nnts.data.preprocessing.Transformation] = None,
-        Sampler: Type = None,
-    ) -> DataLoader:
-
-        if transforms is not None:
-            for transform in transforms:
-                data = transform.transform(data)
-
-        ts = datasets.TimeseriesDataset(
-            data,
-            conts=scenario.conts,
-            context_length=metadata.context_length,
-            prediction_length=metadata.prediction_length,
-        ).build()
-
-        if Sampler is not None:
-            return DataLoader(ts, batch_size=params.batch_size, sampler=Sampler(ts))
-        return DataLoader(ts, batch_size=params.batch_size, shuffle=shuffle)
-
-
-class TorchTimeseriesLagsDataLoaderFactory(nnts.data.DataLoaderFactory):
-    def __call__(
-        self,
-        data: pd.DataFrame,
-        metadata: nnts.data.Metadata,
-        scenario: nnts.experiments.Scenario,
-        params: nnts.models.Hyperparams,
-        shuffle: bool,
-        transforms: List[nnts.data.preprocessing.Transformation] = None,
-        Sampler: Type = None,
-    ) -> DataLoader:
-
-        if transforms is not None:
-            for transform in transforms:
-                data = transform.transform(data)
-
-        ts = datasets.TimeseriesLagsDataset(
-            data,
-            conts=scenario.conts,
-            context_length=metadata.context_length,
-            prediction_length=metadata.prediction_length,
-            lag_seq=scenario.lag_seq,
-        ).build()
-
-        if Sampler is not None:
-            return DataLoader(ts, batch_size=params.batch_size, sampler=Sampler(ts))
-        return DataLoader(ts, batch_size=params.batch_size, shuffle=shuffle)
 
 
 def create_lags(

@@ -1,3 +1,3 @@
-from .preprocessing import TorchTimeseriesDataLoaderFactory
+from .datasets import TorchTimeseriesDataLoaderFactory
 
 __all__ = ["TorchTimeseriesDataLoaderFactory"]

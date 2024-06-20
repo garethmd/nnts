@@ -1,8 +1,12 @@
-from typing import Iterator, List, Optional, Sized
+from typing import Iterator, List, Optional, Sized, Type
 
 import pandas as pd
 import torch
-from torch.utils.data import Sampler
+import torch.utils
+import torch.utils.data
+from torch.utils.data import DataLoader, Sampler
+
+import nnts
 
 
 def right_pad_sequence(
@@ -195,3 +199,96 @@ class TimeSeriesSampler(Sampler[int]):
 
     def __len__(self) -> int:
         return self._num_samples
+
+
+class TruncatedDataLoader(torch.utils.data.DataLoader):
+    """DataLoader that truncates the number of batches per epoch."""
+
+    def __init__(self, *args, batches_per_epoch=None, **kwargs):
+        self.batches_per_epoch = batches_per_epoch
+        super(TruncatedDataLoader, self).__init__(*args, **kwargs)
+
+    def __len__(self):
+        return self.batches_per_epoch if self.batches_per_epoch else super().__len__()
+
+
+class TorchTimeseriesDataLoaderFactory(nnts.data.DataLoaderFactory):
+
+    def __call__(
+        self,
+        data: pd.DataFrame,
+        metadata: nnts.data.Metadata,
+        scenario: nnts.experiments.Scenario,
+        params: nnts.models.Hyperparams,
+        shuffle: bool,
+        transforms: List[nnts.data.preprocessing.Transformation] = None,
+        Sampler: Type = None,
+    ) -> DataLoader:
+
+        if transforms is not None:
+            for transform in transforms:
+                data = transform.transform(data)
+
+        ts = TimeseriesDataset(
+            data,
+            conts=scenario.conts,
+            context_length=metadata.context_length,
+            prediction_length=metadata.prediction_length,
+        ).build()
+
+        if Sampler is not None:
+            result = TruncatedDataLoader(
+                params.batches_per_epoch,
+                ts,
+                batch_size=params.batch_size,
+                sampler=Sampler(ts),
+            )
+        else:
+            result = TruncatedDataLoader(
+                params.batches_per_epoch,
+                ts,
+                batch_size=params.batch_size,
+                shuffle=shuffle,
+            )
+        return result
+
+
+class TorchTimeseriesLagsDataLoaderFactory(nnts.data.DataLoaderFactory):
+    def __call__(
+        self,
+        data: pd.DataFrame,
+        metadata: nnts.data.Metadata,
+        scenario: nnts.experiments.Scenario,
+        params: nnts.models.Hyperparams,
+        shuffle: bool,
+        transforms: List[nnts.data.preprocessing.Transformation] = None,
+        Sampler: Type = None,
+    ) -> DataLoader:
+
+        if transforms is not None:
+            for transform in transforms:
+                data = transform.transform(data)
+
+        ts = TimeseriesLagsDataset(
+            data,
+            conts=scenario.conts,
+            context_length=metadata.context_length,
+            prediction_length=metadata.prediction_length,
+            lag_seq=scenario.lag_seq,
+        ).build()
+
+        if Sampler is not None:
+            result = TruncatedDataLoader(
+                params.batches_per_epoch,
+                ts,
+                batch_size=params.batch_size,
+                sampler=Sampler(ts),
+            )
+        else:
+            result = TruncatedDataLoader(
+                params.batches_per_epoch,
+                ts,
+                batch_size=params.batch_size,
+                shuffle=shuffle,
+            )
+        return result

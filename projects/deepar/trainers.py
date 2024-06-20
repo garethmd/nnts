@@ -55,7 +55,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 self.optimizer,
                 max_lr=self.params.lr * 3,
-                steps_per_epoch=self.params.batches_per_epoch,
+                steps_per_epoch=len(train_dl),
                 epochs=self.params.epochs + 2,
             )
         self.best_loss = np.inf
