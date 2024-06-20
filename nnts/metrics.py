@@ -1,5 +1,3 @@
-from typing import Iterable
-
 import gluonts.evaluation.metrics as gluon_metrics
 import torch
 import torch.nn.functional as F
@@ -54,11 +52,21 @@ def mase(y_hat, y, seasonal_errors, dim=1):
     return mae(y_hat, y, dim=dim) / seasonal_errors
 
 
-def mape(y_hat, y, dim=1):
+def _single_ts_mape(y_hat, y):
     ape = (y_hat - y).abs() / y.abs()
-    # mask = ~torch.isnan(ape)
-    # ape_filtered = ape[mask]
-    return ape.mean(dim=dim) if dim is not None else ape.mean()
+    mask = torch.isfinite(ape)
+    ape_filtered = ape[mask]
+    result = torch.mean(ape_filtered)
+    return result
+
+
+def mape(y_hat, y):
+    if len(y.shape) > 1:
+        return torch.stack(
+            [_single_ts_mape(y_hat[i], y[i]) for i in range(y.shape[0])], dim=0
+        )
+    else:
+        return _single_ts_mape(y_hat, y)
 
 
 def smape(y_hat, y, dim=1):
@@ -93,7 +101,7 @@ def aggregate_metrics(metrics_per_ts):
         "abs_target_sum": "sum",
         "abs_target_mean": "mean",
         "mase": "mean",
-        "mape": "mean",
+        "mape": "nanmean",
         "smape": "mean",
         "nd": "mean",
         "mae": "mean",
