@@ -40,7 +40,7 @@ def create_transformation(prediction_length: int = 24) -> Transformation:
     num_feat_static_real = 0
     num_feat_dynamic_real = 0
     imputation_method = DummyValueImputation(dummy_value=0.0)
-    freq = "1M"
+    freq = "1H"
     time_features = time_features_from_frequency_str(freq)
 
     remove_field_names = []

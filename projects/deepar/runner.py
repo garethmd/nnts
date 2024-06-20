@@ -4,8 +4,6 @@ from typing import Iterable, List
 
 import features
 import gluonadapt
-import numpy as np
-import pandas as pd
 import torch
 import torch.distributions as td
 import torch.nn.functional as F
@@ -57,6 +55,7 @@ def generate_one_hot_matrix(n):
 
 def create_scenarios(metadata, lag_seq):
     scaled_covariates = [
+        "month",
         "unix_timestamp",
         "unique_id_0",
         "static_cont",
@@ -76,7 +75,7 @@ def create_scenarios(metadata, lag_seq):
                 if select == 1
             ]
             scenario_list.append(
-                features.SchedulerScenario(
+                features.LagScenario(
                     metadata.prediction_length,
                     conts=[
                         cov
@@ -92,21 +91,32 @@ def create_scenarios(metadata, lag_seq):
     return scenario_list
 
 
-def create_scheduler_scenarios(metadata, lag_seq, scheduler_name):
-    conts = []
-    scenario_list: List[features.SchedulerScenario] = []
+def create_lag_scenarios(metadata, lag_seq):
+    conts = [
+        "day_of_week",
+        "hour",
+        "dayofyear",
+        "dayofmonth",
+        "unix_timestamp",
+        "unique_id_0",
+        "static_cont",
+    ]
+
+    scenario_list: List[features.LagScenario] = []
 
     # BASELINE
     scenario_list = []
     for seed in [42, 43, 44, 45, 46]:
-        scenario = features.SchedulerScenario(
+        scenario = features.LagScenario(
             metadata.prediction_length,
             conts=conts,
-            scaled_covariates=conts,
+            scaled_covariates=conts
+            + [
+                nnts.torch.models.deepar.FEAT_SCALE,
+            ],
             lag_seq=lag_seq,
             seed=seed,
             dataset=metadata.dataset,
-            scheduler_name=scheduler_name,
         )
         scenario_list.append(scenario)
     return scenario_list
@@ -114,38 +124,8 @@ def create_scheduler_scenarios(metadata, lag_seq, scheduler_name):
 
 def distr_nll(distr: td.Distribution, target: torch.Tensor) -> torch.Tensor:
     nll = -distr.log_prob(target)
+    # nll = nll.mean(dim=(1,))
     return nll.mean()
-
-
-def create_better_time_features(df_orig: pd.DataFrame):
-    df_orig["day_of_week"] = df_orig["ds"].dt.day_of_week / 6.0 - 0.5
-    df_orig["hour"] = df_orig["ds"].dt.hour / 23.0 - 0.5
-    df_orig["dayofyear"] = df_orig["ds"].dt.dayofyear / 365.0 - 0.5
-    df_orig["dayofmonth"] = df_orig["ds"].dt.day / 30.0 - 0.5
-
-    # df_orig["week"] = df_orig["ds"].dt.isocalendar().week
-    # df_orig["week"] = df_orig["week"].astype(np.float32)
-
-    # df_orig["month"] = df_orig["ds"].dt.month - 1
-    # df_orig["month"] = np.cos(df_orig["month"] * 2 * np.pi / 12)
-
-    df_orig["unix_timestamp"] = (
-        df_orig["ds"] - pd.Timestamp("1970-01-01")
-    ) // pd.Timedelta("1s")
-    # df_orig["unix_timestamp"] = np.log10(
-    #    2.0 + df_orig.groupby("unique_id").cumcount() + 1
-    # )
-
-    df_orig["unix_timestamp"] = (
-        df_orig["unix_timestamp"] / df_orig["unix_timestamp"].max()
-    )
-
-    # Normalize data
-    # max_min_scaler = nnts.torch.data.preprocessing.MaxMinScaler()
-    # max_min_scaler.fit(df_orig, ["unix_timestamp"])
-    # df_orig = max_min_scaler.transform(df_orig, ["unix_timestamp"])
-
-    return df_orig
 
 
 def main(
@@ -168,20 +148,24 @@ def main(
     # Set parameters
     params = nnts.models.Hyperparams()
     params.batch_size = 32
-    params.batches_per_epoch = 50
+    params.batches_per_epoch = 100
+
+    # Calculate next month and unix timestamp
+    df_orig = features.create_time_features(df_orig)
+    df_orig = features.create_dummy_unique_ids(df_orig)
+
+    # Normalize data
+    # max_min_scaler = nnts.torch.data.preprocessing.MaxMinScaler()
+    # max_min_scaler.fit(df_orig, ["month"])
+    # df_orig = max_min_scaler.transform(df_orig, ["month"])
+
+    lag_seq = features.create_lag_seq(metadata.freq)
+    scenario_list = create_lag_scenarios(metadata, lag_seq)
+
     params.training_method = nnts.models.hyperparams.TrainingMethod.TEACHER_FORCING
     params.scheduler = nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
 
-    # Calculate next month and unix timestamp
-    df_orig = create_better_time_features(df_orig)
-    df_orig = features.create_dummy_unique_ids(df_orig)
-
-    lag_seq = features.create_lag_seq(metadata.freq)
-    scenario_list = create_scheduler_scenarios(
-        metadata, lag_seq, "REDUCE_LR_ON_PLATEAU"
-    )
-
-    for scenario in scenario_list:
+    for scenario in scenario_list[:1]:
         nnts.torch.data.datasets.seed_everything(scenario.seed)
         df = df_orig.copy()
         lag_processor = nnts.torch.data.preprocessing.LagProcessor(scenario.lag_seq)
@@ -190,7 +174,6 @@ def main(
         split_data = nnts.pandas.split_test_train_last_horizon(
             df, context_length, metadata.prediction_length
         )
-
         trn_dl, test_dl = nnts.data.create_trn_test_dataloaders(
             split_data,
             metadata,
@@ -201,8 +184,8 @@ def main(
         )
         # trn_dl = gluonadapt.trn_dl
         # test_dl = gluonadapt.test_dl
-        logger = nnts.loggers.WandbRun(
-            project=f"{model_name}-{metadata.dataset}-scheduler",
+        logger = nnts.loggers.LocalFileRun(
+            project=f"{model_name}-{metadata.dataset}",
             name=scenario.name,
             config={
                 **params.__dict__,
@@ -232,16 +215,16 @@ def main(
         print(test_metrics)
         logger.finish()
 
-    # csv_aggregator = nnts.pandas.CSVFileAggregator(PATH, "results")
-    # results = csv_aggregator()
-    # univariate_results = results.loc[:, ["smape", "mase"]]
-    # print(
-    #    univariate_results.mean(), univariate_results.std(), univariate_results.count()
-    # )
+    csv_aggregator = nnts.pandas.CSVFileAggregator(PATH, "results")
+    results = csv_aggregator()
+    univariate_results = results.loc[:, ["smape", "mase"]]
+    print(
+        univariate_results.mean(), univariate_results.std(), univariate_results.count()
+    )
 
 
 def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
-    if model_name == "better-deepar-studentt":
+    if model_name == "deepar-studentt":
         net = nnts.torch.models.DistrDeepAR(
             nnts.torch.models.deepar.StudentTHead,
             params,
@@ -251,7 +234,6 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             scaled_features=scenario.scaled_covariates,
             context_length=metadata.context_length,
             cat_idx=scenario.cat_idx,
-            seq_cat_idx=scenario.month_idx,
         )
         trner = trainers.TorchEpochTrainer(
             nnts.models.TrainerState(),
@@ -261,7 +243,7 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             os.path.join(PATH, f"{scenario.name}.pt"),
             loss_fn=distr_nll,
         )
-    elif model_name == "better-deepar-point":
+    elif model_name == "deepar-point":
         net = nnts.torch.models.DeepARPoint(
             nnts.torch.models.LinearModel,
             params,
@@ -271,7 +253,6 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             scaled_features=scenario.scaled_covariates,
             context_length=metadata.context_length,
             cat_idx=scenario.cat_idx,
-            seq_cat_idx=scenario.month_idx,
         )
         trner = trainers.TorchEpochTrainer(
             nnts.models.TrainerState(),
@@ -305,7 +286,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="better-deepar-studentt",
+        default="deepar-studentt",
         help="Name of the model.",
     )
     parser.add_argument(
@@ -321,7 +302,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--results-path",
         type=str,
-        default="projects/better_deepar/scheduler-results",
+        default="projects/deepar/ablation-results",
         help="Path to the results directory.",
     )
     args = parser.parse_args()

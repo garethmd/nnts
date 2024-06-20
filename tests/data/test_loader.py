@@ -45,7 +45,7 @@ def test_should_create_trn_val_test_dataloaders(
     mock_factory = MockDataLoaderFactory()
 
     # Act
-    trn_dl, val_dl, test_dl = nnts.data.loader.create_trn_val_test_dataloaders(
+    trn_dl, val_dl, test_dl = nnts.data.datasets.create_trn_val_test_dataloaders(
         sample_split_data,
         sample_metadata,
         sample_scenario,

@@ -1,316 +1,450 @@
-import argparse
-import os
-from typing import Iterable, List
+from typing import Dict, List
 
-import features
-import gluonadapt
 import torch
-import torch.distributions as td
-import torch.nn.functional as F
-import trainers
+import torch.nn as nn
 
-import nnts
-import nnts.data
-import nnts.experiments
-import nnts.loggers
-import nnts.metrics
 import nnts.models
-import nnts.pandas
-import nnts.torch.data
-import nnts.torch.data.datasets
-import nnts.torch.data.preprocessing
-import nnts.torch.models
-import nnts.torch.utils
+from nnts.torch import models
+
+FEAT_SCALE: str = "feat_scale"
 
 
-def calculate_seasonal_error(trn_dl: Iterable, metadata: nnts.data.metadata.Metadata):
-    se_list = []
-    for batch in trn_dl:
-        past_data = batch["target"]
-        se = nnts.metrics.gluon_metrics.calculate_seasonal_error(
-            past_data, metadata.freq, metadata.seasonality
+import torch.distributions as td
+from torch.distributions import AffineTransform, Distribution, TransformedDistribution
+
+
+class AffineTransformed(TransformedDistribution):
+    """
+    Represents the distribution of an affinely transformed random variable.
+
+    This is the distribution of ``Y = scale * X + loc``, where ``X`` is a
+    random variable distributed according to ``base_distribution``.
+
+    Parameters
+    ----------
+    base_distribution
+        Original distribution
+    loc
+        Translation parameter of the affine transformation.
+    scale
+        Scaling parameter of the affine transformation.
+    """
+
+    def __init__(self, base_distribution: Distribution, loc=None, scale=None):
+        self.scale = 1.0 if scale is None else scale
+        self.loc = 0.0 if loc is None else loc
+
+        super().__init__(base_distribution, [AffineTransform(self.loc, self.scale)])
+
+    @property
+    def mean(self):
+        """
+        Returns the mean of the distribution.
+        """
+        return self.base_dist.mean * self.scale + self.loc
+
+    @property
+    def variance(self):
+        """
+        Returns the variance of the distribution.
+        """
+        return self.base_dist.variance * self.scale**2
+
+    @property
+    def stddev(self):
+        """
+        Returns the standard deviation of the distribution.
+        """
+        return self.variance.sqrt()
+
+
+class DeepAR(nn.Module):
+
+    def __init__(
+        self,
+        Distribution: nn.Module,
+        params: nnts.models.Hyperparams,
+        scaling_fn: callable,
+        output_dim: int,
+        lag_seq: List[int],
+        scaled_features: List[str],
+    ):
+        super(DeepAR, self).__init__()
+        self.scaling_fn = scaling_fn
+        self.output_dim = output_dim
+        self.scaled_features = scaled_features
+        self.n_scaled_features = len(scaled_features)
+        self.n_scaled_features_excluding_feat_scale = len(
+            [f for f in scaled_features if f != FEAT_SCALE]
         )
-        se_list.append(se)
-    return torch.tensor(se_list).unsqueeze(1)
+        self.lag_seq = torch.tensor(lag_seq) - 1
+        self.decoder = models.unrolledlstm.UnrolledLSTMDecoder(
+            params, self.n_scaled_features + len(self.lag_seq)
+        )
+        self.distribution = Distribution(params.hidden_dim, output_dim)
+        self.max_lag = max(lag_seq)
 
+    def create_lags(
+        self, n_timesteps: int, past_target: torch.tensor, lag_seq: List[int]
+    ) -> torch.tensor:
+        lag_features = []
+        for t in range(0, n_timesteps):
+            lag_seq = lag_seq + 1
+            lag_for_step = past_target.index_select(1, lag_seq)
+            lag_features.append(lag_for_step)
+        return torch.stack(lag_features, dim=1).flip(1)
 
-def generate_one_hot_matrix(n):
-    # Total number of rows in the matrix
-    num_rows = 2**n
+    def forward(
+        self,
+        X: torch.tensor,
+        pad_mask: torch.tensor,
+        H: int,
+        context_length: int,
+    ) -> torch.tensor:
+        X = X.clone()
+        if H > 0:
+            h = H - 1
+            X[:, -h:, 0] = 0.0
+            past_target = X[:, :-h, 0].flip(1)
+        else:
+            past_target = X[:, :, 0].flip(1)
+        X = X[:, self.max_lag :, ...]
+        pad_mask = pad_mask[:, self.max_lag :]
+        B, T, C = X.shape
+        y_hat = torch.zeros(B, T, self.output_dim)
 
-    # Initialize the matrix
-    one_hot_matrix = []
+        target_scale = self.scaling_fn(
+            X[:, :context_length, :1], pad_mask[:, :context_length]
+        )
+        X[:, :, :1] = X[:, :, :1] / target_scale
+        past_target = past_target / target_scale.squeeze(2)
+        lags = self.create_lags(context_length, past_target, self.lag_seq)
 
-    # Generate each combination of binary values
-    for i in range(num_rows):
-        # Convert the number to its binary representation and fill with leading zeros
-        binary_representation = format(i, f"0{n}b")
-        # Convert the binary string to a list of integers
-        one_hot_row = [int(bit) for bit in binary_representation]
-        # Append the one-hot row to the matrix
-        one_hot_matrix.append(one_hot_row)
-
-    return one_hot_matrix
-
-
-def create_scenarios(metadata, lag_seq):
-    scaled_covariates = [
-        "month",
-        "unix_timestamp",
-        "unique_id_0",
-        "static_cont",
-        nnts.torch.models.deepar.FEAT_SCALE,
-    ]
-
-    # Example usage for n=5
-    n = len(scaled_covariates)
-    scaled_covariate_selection_matrix = generate_one_hot_matrix(n)
-    scenario_list: List[features.LagScenario] = []
-
-    for seed in [42, 43, 44, 45, 46]:
-        for row in scaled_covariate_selection_matrix:
-            selected_combination = [
-                covariate
-                for covariate, select in zip(scaled_covariates, row)
-                if select == 1
-            ]
-            scenario_list.append(
-                features.LagScenario(
-                    metadata.prediction_length,
-                    conts=[
-                        cov
-                        for cov in selected_combination
-                        if cov != nnts.torch.models.deepar.FEAT_SCALE
-                    ],
-                    scaled_covariates=selected_combination,
-                    lag_seq=lag_seq,
-                    seed=seed,
-                    dataset=metadata.dataset,
-                )
+        if FEAT_SCALE in self.scaled_features:
+            X = torch.cat(
+                [
+                    X,
+                    torch.log(target_scale[:, :, :1]).expand(B, T, 1),
+                ],
+                2,
             )
-    return scenario_list
+            C = C + 1
 
+        input = torch.zeros(B, T, C + lags.shape[2])
+        input[:, :, :C] = X
+        input[:, :context_length, C:] = lags.squeeze(1)
 
-def create_lag_scenarios(metadata, lag_seq):
-    conts = [
-        "day_of_week",
-        "hour",
-        "dayofyear",
-        "dayofmonth",
-        "unix_timestamp",
-        "unique_id_0",
-        "static_cont",
-    ]
+        out, hidden = self.decoder(input[:, :context_length, :])
+        out = self.distribution(out, target_scale=target_scale)
+        y_hat[:, :context_length, :] = out
 
-    scenario_list: List[features.LagScenario] = []
+        # free running for H steps
+        for t in range(0, H - 1):
+            past_target = torch.cat([out[:, -1:, 0], past_target], 1)
+            lags = self.create_lags(1, past_target, self.lag_seq)
+            input[:, context_length + t, 0] = out[:, -1, 0]
+            input[:, context_length + t, -lags.shape[2] :] = lags.squeeze(1)
 
-    # BASELINE
-    scenario_list = []
-    for seed in [42, 43, 44, 45, 46]:
-        scenario = features.LagScenario(
-            metadata.prediction_length,
-            conts=conts,
-            scaled_covariates=conts
-            + [
-                nnts.torch.models.deepar.FEAT_SCALE,
-            ],
-            lag_seq=lag_seq,
-            seed=seed,
-            dataset=metadata.dataset,
+            # select the lag features and detach from the graph to prevent backpropagation
+            out, hidden = self.decoder(
+                input[:, context_length + t : context_length + t + 1, ...]
+                .clone()
+                .detach(),
+                hidden,
+            )
+            out = self.distribution(out, target_scale=target_scale)
+            y_hat[:, context_length + t, :] = out[:, -1, :]
+
+        y_hat = y_hat * target_scale[:, :, : self.output_dim]
+        return y_hat
+
+    def generate(
+        self,
+        X: torch.tensor,
+        pad_mask: torch.tensor,
+        prediction_length: int,
+        context_length: int,
+    ) -> torch.tensor:
+        y_hat = self(X, pad_mask, prediction_length, context_length)
+        y_hat = y_hat[:, -prediction_length:, :]
+        return y_hat
+
+    def free_running(
+        self, data: Dict, prediction_length: int, context_length: int
+    ) -> torch.tensor:
+        x = data["X"]
+        pad_mask = data["pad_mask"]
+        y = x[:, 1 - context_length - prediction_length :, : self.output_dim]
+        y_hat = self(
+            x[:, :-1, :],
+            pad_mask[:, :-1],
+            prediction_length,
+            context_length,
         )
-        scenario_list.append(scenario)
-    return scenario_list
+        return y_hat, y
 
-
-def distr_nll(distr: td.Distribution, target: torch.Tensor) -> torch.Tensor:
-    nll = -distr.log_prob(target)
-    # nll = nll.mean(dim=(1,))
-    return nll.mean()
-
-
-def main(
-    model_name: str,
-    dataset_name: str,
-    data_path: str,
-    base_model_name: str,
-    results_path: str,
-):
-    # Set up paths and load metadata
-    metadata = nnts.data.metadata.load(
-        dataset_name, path=os.path.join(data_path, f"{base_model_name}-monash.json")
-    )
-    PATH = os.path.join(results_path, model_name, metadata.dataset)
-    nnts.loggers.makedirs_if_not_exists(PATH)
-
-    # Load data
-    df_orig, *_ = nnts.pandas.read_tsf(os.path.join(data_path, metadata.filename))
-
-    # Set parameters
-    params = nnts.models.Hyperparams()
-    params.batch_size = 32
-    params.batches_per_epoch = 100
-
-    # Calculate next month and unix timestamp
-    df_orig = features.create_time_features(df_orig)
-    df_orig = features.create_dummy_unique_ids(df_orig)
-
-    # Normalize data
-    # max_min_scaler = nnts.torch.data.preprocessing.MaxMinScaler()
-    # max_min_scaler.fit(df_orig, ["month"])
-    # df_orig = max_min_scaler.transform(df_orig, ["month"])
-
-    lag_seq = features.create_lag_seq(metadata.freq)
-    scenario_list = create_lag_scenarios(metadata, lag_seq)
-
-    params.training_method = nnts.models.hyperparams.TrainingMethod.TEACHER_FORCING
-    params.scheduler = nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
-
-    for scenario in scenario_list[:1]:
-        nnts.torch.data.datasets.seed_everything(scenario.seed)
-        df = df_orig.copy()
-        lag_processor = nnts.torch.data.preprocessing.LagProcessor(scenario.lag_seq)
-
-        context_length = metadata.context_length + max(scenario.lag_seq)
-        split_data = nnts.pandas.split_test_train_last_horizon(
-            df, context_length, metadata.prediction_length
+    def teacher_forcing_output(self, data, prediction_length, context_length):
+        """
+        data: dict with keys "X" and "pad_mask"
+        """
+        x = data["X"]
+        pad_mask = data["pad_mask"]
+        y = x[:, 1:, : self.output_dim]
+        y_hat = self(
+            x[:, :-1, :], pad_mask[:, :-1], 0, context_length + prediction_length - 1
         )
-        trn_dl, test_dl = nnts.data.create_trn_test_dataloaders(
-            split_data,
-            metadata,
-            scenario,
-            params,
-            nnts.torch.data.preprocessing.TorchTimeseriesLagsDataLoaderFactory(),
-            Sampler=nnts.torch.data.datasets.TimeSeriesSampler,
-        )
-        # trn_dl = gluonadapt.trn_dl
-        # test_dl = gluonadapt.test_dl
-        logger = nnts.loggers.LocalFileRun(
-            project=f"{model_name}-{metadata.dataset}",
-            name=scenario.name,
-            config={
-                **params.__dict__,
-                **metadata.__dict__,
-                **scenario.__dict__,
-            },
-            path=PATH,
-        )
-        trner = create_trainer(
-            model_name, metadata, PATH, params, scenario, lag_processor
-        )
-        logger.configure(trner.events)
+        y = y[:, 1 - context_length - prediction_length :, ...]
+        return y_hat, y
 
-        evaluator = trner.train(trn_dl)
+    def validate(self, batch, prediction_length, context_length):
+        y = batch["X"][:, -prediction_length:, : self.output_dim]
+        y_hat = self.generate(
+            batch["X"][:, :-1, ...],
+            batch["pad_mask"][:, :-1],
+            prediction_length=prediction_length,
+            context_length=context_length,
+        )
+        return y_hat, y
 
-        # net = gluonadapt.load_gluonts_weights(net)
-        # evaluator = nnts.torch.models.trainers.TorchEvaluator(net)
 
-        y_hat, y = evaluator.evaluate(
-            test_dl, scenario.prediction_length, metadata.context_length
+class DistrDeepAR(nn.Module):
+
+    def __init__(
+        self,
+        Distribution: nn.Module,
+        params: nnts.models.Hyperparams,
+        scaling_fn: callable,
+        output_dim: int,
+        lag_seq: List[int],
+        scaled_features: List[str],
+    ):
+        super(DistrDeepAR, self).__init__()
+        self.scaling_fn = scaling_fn
+        self.output_dim = output_dim
+        self.scaled_features = scaled_features
+        self.n_scaled_features = len(scaled_features)
+        self.n_scaled_features_excluding_feat_scale = len(
+            [f for f in scaled_features if f != FEAT_SCALE]
+        )
+        self.lag_seq = torch.tensor(lag_seq) - 1
+        self.decoder = models.unrolledlstm.UnrolledLSTMDecoder(
+            params, self.n_scaled_features + len(self.lag_seq) + 1
+        )
+        self.distribution = Distribution(params.hidden_dim, output_dim)
+        self.embbeder = nn.Embedding(1, self.output_dim)
+        self.max_lag = max(lag_seq)
+
+    def create_lags(
+        self, n_timesteps: int, past_target: torch.tensor, lag_seq: List[int]
+    ) -> torch.tensor:
+        lag_features = []
+        for t in range(0, n_timesteps):
+            lag_seq = lag_seq + 1
+            lag_for_step = past_target.index_select(1, lag_seq)
+            lag_features.append(lag_for_step)
+        return torch.stack(lag_features, dim=1).flip(1)
+
+    def _distr(
+        self,
+        X: torch.tensor,
+        pad_mask: torch.tensor,
+        H: int,
+        context_length: int,
+    ) -> torch.tensor:
+        X = X.clone()
+        if H > 0:
+            X[:, -H:, 0] = 0.0
+            past_target = X[:, :-H, 0].flip(1)
+        else:
+            past_target = X[:, :, 0].flip(1)
+        X = X[:, self.max_lag :, ...]
+        pad_mask = pad_mask[:, self.max_lag :]
+        B, T, C = X.shape
+
+        target_scale = self.scaling_fn(X[:, :15, :1], pad_mask[:, :15])
+        X[:, :, :1] = X[:, :, :1] / target_scale
+        past_target = past_target / target_scale.squeeze(2)
+        lags = torch.zeros(B, T, len(self.lag_seq))
+        lags[:, :context_length, :] = self.create_lags(
+            context_length, past_target, self.lag_seq
         )
 
-        test_metrics = nnts.metrics.calc_metrics(
-            y_hat, y, nnts.metrics.calculate_seasonal_error(trn_dl, metadata)
+        if FEAT_SCALE in self.scaled_features:
+            X = torch.cat(
+                [
+                    X[:, :, :1],
+                    lags,
+                    self.embbeder(torch.zeros(B, 1).long()).expand(B, T, 1),
+                    X[:, :, -1:],
+                    torch.log(target_scale[:, :, :1]).expand(B, T, 1),
+                    X[:, :, 1:-1],
+                ],
+                2,
+            )
+            C = C + 2
+
+        # input = torch.zeros(B, T, C + lags.shape[2])
+        # input[:, :, :C] = X
+        # input[:, :context_length, C:] = lags.squeeze(1)
+        input = X
+
+        out, hidden = self.decoder(input[:, :context_length, :])
+        params = self.distribution(out, target_scale=target_scale)
+        distr = AffineTransformed(
+            td.StudentT(params[0], params[1], params[2]), None, target_scale.squeeze(-1)
         )
-        logger.log(test_metrics)
-        print(test_metrics)
-        logger.finish()
 
-    csv_aggregator = nnts.pandas.CSVFileAggregator(PATH, "results")
-    results = csv_aggregator()
-    univariate_results = results.loc[:, ["smape", "mase"]]
-    print(
-        univariate_results.mean(), univariate_results.std(), univariate_results.count()
-    )
+        return distr
 
+    def forward(
+        self,
+        X: torch.tensor,
+        pad_mask: torch.tensor,
+        H: int,
+        context_length: int,
+        n_samples: int = 100,
+    ) -> torch.tensor:
+        X = X.clone()
+        if H > 0:
+            X[:, -H:, 0] = 0.0
+            past_target = X[:, :-H, 0].flip(1)
+        else:
+            past_target = X[:, :, 0].flip(1)
+        X = X[:, self.max_lag :, ...]
+        pad_mask = pad_mask[:, self.max_lag :]
+        B, T, C = X.shape
+        y_hat = torch.zeros(n_samples * B, T - 1, 1)
 
-def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
-    if model_name == "deepar-studentt":
-        net = nnts.torch.models.DistrDeepAR(
-            nnts.torch.models.deepar.StudentTHead,
-            params,
-            nnts.torch.data.preprocessing.masked_mean_abs_scaling,
-            1,
-            lag_processor=lag_processor,
-            scaled_features=scenario.scaled_covariates,
-            context_length=metadata.context_length,
-            cat_idx=scenario.cat_idx,
+        target_scale = self.scaling_fn(
+            X[:, :context_length, :1], pad_mask[:, :context_length]
         )
-        trner = trainers.TorchEpochTrainer(
-            nnts.models.TrainerState(),
-            net,
-            params,
-            metadata,
-            os.path.join(PATH, f"{scenario.name}.pt"),
-            loss_fn=distr_nll,
+        X[:, :, :1] = X[:, :, :1] / target_scale
+        past_target = past_target / target_scale.squeeze(2)
+        lags = torch.zeros(B, T, len(self.lag_seq))
+        lags[:, :context_length, :] = self.create_lags(
+            context_length, past_target, self.lag_seq
         )
-    elif model_name == "deepar-point":
-        net = nnts.torch.models.DeepARPoint(
-            nnts.torch.models.LinearModel,
-            params,
-            nnts.torch.data.preprocessing.masked_mean_abs_scaling,
-            1,
-            lag_processor=lag_processor,
-            scaled_features=scenario.scaled_covariates,
-            context_length=metadata.context_length,
-            cat_idx=scenario.cat_idx,
+
+        if FEAT_SCALE in self.scaled_features:
+            X = torch.cat(
+                [
+                    X[:, :, :1],
+                    lags,
+                    self.embbeder(torch.zeros(B, 1).long()).expand(B, T, 1),
+                    X[:, :, -1:],
+                    torch.log(target_scale[:, :, :1]).expand(B, T, 1),
+                    X[:, :, 1:-1],
+                ],
+                2,
+            )
+            C = C + 2
+        input = X[:, :-1, :]
+        # input = torch.zeros(B, T, C + lags.shape[2])
+        # input[:, :, :C] = X
+        # input[:, :context_length, C:] = lags.squeeze(1)
+
+        out, hidden = self.decoder(input[:, :context_length, :])
+
+        # Expand the input and target_scale to N samples
+        # out = out.reshape(n_samples * B, -1).unsqueeze(-1)  # N*B, T, C
+        # out = out.repeat_interleave(n_samples, 0)  # N*B, T, C
+        params = self.distribution(out, target_scale=target_scale)
+        params = tuple(
+            param.repeat_interleave(n_samples, 0) for param in params
+        )  # N*B, T, C
+
+        input = input.repeat_interleave(n_samples, 0)  # N*B, T, C
+        past_target = past_target.repeat_interleave(n_samples, 0)  # N*B, T
+        target_scale = target_scale.repeat_interleave(n_samples, 0)  # N*B, T, 1
+        lags = lags.repeat_interleave(n_samples, 0)  # N*B, T, L
+        hidden = tuple(
+            state.repeat_interleave(n_samples, 1) for state in hidden
+        )  # N*B, H
+        distr = AffineTransformed(
+            td.StudentT(params[0], params[1], params[2]), None, target_scale.squeeze(-1)
         )
-        trner = trainers.TorchEpochTrainer(
-            nnts.models.TrainerState(),
-            net,
-            params,
-            metadata,
-            os.path.join(PATH, f"{scenario.name}.pt"),
-            F.l1_loss,
+        out = distr.sample()  # N*B, T
+
+        # distr = self.distribution(out, target_scale=target_scale)
+        # out = distr.sample((n_samples,))  # N, B, T
+
+        y_hat[..., :context_length, 0] = out
+
+        # free running for H steps
+        for t in range(0, H - 1):
+            out[:, -1:] = out[:, -1:] / target_scale.squeeze(2)
+            past_target = torch.cat([out[:, -1:], past_target], 1)
+            lags = self.create_lags(1, past_target, self.lag_seq)
+            input[..., context_length + t, 0] = out[:, -1]
+            input[..., context_length + t, 1 : 1 + lags.shape[2]] = lags.squeeze(1)
+
+            # select the lag features and detach from the graph to prevent backpropagation
+            out, hidden = self.decoder(
+                input[:, context_length + t : context_length + t + 1, ...]
+                .clone()
+                .detach(),
+                hidden,
+            )
+            params = self.distribution(out, target_scale=target_scale)
+            distr = AffineTransformed(
+                td.StudentT(params[0], params[1], params[2]),
+                None,
+                target_scale.squeeze(-1),
+            )
+            out = distr.sample()
+            y_hat[..., context_length + t, :] = out
+
+        # y_hat = y_hat * target_scale[:, :, : self.output_dim]
+        y_hat = y_hat.reshape(B, n_samples, -1).permute(1, 0, 2)
+        y_hat = y_hat.median(dim=0)[0]
+        return y_hat.unsqueeze(-1)
+
+    def generate(
+        self,
+        X: torch.tensor,
+        pad_mask: torch.tensor,
+        prediction_length: int,
+        context_length: int,
+    ) -> torch.tensor:
+        assert pad_mask.sum() == pad_mask.numel()
+        y_hat = self(X, pad_mask, prediction_length, context_length)
+        y_hat = y_hat[:, -prediction_length:]
+        return y_hat
+
+    def free_running(
+        self, data: Dict, prediction_length: int, context_length: int
+    ) -> torch.tensor:
+        x = data["X"]
+        pad_mask = data["pad_mask"]
+        assert pad_mask.sum() == pad_mask.numel()
+        y = x[:, 1 - context_length - prediction_length :, : self.output_dim]
+        y_hat = self(
+            x[:, :-1, :],
+            pad_mask[:, :-1],
+            prediction_length,
+            context_length,
         )
-    else:
-        raise ValueError(f"Model {model_name} not recognized.")
+        return y_hat, y
 
-    return trner
+    def teacher_forcing_output(self, data, prediction_length, context_length):
+        """
+        data: dict with keys "X" and "pad_mask"
+        """
+        x = data["X"]
+        pad_mask = data["pad_mask"]
+        y = x[:, 1:, : self.output_dim]
+        y_hat = self._distr(
+            x[:, :-1, :], pad_mask[:, :-1], 0, context_length + prediction_length - 1
+        )
+        y = y[:, 1 - context_length - prediction_length :, ...]
+        return y_hat, y
 
-
-def add_y_hat(df, y_hat, prediction_length):
-    i = 0
-    df_list = []
-    for name, group in df.groupby("unique_id", sort=False):
-        group["y_hat"] = None
-        group["y_hat"][-prediction_length:] = y_hat[i].squeeze()
-        i += 1
-        df_list.append(group)
-    return df_list
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Run the model training and evaluation script."
-    )
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="deepar-studentt",
-        help="Name of the model.",
-    )
-    parser.add_argument(
-        "--dataset", type=str, default="traffic_hourly", help="Name of the dataset."
-    )
-    parser.add_argument(
-        "--data-path",
-        type=str,
-        default="projects/deepar/data",
-        help="Path to the data directory.",
-    )
-
-    parser.add_argument(
-        "--results-path",
-        type=str,
-        default="projects/deepar/ablation-results",
-        help="Path to the results directory.",
-    )
-    args = parser.parse_args()
-
-    main(
-        args.model,
-        args.dataset,
-        args.data_path,
-        "base-lstm",
-        args.results_path,
-    )
+    def validate(self, batch, prediction_length, context_length):
+        y = batch["X"][:, -prediction_length:, : self.output_dim]
+        y_hat = self.generate(
+            batch["X"],
+            batch["pad_mask"],
+            prediction_length=prediction_length,
+            context_length=context_length,
+        )
+        return y_hat, y

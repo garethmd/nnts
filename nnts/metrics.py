@@ -55,8 +55,10 @@ def mase(y_hat, y, seasonal_errors, dim=1):
 
 
 def mape(y_hat, y, dim=1):
-    pe = (y_hat - y).abs() / y.abs()
-    return pe.mean(dim=dim) if dim is not None else pe.mean()
+    ape = (y_hat - y).abs() / y.abs()
+    # mask = ~torch.isnan(ape)
+    # ape_filtered = ape[mask]
+    return ape.mean(dim=dim) if dim is not None else ape.mean()
 
 
 def smape(y_hat, y, dim=1):

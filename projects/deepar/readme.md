@@ -134,8 +134,8 @@ Hospital Monthly H=12:
 
 Tourism Monthly H=24:
 
-| Metric                         | DeepAR (GluonTS) | Our DeepAR      |
-|------------------------------- |------------------|-----------------|
+| Metric                         | DeepAR (GluonTS)   | Our DeepAR    |
+|------------------------------- |--------------------|---------------|
 | abs_error                      | 19413513.541       | 16912486.200  |
 | abs_target_sum                 | 166958474.898      | 166958480.000 |
 | abs_target_mean                | 19007.112          | 19007.113     |
