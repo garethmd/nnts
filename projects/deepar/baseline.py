@@ -5,7 +5,7 @@ from typing import Iterable, List, Tuple
 
 import deepar
 import features
-import gluonadapt
+import gluondata
 import gluonts
 import numpy as np
 import pandas as pd
@@ -397,14 +397,14 @@ def main(
 
     scenario_list = create_lag_scenarios(metadata, lag_seq)
 
-    for scenario in scenario_list:
+    for scenario in scenario_list[:1]:
         nnts.torch.data.datasets.seed_everything(scenario.seed)
         df = df_orig.copy()
         context_length = metadata.context_length + max(scenario.lag_seq)
         split_data = nnts.pandas.split_test_train_last_horizon(
             df, context_length, metadata.prediction_length
         )
-        trn_dl, test_dl = nnts.data.create_trn_test_dataloaders(
+        trn_dl_alt, test_dl = nnts.data.create_trn_test_dataloaders(
             split_data,
             metadata,
             scenario,
@@ -412,7 +412,7 @@ def main(
             nnts.torch.data.datasets.TorchTimeseriesLagsDataLoaderFactory(),
             Sampler=TimeSeriesSampler,
         )
-        # trn_dl = gluonadapt.trn_dl
+        trn_dl = gluondata.get_train_dl()
         # test_dl = gluonadapt.test_dl
         logger = nnts.loggers.LocalFileRun(
             project=f"{model_name}-{metadata.dataset}",
@@ -452,7 +452,7 @@ def main(
             test_dl, scenario.prediction_length, metadata.context_length
         )
         test_metrics = nnts.metrics.calc_metrics(
-            y_hat, y, nnts.metrics.calculate_seasonal_error(trn_dl, metadata)
+            y_hat, y, nnts.metrics.calculate_seasonal_error(trn_dl_alt, metadata)
         )
         logger.log(test_metrics)
         print(test_metrics)

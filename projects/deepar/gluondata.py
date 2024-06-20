@@ -1,15 +1,11 @@
-import warnings
 from typing import Iterable, List, Optional
 
-warnings.filterwarnings("ignore")
-
-import gluonts
+import monash
 import numpy as np
 import torch
 from gluonts.dataset.common import DataBatch, Dataset
 from gluonts.dataset.field_names import FieldName
-from gluonts.dataset.loader import InferenceDataLoader, as_stacked_batches
-from gluonts.dataset.repository import dataset_names, get_dataset
+from gluonts.dataset.loader import as_stacked_batches
 from gluonts.itertools import Cyclic
 from gluonts.time_feature import TimeFeature, time_features_from_frequency_str
 from gluonts.transform import (
@@ -24,18 +20,44 @@ from gluonts.transform import (
     RemoveFields,
     SelectFields,
     SetField,
+    TestSplitSampler,
     Transformation,
     VstackFeatures,
 )
 
-"""
-This module creates dataloaders from the GluonTS library which
-is particularly useful to generate training data in an identical
-fashion as GluonTS and using the GluonTS sampling mechanism
-"""
+dataset_name = "traffic"
+batch_size = 32
+num_batches_per_epoch = 50
+
+FREQ_MAP = {
+    "tourism_monthly": "1M",
+    "electricity_hourly": "1H",
+    "traffic": "1H",
+    "hospital": "1M",
+}
+
+CONTEXT_LENGTH_MAP = {
+    "tourism_monthly": 15,
+    "electricity_hourly": 30,
+    "traffic": 30,
+    "hospital": 15,
+}
+PREDICTION_LENGTH_MAP = {
+    "tourism_monthly": 24,
+    "electricity_hourly": 168,
+    "traffic": 168,
+    "hospital": 12,
+}
+
+prediction_length = PREDICTION_LENGTH_MAP[dataset_name]
+context_length = CONTEXT_LENGTH_MAP[dataset_name]
 
 
-def create_transformation(prediction_length: int = 24) -> Transformation:
+CONTEXT_LENGTH = 30
+MAX_LAGS = 720
+
+
+def create_transformation(prediction_length: int = None) -> Transformation:
     num_feat_static_cat = 0
     num_feat_static_real = 0
     num_feat_dynamic_real = 0
@@ -102,16 +124,12 @@ def create_transformation(prediction_length: int = 24) -> Transformation:
     )
 
 
-CONTEXT_LENGTH = 30
-MAX_LAGS = 720
-
-
 def create_training_data_loader(
     data: Dataset,
     shuffle_buffer_length: Optional[int] = None,
     batch_size: int = 32,
     num_batches_per_epoch: int = 50,
-    prediction_length=24,
+    prediction_length=None,
     **kwargs,
 ) -> Iterable:
     PREDICTION_INPUT_NAMES = [
@@ -176,27 +194,14 @@ def batchify(data: List[dict], device: Optional[torch.device] = None) -> DataBat
     }
 
 
-def create_inference_data_loader(dataset, prediction_length=24, batch_size=32):
-    required_fields = [
-        # "forecast_start",
-        "item_id",
-        # "info",
-        "feat_static_cat",
-        "feat_static_real",
-        "past_time_feat",
-        "past_target",
-        "past_observed_values",
-        "future_time_feat",
-    ]
-    input_transform = create_transformation(prediction_length=prediction_length)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    inference_data_loader = InferenceDataLoader(
-        dataset,
-        transform=input_transform + SelectFields(required_fields, allow_missing=False),
-        batch_size=batch_size,
-        stack_fn=lambda data: batchify(data, device),
-    )
-    return inference_data_loader
+class DecoratedDataLoader:
+    def __init__(self, dataloader, decorator_fn):
+        self.dataloader = dataloader
+        self.decorator_fn = decorator_fn
+
+    def __iter__(self):
+        for batch in self.dataloader:
+            yield self.decorator_fn(batch)
 
 
 def gluonts_to_nnts(batch):
@@ -224,50 +229,31 @@ def gluonts_to_nnts(batch):
     return {"X": X, "pad_mask": pad_mask}
 
 
-class DecoratedDataLoader:
-    def __init__(self, dataloader, decorator_fn):
-        self.dataloader = dataloader
-        self.decorator_fn = decorator_fn
-
-    def __iter__(self):
-        for batch in self.dataloader:
-            yield self.decorator_fn(batch)
-
-
-dataset = get_dataset("traffic")
-
-
-trn_dl = DecoratedDataLoader(
-    create_training_data_loader(dataset.train, batch_size=32, prediction_length=168),
-    gluonts_to_nnts,
-)
-# test_dl = create_inference_data_loader(dataset.test, batch_size=32)
-
-
-def get_test_dataloader():
-    input = torch.load(
-        "/Users/garethdavies/Development/workspaces/gluonts/examples/input.pt"
+def get_train_dl():
+    train_ds, test_ds = monash.get_deep_nn_forecasts(
+        dataset_name,
+        CONTEXT_LENGTH_MAP[dataset_name],
+        "traffic_hourly_dataset.tsf",
+        "feed_forward",
+        PREDICTION_LENGTH_MAP[dataset_name],
+        True,
     )
-    return [gluonts_to_nnts(i) for i in input]
 
-
-test_dl = get_test_dataloader()
-
-
-def load_gluonts_weights(net):
-    def remove_prefix(s, prefix):
-        return s[len(prefix) :] if s.startswith(prefix) else s
-
-    state_dict = torch.load(
-        "/Users/garethdavies/Development/workspaces/nnts/projects/deepar/gluonts.pt"
+    data_loader = create_training_data_loader(
+        train_ds, prediction_length=prediction_length
     )
-    rnn = {k: v for k, v in state_dict.items() if k.startswith("rnn")}
-    net.decoder.load_state_dict(rnn)
-    net.embbeder.load_state_dict({"weight": state_dict["embedder._embedders.0.weight"]})
-    proj = {
-        remove_prefix(k, "param_proj.proj."): v
-        for k, v in state_dict.items()
-        if k.startswith("param_proj")
-    }
-    net.distribution.main.load_state_dict(proj)
-    return net
+
+    trn_dl = DecoratedDataLoader(
+        data_loader,
+        gluonts_to_nnts,
+    )
+    return trn_dl
+
+
+if __name__ == "__main__":
+    trn_dl = get_train_dl()
+
+    for i, batch in enumerate(trn_dl):
+        print(batch)
+        if i > 5:
+            break

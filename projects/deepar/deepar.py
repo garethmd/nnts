@@ -217,6 +217,7 @@ class DistrDeepAR(nn.Module):
         output_dim: int,
         lag_seq: List[int],
         scaled_features: List[str],
+        context_length: int = 30,
     ):
         super(DistrDeepAR, self).__init__()
         self.scaling_fn = scaling_fn
@@ -233,6 +234,7 @@ class DistrDeepAR(nn.Module):
         self.distribution = Distribution(params.hidden_dim, output_dim)
         self.embbeder = nn.Embedding(1, self.output_dim)
         self.max_lag = max(lag_seq)
+        self.context_length = context_length
 
     def create_lags(
         self, n_timesteps: int, past_target: torch.tensor, lag_seq: List[int]
@@ -261,7 +263,9 @@ class DistrDeepAR(nn.Module):
         pad_mask = pad_mask[:, self.max_lag :]
         B, T, C = X.shape
 
-        target_scale = self.scaling_fn(X[:, :15, :1], pad_mask[:, :15])
+        target_scale = self.scaling_fn(
+            X[:, : self.context_length, :1], pad_mask[:, : self.context_length]
+        )
         X[:, :, :1] = X[:, :, :1] / target_scale
         past_target = past_target / target_scale.squeeze(2)
         lags = torch.zeros(B, T, len(self.lag_seq))

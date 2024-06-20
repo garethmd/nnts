@@ -309,7 +309,7 @@ if __name__ == "__main__":
         help="Name of the model.",
     )
     parser.add_argument(
-        "--dataset", type=str, default="traffic_hourly", help="Name of the dataset."
+        "--dataset", type=str, default="hospital", help="Name of the dataset."
     )
     parser.add_argument(
         "--data-path",
