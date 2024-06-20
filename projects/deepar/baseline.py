@@ -17,6 +17,7 @@ import trainers
 
 import nnts
 import nnts.data
+import nnts.data.datasets
 import nnts.experiments
 import nnts.loggers
 import nnts.metrics
@@ -380,6 +381,7 @@ def main(
     params.batch_size = 32
     params.batches_per_epoch = 50
     params.scheduler = nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+    params.training_method = nnts.models.hyperparams.TrainingMethod.TEACHER_FORCING
 
     # Calculate next month and unix timestamp
     df_orig = features.create_time_features(df_orig)
@@ -394,8 +396,6 @@ def main(
     lag_seq = [lag - 1 for lag in lag_seq if lag > 1]
 
     scenario_list = create_lag_scenarios(metadata, lag_seq)
-
-    params.training_method = nnts.models.hyperparams.TrainingMethod.TEACHER_FORCING
 
     for scenario in scenario_list:
         nnts.torch.data.datasets.seed_everything(scenario.seed)

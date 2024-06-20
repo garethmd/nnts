@@ -6,7 +6,7 @@ import torch.utils
 import torch.utils.data
 from torch.utils.data import DataLoader, Sampler
 
-import nnts
+import nnts.data
 
 
 def right_pad_sequence(
@@ -201,17 +201,6 @@ class TimeSeriesSampler(Sampler[int]):
         return self._num_samples
 
 
-class TruncatedDataLoader(torch.utils.data.DataLoader):
-    """DataLoader that truncates the number of batches per epoch."""
-
-    def __init__(self, *args, batches_per_epoch=None, **kwargs):
-        self.batches_per_epoch = batches_per_epoch
-        super(TruncatedDataLoader, self).__init__(*args, **kwargs)
-
-    def __len__(self):
-        return self.batches_per_epoch if self.batches_per_epoch else super().__len__()
-
-
 class TorchTimeseriesDataLoaderFactory(nnts.data.DataLoaderFactory):
 
     def __call__(
@@ -237,19 +226,9 @@ class TorchTimeseriesDataLoaderFactory(nnts.data.DataLoaderFactory):
         ).build()
 
         if Sampler is not None:
-            result = TruncatedDataLoader(
-                params.batches_per_epoch,
-                ts,
-                batch_size=params.batch_size,
-                sampler=Sampler(ts),
-            )
+            result = DataLoader(ts, batch_size=params.batch_size, sampler=Sampler(ts))
         else:
-            result = TruncatedDataLoader(
-                params.batches_per_epoch,
-                ts,
-                batch_size=params.batch_size,
-                shuffle=shuffle,
-            )
+            result = DataLoader(ts, batch_size=params.batch_size, shuffle=shuffle)
         return result
 
 
@@ -278,15 +257,13 @@ class TorchTimeseriesLagsDataLoaderFactory(nnts.data.DataLoaderFactory):
         ).build()
 
         if Sampler is not None:
-            result = TruncatedDataLoader(
-                params.batches_per_epoch,
+            result = DataLoader(
                 ts,
                 batch_size=params.batch_size,
                 sampler=Sampler(ts),
             )
         else:
-            result = TruncatedDataLoader(
-                params.batches_per_epoch,
+            result = DataLoader(
                 ts,
                 batch_size=params.batch_size,
                 shuffle=shuffle,

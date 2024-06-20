@@ -6,9 +6,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import AffineTransform, Distribution, TransformedDistribution
 
+import nnts.data
 import nnts.models
-import nnts.torch
-import nnts.torch.data
+import nnts.torch.data.preprocessing
 
 from .. import models
 
