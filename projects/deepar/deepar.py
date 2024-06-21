@@ -58,7 +58,7 @@ class AffineTransformed(TransformedDistribution):
         return self.variance.sqrt()
 
 
-class DeepAR(nn.Module):
+class DeepARPoint(nn.Module):
 
     def __init__(
         self,
@@ -68,8 +68,9 @@ class DeepAR(nn.Module):
         output_dim: int,
         lag_seq: List[int],
         scaled_features: List[str],
+        context_length: int = None,
     ):
-        super(DeepAR, self).__init__()
+        super(DeepARPoint, self).__init__()
         self.scaling_fn = scaling_fn
         self.output_dim = output_dim
         self.scaled_features = scaled_features
@@ -83,6 +84,7 @@ class DeepAR(nn.Module):
         )
         self.distribution = Distribution(params.hidden_dim, output_dim)
         self.max_lag = max(lag_seq)
+        self.context_length = context_length
 
     def create_lags(
         self, n_timesteps: int, past_target: torch.tensor, lag_seq: List[int]
@@ -114,7 +116,7 @@ class DeepAR(nn.Module):
         y_hat = torch.zeros(B, T, self.output_dim)
 
         target_scale = self.scaling_fn(
-            X[:, :context_length, :1], pad_mask[:, :context_length]
+            X[:, : self.context_length, :1], pad_mask[:, : self.context_length]
         )
         X[:, :, :1] = X[:, :, :1] / target_scale
         past_target = past_target / target_scale.squeeze(2)
@@ -135,7 +137,7 @@ class DeepAR(nn.Module):
         input[:, :context_length, C:] = lags.squeeze(1)
 
         out, hidden = self.decoder(input[:, :context_length, :])
-        out = self.distribution(out, target_scale=target_scale)
+        out = self.distribution(out, target_scale=None)
         y_hat[:, :context_length, :] = out
 
         # free running for H steps
@@ -152,7 +154,7 @@ class DeepAR(nn.Module):
                 .detach(),
                 hidden,
             )
-            out = self.distribution(out, target_scale=target_scale)
+            out = self.distribution(out, target_scale=None)
             y_hat[:, context_length + t, :] = out[:, -1, :]
 
         y_hat = y_hat * target_scale[:, :, : self.output_dim]

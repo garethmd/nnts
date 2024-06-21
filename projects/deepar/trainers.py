@@ -36,10 +36,11 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         self.metadata = metadata
         self.path = path
         self.loss_fn = loss_fn
+        self.Optimizer = params.optimizer or torch.optim.AdamW
 
     def before_train(self, train_dl):
         print(self.net)
-        self.optimizer = optim.Adam(
+        self.optimizer = self.Optimizer(
             self.net.parameters(),
             lr=self.params.lr,
             weight_decay=self.params.weight_decay,
@@ -85,8 +86,6 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
             torch.save(self.net.state_dict(), self.path)
             self.state.best_loss = self.state.valid_loss
             self.events.notify(nnts.models.trainers.EpochBestModel(self.path))
-
-        # self.scheduler.step(self.state.valid_loss)
 
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()

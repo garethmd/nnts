@@ -3,9 +3,6 @@ import os
 from typing import Iterable, List
 
 import features
-import gluonadapt
-import numpy as np
-import pandas as pd
 import torch
 import torch.distributions as td
 import torch.nn.functional as F
@@ -117,37 +114,6 @@ def distr_nll(distr: td.Distribution, target: torch.Tensor) -> torch.Tensor:
     return nll.mean()
 
 
-def create_better_time_features(df_orig: pd.DataFrame):
-    df_orig["day_of_week"] = df_orig["ds"].dt.day_of_week / 6.0 - 0.5
-    df_orig["hour"] = df_orig["ds"].dt.hour / 23.0 - 0.5
-    df_orig["dayofyear"] = df_orig["ds"].dt.dayofyear / 365.0 - 0.5
-    df_orig["dayofmonth"] = df_orig["ds"].dt.day / 30.0 - 0.5
-
-    # df_orig["week"] = df_orig["ds"].dt.isocalendar().week
-    # df_orig["week"] = df_orig["week"].astype(np.float32)
-
-    # df_orig["month"] = df_orig["ds"].dt.month - 1
-    # df_orig["month"] = np.cos(df_orig["month"] * 2 * np.pi / 12)
-
-    df_orig["unix_timestamp"] = (
-        df_orig["ds"] - pd.Timestamp("1970-01-01")
-    ) // pd.Timedelta("1s")
-    # df_orig["unix_timestamp"] = np.log10(
-    #    2.0 + df_orig.groupby("unique_id").cumcount() + 1
-    # )
-
-    df_orig["unix_timestamp"] = (
-        df_orig["unix_timestamp"] / df_orig["unix_timestamp"].max()
-    )
-
-    # Normalize data
-    # max_min_scaler = nnts.torch.data.preprocessing.MaxMinScaler()
-    # max_min_scaler.fit(df_orig, ["unix_timestamp"])
-    # df_orig = max_min_scaler.transform(df_orig, ["unix_timestamp"])
-
-    return df_orig
-
-
 def main(
     model_name: str,
     dataset_name: str,
@@ -170,16 +136,13 @@ def main(
     params.batch_size = 32
     params.batches_per_epoch = 50
     params.training_method = nnts.models.hyperparams.TrainingMethod.TEACHER_FORCING
-    params.scheduler = nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+    params.scheduler = nnts.models.hyperparams.Scheduler.ONE_CYCLE
+    params.optimizer == torch.optim.AdamW
 
     # Calculate next month and unix timestamp
-    df_orig = create_better_time_features(df_orig)
     df_orig = features.create_dummy_unique_ids(df_orig)
-
     lag_seq = features.create_lag_seq(metadata.freq)
-    scenario_list = create_scheduler_scenarios(
-        metadata, lag_seq, "REDUCE_LR_ON_PLATEAU"
-    )
+    scenario_list = create_scheduler_scenarios(metadata, lag_seq, "ONE_CYCLE")
 
     for scenario in scenario_list:
         nnts.torch.data.datasets.seed_everything(scenario.seed)
@@ -199,8 +162,6 @@ def main(
             nnts.torch.data.datasets.TorchTimeseriesLagsDataLoaderFactory(),
             Sampler=nnts.torch.data.datasets.TimeSeriesSampler,
         )
-        # trn_dl = gluonadapt.trn_dl
-        # test_dl = gluonadapt.test_dl
         logger = nnts.loggers.WandbRun(
             project=f"{model_name}-{metadata.dataset}-scheduler",
             name=scenario.name,
@@ -217,9 +178,6 @@ def main(
         logger.configure(trner.events)
 
         evaluator = trner.train(trn_dl)
-
-        # net = gluonadapt.load_gluonts_weights(net)
-        # evaluator = nnts.torch.models.trainers.TorchEvaluator(net)
 
         y_hat, y = evaluator.evaluate(
             test_dl, scenario.prediction_length, metadata.context_length
@@ -309,7 +267,7 @@ if __name__ == "__main__":
         help="Name of the model.",
     )
     parser.add_argument(
-        "--dataset", type=str, default="hospital", help="Name of the dataset."
+        "--dataset", type=str, default="traffic_hourly", help="Name of the dataset."
     )
     parser.add_argument(
         "--data-path",
@@ -321,7 +279,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--results-path",
         type=str,
-        default="projects/better_deepar/scheduler-results",
+        default="projects/deepar/scheduler-results",
         help="Path to the results directory.",
     )
     args = parser.parse_args()

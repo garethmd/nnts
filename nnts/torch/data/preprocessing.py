@@ -23,8 +23,13 @@ def masked_mean_abs_scaling(
         )
     seq_sum = (seq * mask).abs().sum(dim, keepdim=True)
     item_count = mask.sum(dim, keepdim=True).clamp(min=1)
+
     scale = seq_sum / item_count
-    scale = torch.clamp(scale, min=eps)
+
+    if scale.max() < 1:
+        scale = torch.clamp(scale, min=eps)
+    else:
+        scale = torch.clamp(scale, min=1)
     return scale
 
 

@@ -25,44 +25,38 @@ from gluonts.transform import (
     VstackFeatures,
 )
 
-dataset_name = "traffic"
-batch_size = 32
-num_batches_per_epoch = 50
-
 FREQ_MAP = {
-    "tourism_monthly": "1M",
-    "electricity_hourly": "1H",
-    "traffic": "1H",
+    "tourism": "1M",
+    "electricity": "1H",
+    "traffic_hourly": "1H",
     "hospital": "1M",
 }
 
 CONTEXT_LENGTH_MAP = {
-    "tourism_monthly": 15,
-    "electricity_hourly": 30,
-    "traffic": 30,
+    "tourism": 15,
+    "electricity": 30,
+    "traffic_hourly": 30,
     "hospital": 15,
 }
 PREDICTION_LENGTH_MAP = {
-    "tourism_monthly": 24,
-    "electricity_hourly": 168,
-    "traffic": 168,
+    "tourism": 24,
+    "electricity": 168,
+    "traffic_hourly": 168,
     "hospital": 12,
 }
+FILE_NAME_MAP = {
+    "tourism": "tourism_monthly_dataset.tsf",
+    "electricity": "electricity_hourly_dataset.tsf",
+    "traffic_hourly": "traffic_hourly_dataset.tsf",
+    "hospital": "hospital_dataset.tsf",
+}
 
-prediction_length = PREDICTION_LENGTH_MAP[dataset_name]
-context_length = CONTEXT_LENGTH_MAP[dataset_name]
 
-
-CONTEXT_LENGTH = 30
-MAX_LAGS = 720
-
-
-def create_transformation(prediction_length: int = None) -> Transformation:
+def create_transformation(prediction_length: int, freq) -> Transformation:
     num_feat_static_cat = 0
     num_feat_static_real = 0
     num_feat_dynamic_real = 0
     imputation_method = DummyValueImputation(dummy_value=0.0)
-    freq = "1H"
     time_features = time_features_from_frequency_str(freq)
 
     remove_field_names = []
@@ -126,10 +120,13 @@ def create_transformation(prediction_length: int = None) -> Transformation:
 
 def create_training_data_loader(
     data: Dataset,
+    batch_size,
+    num_batches_per_epoch,
+    prediction_length,
+    context_length,
+    max_lags,
+    freq,
     shuffle_buffer_length: Optional[int] = None,
-    batch_size: int = 32,
-    num_batches_per_epoch: int = 50,
-    prediction_length=None,
     **kwargs,
 ) -> Iterable:
     PREDICTION_INPUT_NAMES = [
@@ -145,7 +142,9 @@ def create_training_data_loader(
         "future_observed_values",
     ]
 
-    transformation = create_transformation(prediction_length=prediction_length)
+    transformation = create_transformation(
+        prediction_length=prediction_length, freq=freq
+    )
     transformed_training_data = transformation.apply(data, is_train=True)
 
     data = Cyclic(transformed_training_data).stream()
@@ -159,7 +158,7 @@ def create_training_data_loader(
         start_field=FieldName.START,
         forecast_start_field=FieldName.FORECAST_START,
         instance_sampler=instance_sampler,
-        past_length=CONTEXT_LENGTH + MAX_LAGS,  # context length + max lags
+        past_length=context_length + max_lags,  # context length + max lags
         future_length=prediction_length,
         time_series_fields=[
             FieldName.FEAT_TIME,
@@ -229,18 +228,29 @@ def gluonts_to_nnts(batch):
     return {"X": X, "pad_mask": pad_mask}
 
 
-def get_train_dl():
+def get_train_dl(dataset_name, max_lags=0):
+    batch_size = 32
+    num_batches_per_epoch = 50
+    prediction_length = PREDICTION_LENGTH_MAP[dataset_name]
+    context_length = CONTEXT_LENGTH_MAP[dataset_name]
+
     train_ds, test_ds = monash.get_deep_nn_forecasts(
         dataset_name,
-        CONTEXT_LENGTH_MAP[dataset_name],
-        "traffic_hourly_dataset.tsf",
+        context_length,
+        FILE_NAME_MAP[dataset_name],
         "feed_forward",
-        PREDICTION_LENGTH_MAP[dataset_name],
+        prediction_length,
         True,
     )
 
     data_loader = create_training_data_loader(
-        train_ds, prediction_length=prediction_length
+        train_ds,
+        batch_size,
+        num_batches_per_epoch,
+        prediction_length=prediction_length,
+        context_length=context_length,
+        max_lags=max_lags,
+        freq=FREQ_MAP[dataset_name],
     )
 
     trn_dl = DecoratedDataLoader(

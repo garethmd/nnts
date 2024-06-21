@@ -7,6 +7,7 @@ import pandas as pd
 
 import nnts
 import nnts.experiments
+import nnts.torch.data.preprocessing
 
 
 def create_time_features(df_orig: pd.DataFrame):
@@ -22,6 +23,9 @@ def create_time_features(df_orig: pd.DataFrame):
     # Also note that this doesn't align to the most recent time point, but to the first time point which
     # intuitively doesn't make sense.
     df_orig["month"] = (df_orig["ds"] + pd.DateOffset(months=1)).dt.month
+    max_min_scaler = nnts.torch.data.preprocessing.MaxMinScaler()
+    max_min_scaler.fit(df_orig, ["month"])
+    df_orig = max_min_scaler.transform(df_orig, ["month"])
 
     df_orig["unix_timestamp"] = np.log10(
         2.0 + df_orig.groupby("unique_id").cumcount() + 1
