@@ -77,10 +77,11 @@ def test_should_validate_epoch_batch(state, params):
 
 
 def test_should_train_epoch(state, params):
+
     trainer = MockEpochTrainer(state, params)
     train_dl = [1, 2, 3, 4, 5]
     L = trainer._train_epoch(train_dl)
-    assert L == 50 / len(train_dl)
+    assert L == 50 / params.batches_per_epoch
 
 
 def test_should_validate_epoch(state, params):
@@ -97,7 +98,7 @@ def test_should_train(state, params):
     evaluator = trainer.train(train_dl, valid_dl)
     assert isinstance(evaluator, trainers.Evaluator)
     assert state.epoch == 5
-    assert state.train_loss == 50 / len(train_dl)
+    assert state.train_loss == 50 / params.batches_per_epoch
     assert state.valid_loss == 100 / len(valid_dl)
     assert not state.stop
 

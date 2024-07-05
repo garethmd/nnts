@@ -87,7 +87,7 @@ class EpochEventMixin(nnts.events.Listener):
     def configure(self, evts: nnts.events.EventManager) -> None:
         evts.add_listener(nnts.models.trainers.EpochTrainComplete, self)
         evts.add_listener(nnts.models.trainers.EpochValidateComplete, self)
-        # evts.add_listener(nnts.models.trainers.EpochBestModel, self)
+        evts.add_listener(nnts.models.trainers.EpochBestModel, self)
 
 
 class Run(ABC):

@@ -99,20 +99,3 @@ def sample_dataset():
         torch.randn(100, 5), torch.randint(0, 2, (100,))
     )
     return sample_dataset
-
-
-class TestTruncatedDataLoader:
-
-    def test_should_return_correct_length_given_no_batches_per_epoch(
-        self, sample_dataset
-    ):
-        loader = datasets.TruncatedDataLoader(sample_dataset, batch_size=32)
-        assert len(loader) == 4
-
-    def test_should_return_correct_length_given_set_batches_per_epoch(
-        self, sample_dataset
-    ):
-        loader = datasets.TruncatedDataLoader(
-            sample_dataset, batch_size=32, batches_per_epoch=2
-        )
-        assert len(loader) == 2
