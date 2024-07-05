@@ -14,6 +14,7 @@ def right_pad_sequence(
 ):
     """Pads a list of 2D tensors to the right with a given padding value."""
     max_lengths = max([t.shape[0] for t in seq])
+    max_lengths = max(max_lengths, min_length)
     padded_tensor = torch.zeros(len(seq), max_lengths, seq[0].shape[1]) + padding_value
     padded_mask = torch.zeros(len(seq), max_lengths).bool()
     padded_mask[:, :min_length] = True

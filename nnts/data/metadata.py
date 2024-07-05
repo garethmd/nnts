@@ -1,7 +1,6 @@
 import json
-import os
 
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel
 
 
 class Metadata(BaseModel):
