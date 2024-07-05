@@ -42,6 +42,8 @@ def read_tsf(path: str, url: str = None) -> pd.DataFrame:
     ) = tsf.read(path, url)
     df = pd.DataFrame(all_data)
     freq = FREQUENCY_MAP[frequency]
+    if "start_timestamp" not in df.columns:
+        df["start_timestamp"] = pd.Timestamp("1970-01-01")
     df = pd.concat([unpack(df.iloc[x], freq=freq) for x in range(len(df))])
     return df, freq, forecast_horizon, contain_missing_values, contain_equal_length
 
