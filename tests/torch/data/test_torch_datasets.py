@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 import torch
 
-import nnts.torch.data.datasets as datasets
+import nnts.torch.datasets as datasets
 
 
 def test_right_pad_sequence():

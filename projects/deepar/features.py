@@ -2,12 +2,13 @@ from dataclasses import dataclass, field
 from typing import List
 
 import gluonts
+import gluonts.time_feature
 import numpy as np
 import pandas as pd
 
 import nnts
 import nnts.experiments
-import nnts.torch.data.preprocessing
+import nnts.torch.preprocessing
 
 
 def create_time_features(df_orig: pd.DataFrame):
@@ -23,7 +24,7 @@ def create_time_features(df_orig: pd.DataFrame):
     # Also note that this doesn't align to the most recent time point, but to the first time point which
     # intuitively doesn't make sense.
     df_orig["month"] = (df_orig["ds"] + pd.DateOffset(months=1)).dt.month
-    max_min_scaler = nnts.torch.data.preprocessing.MaxMinScaler()
+    max_min_scaler = nnts.torch.preprocessing.MaxMinScaler()
     max_min_scaler.fit(df_orig, ["month"])
     df_orig = max_min_scaler.transform(df_orig, ["month"])
 

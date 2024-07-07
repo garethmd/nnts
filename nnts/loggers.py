@@ -12,7 +12,7 @@ import numpy as np
 import seaborn as sns
 
 import nnts.events
-import nnts.models.trainers
+import nnts.trainers
 import wandb
 
 
@@ -60,8 +60,8 @@ class EpochEventMixin(nnts.events.Listener):
     def notify(self, event: Dict[str, Any]) -> None:
         self.log(event)
 
-    @notify.register(nnts.models.trainers.EpochTrainComplete)
-    def _(self, event: nnts.models.trainers.EpochTrainComplete) -> None:
+    @notify.register(nnts.trainers.EpochTrainComplete)
+    def _(self, event: nnts.trainers.EpochTrainComplete) -> None:
         self.log(
             {
                 "epoch": event.state.epoch,
@@ -69,8 +69,8 @@ class EpochEventMixin(nnts.events.Listener):
             }
         )
 
-    @notify.register(nnts.models.trainers.EpochValidateComplete)
-    def _(self, event: nnts.models.trainers.EpochValidateComplete) -> None:
+    @notify.register(nnts.trainers.EpochValidateComplete)
+    def _(self, event: nnts.trainers.EpochValidateComplete) -> None:
         self.log(
             {
                 "valid_loss": event.state.valid_loss.detach().item(),
@@ -80,14 +80,14 @@ class EpochEventMixin(nnts.events.Listener):
             f"Epoch {event.state.epoch} train loss: {event.state.train_loss.detach().item()}, valid loss: {event.state.valid_loss.detach().item()}"
         )
 
-    @notify.register(nnts.models.trainers.EpochBestModel)
-    def _(self, event: nnts.models.trainers.EpochBestModel) -> None:
+    @notify.register(nnts.trainers.EpochBestModel)
+    def _(self, event: nnts.trainers.EpochBestModel) -> None:
         self.log_model(event.path)
 
     def configure(self, evts: nnts.events.EventManager) -> None:
-        evts.add_listener(nnts.models.trainers.EpochTrainComplete, self)
-        evts.add_listener(nnts.models.trainers.EpochValidateComplete, self)
-        evts.add_listener(nnts.models.trainers.EpochBestModel, self)
+        evts.add_listener(nnts.trainers.EpochTrainComplete, self)
+        evts.add_listener(nnts.trainers.EpochValidateComplete, self)
+        evts.add_listener(nnts.trainers.EpochBestModel, self)
 
 
 class Run(ABC):

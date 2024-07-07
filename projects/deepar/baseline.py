@@ -17,16 +17,14 @@ from torch.utils.data import Sampler
 
 import nnts
 import nnts.data
-import nnts.data.datasets
 import nnts.experiments
+import nnts.hyperparams
 import nnts.loggers
 import nnts.metrics
-import nnts.models
 import nnts.pandas
-import nnts.torch.data
-import nnts.torch.data.datasets
-import nnts.torch.data.preprocessing
+import nnts.torch.datasets
 import nnts.torch.models
+import nnts.torch.preprocessing
 import nnts.torch.utils
 
 
@@ -282,7 +280,7 @@ def main(
 
     # Load data
     df_orig, *_ = nnts.pandas.read_tsf(datafile_path)
-    params = nnts.models.Hyperparams()
+    params = nnts.hyperparams.Hyperparams()
 
     # Create output directory if it doesn't exist
     nnts.loggers.makedirs_if_not_exists(PATH)
@@ -290,8 +288,8 @@ def main(
     # Set parameters
     params.batch_size = 32
     params.batches_per_epoch = 50
-    params.scheduler = nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
-    params.training_method = nnts.models.hyperparams.TrainingMethod.TEACHER_FORCING
+    params.scheduler = nnts.hyperparams.Hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+    params.training_method = nnts.hyperparams.Hyperparams.TrainingMethod.TEACHER_FORCING
     params.optimizer == torch.optim.Adam
 
     # Calculate next month and unix timestamp
@@ -304,7 +302,7 @@ def main(
     scenario_list = create_lag_scenarios(metadata, lag_seq)
 
     for scenario in scenario_list:
-        nnts.torch.data.datasets.seed_everything(scenario.seed)
+        nnts.torch.datasets.seed_everything(scenario.seed)
         df = df_orig.copy()
         context_length = metadata.context_length + max(scenario.lag_seq)
         split_data = nnts.pandas.split_test_train_last_horizon(
@@ -343,7 +341,7 @@ def main(
                 context_length=metadata.context_length,
             )
             trner = trainers.TorchEpochTrainer(
-                nnts.models.TrainerState(),
+                nnts.trainers.TrainerState(),
                 net,
                 params,
                 metadata,
@@ -362,7 +360,7 @@ def main(
             )
             print(nnts.torch.utils.count_of_params_in(net))
             trner = trainers.TorchEpochTrainer(
-                nnts.models.TrainerState(),
+                nnts.trainers.TrainerState(),
                 net,
                 params,
                 metadata,

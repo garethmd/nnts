@@ -14,21 +14,21 @@ import nnts.metrics
 import nnts.models
 import nnts.pandas
 import nnts.torch.data
-import nnts.torch.data.datasets
+import nnts.torch.datasets
 import nnts.torch.models
-import nnts.torch.models.trainers as trainers
+import nnts.torch.trainers as trainers
 
 
 def run_scenario(
     scenario: nnts.experiments.CovariateScenario,
     df_orig: pd.DataFrame,
     metadata: nnts.data.metadata.Metadata,
-    params: nnts.models.Hyperparams,
+    params: nnts.hyperparams.Hyperparams,
     splitter: nnts.data.Splitter,
     model_name: str,
     path: str,
 ):
-    nnts.torch.data.datasets.seed_everything(scenario.seed)
+    nnts.torch.datasets.seed_everything(scenario.seed)
     df, scenario = covs.prepare(df_orig.copy(), scenario.copy())
     split_data = splitter.split(df, metadata)
     trn_dl, val_dl, test_dl = nnts.data.create_trn_val_test_dataloaders(
@@ -51,7 +51,7 @@ def run_scenario(
 
     net = covs.model_factory(model_name, params, scenario, metadata)
     trner = trainers.TorchEpochTrainer(
-        nnts.models.TrainerState(),
+        nnts.trainers.TrainerState(),
         net,
         params,
         metadata,
@@ -91,7 +91,7 @@ def run_experiment(
                 os.path.join(data_path, covs.file_map[dataset_name])
             )
 
-            params = nnts.models.Hyperparams()
+            params = nnts.hyperparams.Hyperparams()
             splitter = nnts.pandas.LastHorizonSplitter()
             path = os.path.join(results_path, model_name, metadata.dataset)
             nnts.loggers.makedirs_if_not_exists(path)

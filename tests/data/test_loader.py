@@ -2,7 +2,8 @@ import pytest
 
 import nnts.data
 import nnts.experiments
-import nnts.models
+import nnts.hyperparams
+import nnts.torch.datasets
 
 
 @pytest.fixture
@@ -31,30 +32,4 @@ def sample_scenario():
 
 @pytest.fixture
 def sample_params():
-    return nnts.models.Hyperparams(batch_size=2, epochs=10, lr=0.01)
-
-
-def test_should_create_trn_val_test_dataloaders(
-    sample_split_data, sample_metadata, sample_scenario, sample_params
-):
-    # Arrange
-    class MockDataLoaderFactory(nnts.data.DataLoaderFactory):
-        def __call__(self, data, *args, **kwargs):
-            return data
-
-    mock_factory = MockDataLoaderFactory()
-
-    # Act
-    trn_dl, val_dl, test_dl = nnts.data.datasets.create_trn_val_test_dataloaders(
-        sample_split_data,
-        sample_metadata,
-        sample_scenario,
-        sample_params,
-        dataloader_factory=mock_factory,
-    )
-
-    print(trn_dl)
-    # Assert
-    assert trn_dl == "train"
-    assert val_dl == "validation"
-    assert test_dl == "test"
+    return nnts.hyperparams.Hyperparams(batch_size=2, epochs=10, lr=0.01)

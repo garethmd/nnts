@@ -3,7 +3,7 @@ from typing import Dict, List
 import torch
 import torch.nn as nn
 
-import nnts.models
+import nnts.hyperparams
 from nnts.torch import models
 
 FEAT_SCALE: str = "feat_scale"
@@ -63,7 +63,7 @@ class DeepARPoint(nn.Module):
     def __init__(
         self,
         Distribution: nn.Module,
-        params: nnts.models.Hyperparams,
+        params: nnts.hyperparams.Hyperparams,
         scaling_fn: callable,
         output_dim: int,
         lag_seq: List[int],
@@ -214,7 +214,7 @@ class DistrDeepAR(nn.Module):
     def __init__(
         self,
         Distribution: nn.Module,
-        params: nnts.models.Hyperparams,
+        params: nnts.hyperparams.Hyperparams,
         scaling_fn: callable,
         output_dim: int,
         lag_seq: List[int],

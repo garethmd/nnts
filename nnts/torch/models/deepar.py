@@ -7,12 +7,16 @@ import torch.nn.functional as F
 from torch.distributions import AffineTransform, Distribution, TransformedDistribution
 
 import nnts.data
-import nnts.models
-import nnts.torch.data.preprocessing
+import nnts.torch.preprocessing
 
 from .. import models
 
 FEAT_SCALE: str = "feat_scale"
+
+
+def distr_nll(distr: td.Distribution, target: torch.Tensor) -> torch.Tensor:
+    nll = -distr.log_prob(target)
+    return nll.mean()
 
 
 class AffineTransformed(TransformedDistribution):
@@ -153,10 +157,10 @@ class DeepARPoint(nn.Module, DeepARMixin):
     def __init__(
         self,
         Distribution: nn.Module,
-        params: nnts.models.Hyperparams,
+        params: nnts.hyperparams.Hyperparams,
         scaling_fn: callable,
         output_dim: int,
-        lag_processor: nnts.torch.data.preprocessing.LagProcessor,
+        lag_processor: nnts.torch.preprocessing.LagProcessor,
         scaled_features: List[str],
         context_length: int = 15,
         cat_idx: int = None,
@@ -259,10 +263,10 @@ class DistrDeepAR(nn.Module, DeepARMixin):
     def __init__(
         self,
         Distribution: nn.Module,
-        params: nnts.models.Hyperparams,
+        params: nnts.hyperparams.Hyperparams,
         scaling_fn: callable,
         output_dim: int,
-        lag_processor: nnts.torch.data.preprocessing.LagProcessor,
+        lag_processor: nnts.torch.preprocessing.LagProcessor,
         scaled_features: List[str],
         context_length: int = 15,
         cat_idx: int = None,

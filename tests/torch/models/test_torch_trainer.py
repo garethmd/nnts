@@ -3,8 +3,9 @@ import types
 import pytest
 import torch
 
-import nnts.models.trainers
-import nnts.torch.models.trainers
+import nnts.torch.models
+import nnts.torch.trainers
+import nnts.trainers
 
 
 class FakeNet:
@@ -30,8 +31,8 @@ def fake_net():
 
 def test_early_stopper_should_stop_when_loss_is_nan():
     # Arrange
-    stopper = nnts.torch.models.trainers.EarlyStopper(patience=1)
-    state = nnts.models.trainers.TrainerState()
+    stopper = nnts.torch.trainers.EarlyStopper(patience=1)
+    state = nnts.trainers.TrainerState()
     state.valid_loss = float("nan")
 
     # Act
@@ -43,8 +44,8 @@ def test_early_stopper_should_stop_when_loss_is_nan():
 
 def test_should_early_stop_after_patience_expired():
     # Arrange
-    stopper = nnts.torch.models.trainers.EarlyStopper(patience=5)
-    state = nnts.models.trainers.TrainerState()
+    stopper = nnts.torch.trainers.EarlyStopper(patience=5)
+    state = nnts.trainers.TrainerState()
     state.valid_loss = 1.0
 
     for i in range(5):
@@ -84,7 +85,7 @@ def test_should_validate_correctly(fake_net):
     batch = {"X": X, "pad_mask": pad_mask}
 
     # Act
-    y_hat, y = nnts.torch.models.trainers.validate(
+    y_hat, y = nnts.torch.trainers.validate(
         fake_net, batch, prediction_length, context_length
     )
 
@@ -112,7 +113,7 @@ def test_should_eval_correctly(fake_net):
         yield batch
 
     # Act
-    y, y_hat = nnts.torch.models.trainers.eval(
+    y, y_hat = nnts.torch.trainers.eval(
         fake_net, fake_dl(), prediction_length, context_length
     )
 

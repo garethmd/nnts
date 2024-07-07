@@ -7,13 +7,12 @@ import torch.optim as optim
 
 import nnts.data
 import nnts.loggers
-import nnts.models
 import nnts.torch
 import nnts.torch.models
-import nnts.torch.models.trainers
+import nnts.torch.trainers
 
 
-class TorchEpochTrainer(nnts.models.EpochTrainer):
+class TorchEpochTrainer(nnts.trainers.EpochTrainer):
     """A GluonTS like trainer that mimics the default behaviour of a GluonTS estimator.
     In particular it uses:
         No validation set
@@ -24,9 +23,9 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
 
     def __init__(
         self,
-        state: nnts.models.TrainerState,
+        state: nnts.trainers.TrainerState,
         net: torch.nn.Module,
-        params: nnts.models.Hyperparams,
+        params: nnts.hyperparams.Hyperparams,
         metadata: nnts.data.Metadata,
         path: str,
         loss_fn=F.l1_loss,
@@ -47,12 +46,12 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         )
         if (
             self.params.scheduler
-            == nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+            == nnts.hyperparams.Hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
         ):
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 self.optimizer, mode="min", factor=0.5, patience=10
             )
-        elif self.params.scheduler == nnts.models.hyperparams.Scheduler.ONE_CYCLE:
+        elif self.params.scheduler == nnts.hyperparams.Hyperparams.Scheduler.ONE_CYCLE:
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 self.optimizer,
                 max_lr=self.params.lr * 3,
@@ -72,7 +71,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
 
         if (
             self.params.scheduler
-            == nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+            == nnts.hyperparams.Hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
         ):
             self.scheduler.step(self.state.train_loss)
 
@@ -92,7 +91,7 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
 
         if (
             self.params.training_method
-            == nnts.models.hyperparams.TrainingMethod.FREE_RUNNING
+            == nnts.hyperparams.Hyperparams.TrainingMethod.FREE_RUNNING
         ):
             y_hat, y = self.net.free_running(
                 batch,
@@ -111,13 +110,13 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
         torch.nn.utils.clip_grad_value_(self.net.parameters(), 10.0)
         self.optimizer.step()
 
-        if self.params.scheduler == nnts.models.hyperparams.Scheduler.ONE_CYCLE:
+        if self.params.scheduler == nnts.hyperparams.Hyperparams.Scheduler.ONE_CYCLE:
             self.scheduler.step()  # This is required for OneCycleLR
         return L
 
     def _validate_batch(self, i, batch):
         with torch.no_grad():
-            y_hat, y = nnts.torch.models.trainers.validate(
+            y_hat, y = nnts.torch.trainers.validate(
                 self.net,
                 batch,
                 self.metadata.prediction_length,
@@ -126,8 +125,8 @@ class TorchEpochTrainer(nnts.models.EpochTrainer):
             L = self.loss_fn(y_hat, y)
         return L
 
-    def create_evaluator(self) -> nnts.models.Evaluator:
+    def create_evaluator(self) -> nnts.trainers.Evaluator:
         state_dict = torch.load(self.path)
         self.net.load_state_dict(state_dict)
         print(f"Best model loaded from {self.path}")
-        return nnts.torch.models.trainers.TorchEvaluator(self.net)
+        return nnts.torch.trainers.TorchEvaluator(self.net)

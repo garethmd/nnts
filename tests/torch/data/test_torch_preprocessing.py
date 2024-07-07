@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 import torch
 
-import nnts.torch.data.preprocessing as preprocessing
+import nnts.torch.preprocessing as preprocessing
 
 
 def test_masked_mean_abs_scaling_returns_mean_of_non_masked_values():

@@ -4,9 +4,9 @@ from typing import Tuple
 
 import pandas as pd
 
-import nnts.data.metadata
-import nnts.data.splitter as splitter
 import nnts.data.tsf as tsf
+import nnts.metadata
+import nnts.splitter as splitter
 
 FREQUENCY_MAP: dict = {
     "minutely": "1min",
@@ -50,10 +50,10 @@ def read_tsf(path: str, url: str = None) -> pd.DataFrame:
 
 def load(
     dataset_name: str, data_path: str, metadata_filename: str
-) -> Tuple[pd.DataFrame, nnts.data.metadata.Metadata]:
+) -> Tuple[pd.DataFrame, nnts.metadata.Metadata]:
 
     metadata_path = os.path.join(data_path, metadata_filename)
-    metadata = nnts.data.metadata.load(dataset_name, path=metadata_path)
+    metadata = nnts.metadata.load(dataset_name, path=metadata_path)
     datafile_path = os.path.join(data_path, metadata.filename)
     df, freq, forecast_horizon, *_ = read_tsf(datafile_path)
     metadata.freq = freq
@@ -80,50 +80,23 @@ def split_test_val_train_last_horizon(
     return splitter.SplitData(train=trn, validation=val, test=test)
 
 
-class LastHorizonSplitter(splitter.Splitter):
-
-    def split(
-        self, data: pd.DataFrame, metadata: nnts.data.metadata.Metadata, *args, **kwargs
-    ) -> splitter.SplitData:
-        """
-        Splits the data into train, validation, and test sets based on the provided metadata.
-
-        Args:
-            data (pd.DataFrame): The input DataFrame containing the data to be split.
-            metadata (metadata.Metadata): The metadata object containing information about the split.
-
-        Returns:
-            splitter.SplitData: An object containing the train, validation, and test sets.
-        """
-
-        trn_val = data.groupby("unique_id").head(-metadata.prediction_length)
-        trn = trn_val.groupby("unique_id").head(-metadata.prediction_length)
-        val = trn_val.groupby("unique_id").tail(
-            metadata.context_length + metadata.prediction_length
-        )
-        test = data.groupby("unique_id").tail(
-            metadata.context_length + metadata.prediction_length
-        )
-        return splitter.SplitData(train=trn, validation=val, test=test)
-
-
 def slice_rows(group: pd.DataFrame, start, end) -> pd.DataFrame:
     return group.iloc[start:end]
 
 
-class FixedSizeSplitter(splitter.Splitter):
+# class FixedSizeSplitter(splitter.Splitter):
 
-    def split(
-        self, data: pd.DataFrame, train_size: int, val_size: int, test_size: int
-    ) -> splitter.SplitData:
-        trn = data.groupby("unique_id").head(train_size)
-        val = (
-            data.groupby("unique_id")
-            .apply(slice_rows, train_size, train_size + val_size)
-            .reset_index(drop=True)
-        )
-        test = data.groupby("unique_id").tail(test_size)
-        return splitter.SplitData(train=trn, validation=val, test=test)
+#     def split(
+#         self, data: pd.DataFrame, train_size: int, val_size: int, test_size: int
+#     ) -> splitter.SplitData:
+#         trn = data.groupby("unique_id").head(train_size)
+#         val = (
+#             data.groupby("unique_id")
+#             .apply(slice_rows, train_size, train_size + val_size)
+#             .reset_index(drop=True)
+#         )
+#         test = data.groupby("unique_id").tail(test_size)
+#         return splitter.SplitData(train=trn, validation=val, test=test)
 
 
 class CSVFileAggregator:

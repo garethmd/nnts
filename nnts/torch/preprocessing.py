@@ -1,12 +1,11 @@
-from typing import List, Type
+from typing import List
 
 import pandas as pd
 import torch
 
 import nnts.data
-import nnts.data.preprocessing
 import nnts.experiments
-import nnts.models
+import nnts.preprocessing
 
 
 def masked_mean_abs_scaling(
@@ -33,7 +32,7 @@ def masked_mean_abs_scaling(
     return scale
 
 
-class StandardScaler(nnts.data.preprocessing.Transformation):
+class StandardScaler(nnts.preprocessing.Transformation):
 
     def __init__(self, mean=None, std=None, cols=None):
         self.mean = mean
@@ -73,7 +72,7 @@ class StandardScaler(nnts.data.preprocessing.Transformation):
         return data
 
 
-class MaxMinScaler(nnts.data.preprocessing.Transformation):
+class MaxMinScaler(nnts.preprocessing.Transformation):
     def __init__(self, max=None, min=None, cols=None):
         self.max = max
         self.min = min

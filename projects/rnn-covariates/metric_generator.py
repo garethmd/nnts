@@ -5,13 +5,13 @@ import metrics_old
 import pandas as pd
 import torch
 
-import nnts.data.metadata
 import nnts.experiments
-import nnts.models
+import nnts.hyperparams
+import nnts.metadata
 import nnts.pandas
-import nnts.torch.data.datasets
+import nnts.torch.datasets
 import nnts.torch.models
-import nnts.torch.models.trainers
+import nnts.torch.trainers
 
 
 def save_results(y_hat, y, path, name):
@@ -36,13 +36,13 @@ def calculate_forecast_horizon_metrics(y_hat, y, metadata, metric="mae"):
 def generate(
     scenario_list: List[nnts.experiments.CovariateScenario],
     df_orig: pd.DataFrame,
-    metadata: nnts.data.metadata.Metadata,
-    params: nnts.models.Hyperparams,
+    metadata: nnts.metadata.Metadata,
+    params: nnts.hyperparams.Hyperparams,
     model_name: str,
     path: str,
 ):
     for scenario in scenario_list:
-        nnts.torch.data.datasets.seed_everything(scenario.seed)
+        nnts.torch.datasets.seed_everything(scenario.seed)
         df, scenario = covs.prepare(df_orig.copy(), scenario.copy())
         splitter = nnts.pandas.LastHorizonSplitter()
         split_data = splitter.split(df, metadata)
@@ -56,7 +56,7 @@ def generate(
         net = covs.model_factory(model_name, params, scenario, metadata)
         best_state_dict = torch.load(f"{path}/{scenario.name}.pt")
         net.load_state_dict(best_state_dict)
-        evaluator = nnts.torch.models.trainers.TorchEvaluator(net)
+        evaluator = nnts.torch.trainers.TorchEvaluator(net)
         y_hat, y = evaluator.evaluate(
             test_dl, scenario.prediction_length, metadata.context_length
         )

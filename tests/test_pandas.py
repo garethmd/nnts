@@ -1,3 +1,5 @@
+from typing import Callable
+
 import pandas as pd
 import pytest
 
@@ -41,7 +43,7 @@ def sample_data():
 
 
 @pytest.fixture
-def sample_metadata():
+def sample_metadata() -> nnts.data.Metadata:
     metadata = nnts.data.Metadata(
         filename="fake_path",
         dataset="fake_dataset",
@@ -53,16 +55,9 @@ def sample_metadata():
     return metadata
 
 
-def test_should_split_data(sample_data, sample_metadata):
-    splitter = nnts.pandas.LastHorizonSplitter()
-    split_data = splitter.split(sample_data, sample_metadata)
-    assert isinstance(split_data, nnts.data.SplitData)
-
-
 def test_should_should_contain_correct_counts(sample_data, sample_metadata):
-    splitter = nnts.pandas.LastHorizonSplitter()
-    split_data = splitter.split(
-        sample_data, sample_metadata
+    split_data = nnts.pandas.split_test_val_train_last_horizon(
+        sample_data, sample_metadata.context_length, sample_metadata.prediction_length
     )  # 50 records for each unique_id
 
     assert split_data.train.groupby("unique_id").get_group("T1").shape == (
@@ -76,31 +71,11 @@ def test_should_should_contain_correct_counts(sample_data, sample_metadata):
     assert split_data.test.groupby("unique_id").get_group("T1").shape == (15 + 12, 3)
 
 
-def test_train_should_not_overlap_dates(sample_data, sample_metadata):
-    splitter = nnts.pandas.LastHorizonSplitter()
-    split_data = splitter.split(
-        sample_data, sample_metadata
-    )  # 50 records for each unique_id
-
-    assert (
-        split_data.train.groupby("unique_id").get_group("T1").max().ds
-        < split_data.validation.groupby("unique_id")
-        .get_group("T1")[-sample_metadata.prediction_length :]
-        .ds.min()
-    )
-
-    assert (
-        split_data.train.groupby("unique_id").get_group("T1").max().ds
-        == split_data.validation.groupby("unique_id")
-        .get_group("T1")[-sample_metadata.prediction_length - 1 :]
-        .ds.min()
-    )
-
-
-def test_validation_should_not_overlap_dates(sample_data, sample_metadata):
-    splitter = nnts.pandas.LastHorizonSplitter()
-    split_data = splitter.split(
-        sample_data, sample_metadata
+def test_validation_should_not_overlap_dates(
+    sample_data: pd.DataFrame, sample_metadata: nnts.data.Metadata
+):
+    split_data = nnts.pandas.split_test_val_train_last_horizon(
+        sample_data, sample_metadata.context_length, sample_metadata.prediction_length
     )  # 50 records for each unique_id
 
     assert (
@@ -116,3 +91,42 @@ def test_validation_should_not_overlap_dates(sample_data, sample_metadata):
         .get_group("T1")[-sample_metadata.prediction_length - 1 :]
         .ds.min()
     )
+
+
+@pytest.mark.parametrize(
+    "splitter_fn",
+    [
+        nnts.pandas.split_test_train_last_horizon,
+        nnts.pandas.split_test_val_train_last_horizon,
+    ],
+)
+def test_train_should_not_overlap_dates(
+    splitter_fn: Callable,
+    sample_data: pd.DataFrame,
+    sample_metadata: nnts.data.Metadata,
+):
+    split_data = splitter_fn(
+        sample_data, sample_metadata.context_length, sample_metadata.prediction_length
+    )  # 50 records for each unique_id
+
+    assert (
+        split_data.train.groupby("unique_id").get_group("T1").max().ds
+        < split_data.test.groupby("unique_id")
+        .get_group("T1")[-sample_metadata.prediction_length :]
+        .ds.min()
+    )
+
+
+def test_should_should_contain_correct_counts_given_train_test_split(
+    sample_data, sample_metadata
+):
+    split_data = nnts.pandas.split_test_train_last_horizon(
+        sample_data, sample_metadata.context_length, sample_metadata.prediction_length
+    )  # 50 records for each unique_id
+
+    assert split_data.train.groupby("unique_id").get_group("T1").shape == (
+        50 - 12,
+        3,
+    )
+
+    assert split_data.test.groupby("unique_id").get_group("T1").shape == (15 + 12, 3)

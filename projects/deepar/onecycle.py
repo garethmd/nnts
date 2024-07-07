@@ -1,10 +1,8 @@
 import argparse
 import os
-from typing import Iterable, List
+from typing import List
 
 import features
-import torch
-import torch.distributions as td
 import torch.nn.functional as F
 import trainers
 
@@ -12,27 +10,20 @@ import nnts
 import nnts.data
 import nnts.experiments
 import nnts.loggers
+import nnts.metadata
 import nnts.metrics
-import nnts.models
 import nnts.pandas
-import nnts.torch.data
-import nnts.torch.data.datasets
-import nnts.torch.data.preprocessing
+import nnts.torch
+import nnts.torch.datasets
+import nnts.torch.hyperparams
 import nnts.torch.models
+import nnts.torch.preprocessing
+import nnts.torch.trainers
 import nnts.torch.utils
+import nnts.trainers
 
 
-def calculate_seasonal_error(trn_dl: Iterable, metadata: nnts.data.metadata.Metadata):
-    se_list = []
-    for batch in trn_dl:
-        past_data = batch["target"]
-        se = nnts.metrics.gluon_metrics.calculate_seasonal_error(
-            past_data, metadata.freq, metadata.seasonality
-        )
-        se_list.append(se)
-    return torch.tensor(se_list).unsqueeze(1)
-
-
+# EXPERIMENT SETUP
 def generate_one_hot_matrix(n):
     # Total number of rows in the matrix
     num_rows = 2**n
@@ -109,11 +100,6 @@ def create_scheduler_scenarios(metadata, lag_seq, scheduler_name):
     return scenario_list
 
 
-def distr_nll(distr: td.Distribution, target: torch.Tensor) -> torch.Tensor:
-    nll = -distr.log_prob(target)
-    return nll.mean()
-
-
 def main(
     model_name: str,
     dataset_name: str,
@@ -122,7 +108,7 @@ def main(
     results_path: str,
 ):
     # Set up paths and load metadata
-    metadata = nnts.data.metadata.load(
+    metadata = nnts.metadata.load(
         dataset_name, path=os.path.join(data_path, f"{base_model_name}-monash.json")
     )
     PATH = os.path.join(results_path, model_name, metadata.dataset)
@@ -132,12 +118,7 @@ def main(
     df_orig, *_ = nnts.pandas.read_tsf(os.path.join(data_path, metadata.filename))
 
     # Set parameters
-    params = nnts.models.Hyperparams()
-    params.batch_size = 32
-    params.batches_per_epoch = 50
-    params.training_method = nnts.models.hyperparams.TrainingMethod.TEACHER_FORCING
-    params.scheduler = nnts.models.hyperparams.Scheduler.ONE_CYCLE
-    params.optimizer == torch.optim.AdamW
+    params = nnts.torch.hyperparams.GluonTsDefaultWithOneCycle()
 
     # Calculate next month and unix timestamp
     df_orig = features.create_dummy_unique_ids(df_orig)
@@ -145,23 +126,13 @@ def main(
     scenario_list = create_scheduler_scenarios(metadata, lag_seq, "ONE_CYCLE")
 
     for scenario in scenario_list:
-        nnts.torch.data.datasets.seed_everything(scenario.seed)
+        nnts.torch.datasets.seed_everything(scenario.seed)
         df = df_orig.copy()
-        lag_processor = nnts.torch.data.preprocessing.LagProcessor(scenario.lag_seq)
+        lag_processor = nnts.torch.preprocessing.LagProcessor(scenario.lag_seq)
 
         context_length = metadata.context_length + max(scenario.lag_seq)
-        split_data = nnts.pandas.split_test_train_last_horizon(
-            df, context_length, metadata.prediction_length
-        )
+        # end of experiment setup
 
-        trn_dl, test_dl = nnts.data.create_trn_test_dataloaders(
-            split_data,
-            metadata,
-            scenario,
-            params,
-            nnts.torch.data.datasets.TorchTimeseriesLagsDataLoaderFactory(),
-            Sampler=nnts.torch.data.datasets.TimeSeriesSampler,
-        )
         logger = nnts.loggers.WandbRun(
             project=f"{model_name}-{metadata.dataset}-scheduler",
             name=scenario.name,
@@ -172,9 +143,28 @@ def main(
             },
             path=PATH,
         )
+
+        dataset_options = {
+            "context_length": metadata.context_length,
+            "prediction_length": metadata.prediction_length,
+            "conts": scenario.conts,
+            "lag_seq": scenario.lag_seq,
+        }
+
+        trn_dl, test_dl = nnts.torch.utils.create_dataloaders(
+            df,
+            nnts.pandas.split_test_train_last_horizon,
+            context_length,
+            metadata.prediction_length,
+            Dataset=nnts.torch.datasets.TimeseriesLagsDataset,
+            dataset_options=dataset_options,
+            Sampler=nnts.torch.datasets.TimeSeriesSampler,
+        )
+
         trner = create_trainer(
             model_name, metadata, PATH, params, scenario, lag_processor
         )
+
         logger.configure(trner.events)
 
         evaluator = trner.train(trn_dl)
@@ -203,7 +193,7 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
         net = nnts.torch.models.DistrDeepAR(
             nnts.torch.models.deepar.StudentTHead,
             params,
-            nnts.torch.data.preprocessing.masked_mean_abs_scaling,
+            nnts.torch.preprocessing.masked_mean_abs_scaling,
             1,
             lag_processor=lag_processor,
             scaled_features=scenario.scaled_covariates,
@@ -211,19 +201,19 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             cat_idx=scenario.cat_idx,
             seq_cat_idx=scenario.month_idx,
         )
-        trner = trainers.TorchEpochTrainer(
-            nnts.models.TrainerState(),
+        trner = nnts.torch.trainers.TorchEpochTrainer(
+            nnts.trainers.TrainerState(),
             net,
             params,
             metadata,
             os.path.join(PATH, f"{scenario.name}.pt"),
-            loss_fn=distr_nll,
+            loss_fn=nnts.torch.models.deepar.distr_nll,
         )
     elif model_name == "better-deepar-point":
         net = nnts.torch.models.DeepARPoint(
             nnts.torch.models.LinearModel,
             params,
-            nnts.torch.data.preprocessing.masked_mean_abs_scaling,
+            nnts.torch.preprocessing.masked_mean_abs_scaling,
             1,
             lag_processor=lag_processor,
             scaled_features=scenario.scaled_covariates,
@@ -232,7 +222,7 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             seq_cat_idx=scenario.month_idx,
         )
         trner = trainers.TorchEpochTrainer(
-            nnts.models.TrainerState(),
+            nnts.trainers.TrainerState(),
             net,
             params,
             metadata,
@@ -269,7 +259,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset",
         type=str,
-        default="m4_yearly",
+        default="tourism",
         help="Name of the dataset.",
     )
     parser.add_argument(

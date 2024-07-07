@@ -3,11 +3,11 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
-import nnts.models
+import nnts.hyperparams
 
 
 class UnrolledLSTMDecoder(nn.Module):
-    def __init__(self, params: nnts.models.Hyperparams, output_dim: int):
+    def __init__(self, params: nnts.hyperparams.Hyperparams, output_dim: int):
         super(UnrolledLSTMDecoder, self).__init__()
         self.params = params
 
@@ -56,7 +56,7 @@ class UnrolledLSTM(nn.Module):
     def __init__(
         self,
         Distribution: nn.Module,
-        params: nnts.models.Hyperparams,
+        params: nnts.hyperparams.Hyperparams,
         scaling_fn: callable,
         output_dim: int,
     ):

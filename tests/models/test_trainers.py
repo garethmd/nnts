@@ -2,8 +2,8 @@ import types
 
 import pytest
 
-import nnts.models.hyperparams as hyperparams
-import nnts.models.trainers as trainers
+import nnts.hyperparams as hyperparams
+import nnts.trainers as trainers
 
 
 class MockEvaluator(trainers.Evaluator):

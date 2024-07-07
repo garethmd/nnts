@@ -12,18 +12,18 @@ import trainers
 import nnts
 import nnts.data
 import nnts.experiments
+import nnts.hyperparams
 import nnts.loggers
+import nnts.metadata
 import nnts.metrics
-import nnts.models
 import nnts.pandas
-import nnts.torch.data
-import nnts.torch.data.datasets
-import nnts.torch.data.preprocessing
+import nnts.torch.datasets
 import nnts.torch.models
+import nnts.torch.preprocessing
 import nnts.torch.utils
 
 
-def calculate_seasonal_error(trn_dl: Iterable, metadata: nnts.data.metadata.Metadata):
+def calculate_seasonal_error(trn_dl: Iterable, metadata: nnts.metadata.Metadata):
     se_list = []
     for batch in trn_dl:
         past_data = batch["target"]
@@ -146,7 +146,7 @@ def main(
     df_orig, *_ = nnts.pandas.read_tsf(os.path.join(data_path, metadata.filename))
 
     # Set parameters
-    params = nnts.models.Hyperparams()
+    params = nnts.hyperparams.Hyperparams()
     params.batch_size = 32
     params.batches_per_epoch = 100
 
@@ -162,13 +162,13 @@ def main(
     lag_seq = features.create_lag_seq(metadata.freq)
     scenario_list = create_lag_scenarios(metadata, lag_seq)
 
-    params.training_method = nnts.models.hyperparams.TrainingMethod.TEACHER_FORCING
-    params.scheduler = nnts.models.hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+    params.training_method = nnts.hyperparams.Hyperparams.TrainingMethod.TEACHER_FORCING
+    params.scheduler = nnts.hyperparams.Hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
 
     for scenario in scenario_list[:1]:
-        nnts.torch.data.datasets.seed_everything(scenario.seed)
+        nnts.torch.datasets.seed_everything(scenario.seed)
         df = df_orig.copy()
-        lag_processor = nnts.torch.data.preprocessing.LagProcessor(scenario.lag_seq)
+        lag_processor = nnts.torch.preprocessing.LagProcessor(scenario.lag_seq)
 
         context_length = metadata.context_length + max(scenario.lag_seq)
         split_data = nnts.pandas.split_test_train_last_horizon(
@@ -180,7 +180,7 @@ def main(
             scenario,
             params,
             nnts.torch.data.datasets.TorchTimeseriesLagsDataLoaderFactory(),
-            Sampler=nnts.torch.data.datasets.TimeSeriesSampler,
+            Sampler=nnts.torch.datasets.TimeSeriesSampler,
         )
         # trn_dl = gluonadapt.trn_dl
         # test_dl = gluonadapt.test_dl
@@ -228,7 +228,7 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
         net = nnts.torch.models.DistrDeepAR(
             nnts.torch.models.deepar.StudentTHead,
             params,
-            nnts.torch.data.preprocessing.masked_mean_abs_scaling,
+            nnts.torch.preprocessing.masked_mean_abs_scaling,
             1,
             lag_processor=lag_processor,
             scaled_features=scenario.scaled_covariates,
@@ -236,7 +236,7 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             cat_idx=scenario.cat_idx,
         )
         trner = trainers.TorchEpochTrainer(
-            nnts.models.TrainerState(),
+            nnts.trainers.TrainerState(),
             net,
             params,
             metadata,
@@ -247,7 +247,7 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
         net = nnts.torch.models.DeepARPoint(
             nnts.torch.models.LinearModel,
             params,
-            nnts.torch.data.preprocessing.masked_mean_abs_scaling,
+            nnts.torch.preprocessing.masked_mean_abs_scaling,
             1,
             lag_processor=lag_processor,
             scaled_features=scenario.scaled_covariates,
@@ -255,7 +255,7 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             cat_idx=scenario.cat_idx,
         )
         trner = trainers.TorchEpochTrainer(
-            nnts.models.TrainerState(),
+            nnts.trainers.TrainerState(),
             net,
             params,
             metadata,
