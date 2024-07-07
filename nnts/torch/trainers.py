@@ -163,8 +163,7 @@ class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
                 self.metadata.prediction_length,
                 self.metadata.context_length,
             )
-            # L = self.loss_fn(y_hat, y)
-            L = F.l1_loss(y_hat, y)
+            L = self.loss_fn(y_hat, y)
         return L
 
     def create_evaluator(self) -> nnts.trainers.Evaluator:

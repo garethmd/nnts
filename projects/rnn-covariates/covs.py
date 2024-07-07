@@ -111,7 +111,7 @@ def prepare_scenarios(
 ) -> List[nnts.experiments.CovariateScenario]:
     new_scenario_list = []
     for scenario in scenario_list:
-        nnts.torch.data.datasets.seed_everything(scenario.seed)
+        nnts.torch.datasets.seed_everything(scenario.seed)
         new_scenario_list.append(prepare(df_orig.copy(), scenario)[1])
     scenario_list = new_scenario_list
     return scenario_list

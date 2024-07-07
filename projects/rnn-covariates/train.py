@@ -30,7 +30,7 @@ def run_scenario(
 ):
     nnts.torch.datasets.seed_everything(scenario.seed)
     df, scenario = covs.prepare(df_orig.copy(), scenario.copy())
-    split_data = splitter.split(df, metadata)
+    split_data = splitter(df, metadata.context_length, metadata.prediction_length)
     trn_dl, val_dl, test_dl = nnts.data.create_trn_val_test_dataloaders(
         split_data,
         metadata,
@@ -84,7 +84,7 @@ def run_experiment(
 
     for dataset_name in dataset_names:
         for model_name in model_names:
-            metadata = nnts.data.metadata.load(
+            metadata = nnts.metadata.load(
                 dataset_name, path=os.path.join(data_path, f"{model_name}-monash.json")
             )
             df_orig, *_ = nnts.pandas.read_tsf(

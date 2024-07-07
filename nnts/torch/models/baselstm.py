@@ -120,7 +120,7 @@ class BaseLSTM(nn.Module):
             pad_mask = torch.cat((pad_mask, torch.ones_like(preds[:, :, 0])), dim=1)
         return torch.cat(pred_list, 1)
 
-    def teacher_forcing_output(self, data):
+    def teacher_forcing_output(self, data, *args, **kwargs):
         """
         data: dict with keys "X" and "pad_mask"
         """

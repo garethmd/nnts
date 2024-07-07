@@ -136,7 +136,7 @@ def main(
     results_path: str,
 ):
     # Set up paths and load metadata
-    metadata = nnts.data.metadata.load(
+    metadata = nnts.metadata.load(
         dataset_name, path=os.path.join(data_path, f"{base_model_name}-monash.json")
     )
     PATH = os.path.join(results_path, model_name, metadata.dataset)

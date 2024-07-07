@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Iterable
+from typing import Any, Iterable, Tuple
 
 import numpy as np
 from pydantic import BaseModel, PositiveInt
@@ -13,6 +13,20 @@ class Evaluator(ABC):
 
     @abstractmethod
     def evaluate(self) -> None:
+        pass
+
+
+class MetricReport:
+    pass
+
+
+class Forecaster(ABC):
+    @abstractmethod
+    def forecast(self, data, h: int) -> Tuple[Any, Any]:
+        pass
+
+    @abstractmethod
+    def evaluate(self, test_data, h: int, trn_data) -> MetricReport:
         pass
 
 
