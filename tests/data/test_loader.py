@@ -2,18 +2,18 @@ import pytest
 
 import nnts.data
 import nnts.experiments
-import nnts.hyperparams
 import nnts.torch.datasets
+from nnts import utils
 
 
 @pytest.fixture
 def sample_split_data():
-    return nnts.data.SplitData(train="train", validation="validation", test="test")
+    return utils.SplitData(train="train", validation="validation", test="test")
 
 
 @pytest.fixture
 def sample_metadata():
-    return nnts.data.Metadata(
+    return utils.Metadata(
         filename="fake_path",
         dataset="fake_dataset",
         context_length=15,
@@ -32,4 +32,4 @@ def sample_scenario():
 
 @pytest.fixture
 def sample_params():
-    return nnts.hyperparams.Hyperparams(batch_size=2, epochs=10, lr=0.01)
+    return utils.Hyperparams(batch_size=2, epochs=10, lr=0.01)

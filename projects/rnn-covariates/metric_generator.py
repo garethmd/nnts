@@ -6,12 +6,11 @@ import pandas as pd
 import torch
 
 import nnts.experiments
-import nnts.hyperparams
-import nnts.metadata
 import nnts.pandas
 import nnts.torch.datasets
 import nnts.torch.models
 import nnts.torch.trainers
+from nnts import utils
 
 
 def save_results(y_hat, y, path, name):
@@ -36,8 +35,8 @@ def calculate_forecast_horizon_metrics(y_hat, y, metadata, metric="mae"):
 def generate(
     scenario_list: List[nnts.experiments.CovariateScenario],
     df_orig: pd.DataFrame,
-    metadata: nnts.metadata.Metadata,
-    params: nnts.hyperparams.Hyperparams,
+    metadata: utils.Metadata,
+    params: utils.Hyperparams,
     model_name: str,
     path: str,
 ):

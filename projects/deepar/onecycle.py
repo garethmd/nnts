@@ -10,7 +10,6 @@ import nnts
 import nnts.data
 import nnts.experiments
 import nnts.loggers
-import nnts.metadata
 import nnts.metrics
 import nnts.pandas
 import nnts.torch
@@ -21,6 +20,7 @@ import nnts.torch.preprocessing
 import nnts.torch.trainers
 import nnts.torch.utils
 import nnts.trainers
+from nnts import utils
 
 
 # EXPERIMENT SETUP
@@ -108,7 +108,7 @@ def main(
     results_path: str,
 ):
     # Set up paths and load metadata
-    metadata = nnts.metadata.load(
+    metadata = utils.load(
         dataset_name, path=os.path.join(data_path, f"{base_model_name}-monash.json")
     )
     PATH = os.path.join(results_path, model_name, metadata.dataset)

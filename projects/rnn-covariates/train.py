@@ -17,14 +17,15 @@ import nnts.torch.data
 import nnts.torch.datasets
 import nnts.torch.models
 import nnts.torch.trainers as trainers
+from nnts import utils
 
 
 def run_scenario(
     scenario: nnts.experiments.CovariateScenario,
     df_orig: pd.DataFrame,
-    metadata: nnts.data.metadata.Metadata,
-    params: nnts.hyperparams.Hyperparams,
-    splitter: nnts.data.Splitter,
+    metadata: utils.Metadata,
+    params: utils.Hyperparams,
+    splitter: callable,
     model_name: str,
     path: str,
 ):
@@ -84,14 +85,14 @@ def run_experiment(
 
     for dataset_name in dataset_names:
         for model_name in model_names:
-            metadata = nnts.metadata.load(
+            metadata = utils.load(
                 dataset_name, path=os.path.join(data_path, f"{model_name}-monash.json")
             )
             df_orig, *_ = nnts.pandas.read_tsf(
                 os.path.join(data_path, covs.file_map[dataset_name])
             )
 
-            params = nnts.hyperparams.Hyperparams()
+            params = utils.Hyperparams()
             splitter = nnts.pandas.LastHorizonSplitter()
             path = os.path.join(results_path, model_name, metadata.dataset)
             nnts.loggers.makedirs_if_not_exists(path)

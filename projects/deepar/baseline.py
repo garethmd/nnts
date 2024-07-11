@@ -18,7 +18,6 @@ from torch.utils.data import Sampler
 import nnts
 import nnts.data
 import nnts.experiments
-import nnts.hyperparams
 import nnts.loggers
 import nnts.metrics
 import nnts.pandas
@@ -26,9 +25,10 @@ import nnts.torch.datasets
 import nnts.torch.models
 import nnts.torch.preprocessing
 import nnts.torch.utils
+from nnts import utils
 
 
-def calculate_seasonal_error(trn_dl: Iterable, metadata: nnts.data.metadata.Metadata):
+def calculate_seasonal_error(trn_dl: Iterable, metadata: utils.Metadata):
     se_list = []
     for batch in trn_dl:
         past_data = batch["target"]
@@ -101,7 +101,7 @@ def create_scenarios(metadata, lag_seq):
     return scenario_list
 
 
-def create_lag_scenarios(metadata: nnts.data.metadata.Metadata, lag_seq: List[int]):
+def create_lag_scenarios(metadata: utils.Metadata, lag_seq: List[int]):
     if metadata.freq == "1H":
         conts = [
             "hour",
@@ -274,13 +274,13 @@ def main(
     # Set up paths and load metadata
 
     metadata_path = os.path.join(data_path, f"{base_model_name}-monash.json")
-    metadata = nnts.metadata.load(dataset_name, path=metadata_path)
+    metadata = utils.load(dataset_name, path=metadata_path)
     datafile_path = os.path.join(data_path, metadata.filename)
     PATH = os.path.join(results_path, model_name, metadata.dataset)
 
     # Load data
     df_orig, *_ = nnts.pandas.read_tsf(datafile_path)
-    params = nnts.hyperparams.Hyperparams()
+    params = utils.Hyperparams()
 
     # Create output directory if it doesn't exist
     nnts.loggers.makedirs_if_not_exists(PATH)
@@ -288,8 +288,8 @@ def main(
     # Set parameters
     params.batch_size = 32
     params.batches_per_epoch = 50
-    params.scheduler = nnts.hyperparams.Hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
-    params.training_method = nnts.hyperparams.Hyperparams.TrainingMethod.TEACHER_FORCING
+    params.scheduler = utils.Scheduler.REDUCE_LR_ON_PLATEAU
+    params.training_method = utils.TrainingMethod.TEACHER_FORCING
     params.optimizer == torch.optim.Adam
 
     # Calculate next month and unix timestamp

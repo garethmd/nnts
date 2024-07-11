@@ -12,18 +12,17 @@ import trainers
 import nnts
 import nnts.data
 import nnts.experiments
-import nnts.hyperparams
 import nnts.loggers
-import nnts.metadata
 import nnts.metrics
 import nnts.pandas
 import nnts.torch.datasets
 import nnts.torch.models
 import nnts.torch.preprocessing
 import nnts.torch.utils
+from nnts import utils
 
 
-def calculate_seasonal_error(trn_dl: Iterable, metadata: nnts.metadata.Metadata):
+def calculate_seasonal_error(trn_dl: Iterable, metadata: utils.Metadata):
     se_list = []
     for batch in trn_dl:
         past_data = batch["target"]
@@ -136,7 +135,7 @@ def main(
     results_path: str,
 ):
     # Set up paths and load metadata
-    metadata = nnts.metadata.load(
+    metadata = utils.load(
         dataset_name, path=os.path.join(data_path, f"{base_model_name}-monash.json")
     )
     PATH = os.path.join(results_path, model_name, metadata.dataset)
@@ -146,7 +145,7 @@ def main(
     df_orig, *_ = nnts.pandas.read_tsf(os.path.join(data_path, metadata.filename))
 
     # Set parameters
-    params = nnts.hyperparams.Hyperparams()
+    params = utils.Hyperparams()
     params.batch_size = 32
     params.batches_per_epoch = 100
 
@@ -162,8 +161,8 @@ def main(
     lag_seq = features.create_lag_seq(metadata.freq)
     scenario_list = create_lag_scenarios(metadata, lag_seq)
 
-    params.training_method = nnts.hyperparams.Hyperparams.TrainingMethod.TEACHER_FORCING
-    params.scheduler = nnts.hyperparams.Hyperparams.Scheduler.REDUCE_LR_ON_PLATEAU
+    params.training_method = utils.TrainingMethod.TEACHER_FORCING
+    params.scheduler = utils.Scheduler.REDUCE_LR_ON_PLATEAU
 
     for scenario in scenario_list[:1]:
         nnts.torch.datasets.seed_everything(scenario.seed)

@@ -1,14 +1,12 @@
 import torch
 import torch.nn as nn
 
-import nnts.hyperparams
+from nnts import utils
 
 
 class SegLSTMDecoder(nn.Module):
 
-    def __init__(
-        self, params: nnts.hyperparams.Hyperparams, input_dim: int, hidden_dim: int
-    ):
+    def __init__(self, params: utils.Hyperparams, input_dim: int, hidden_dim: int):
         super(SegLSTMDecoder, self).__init__()
         self.params = params
         self.dim = input_dim
@@ -64,7 +62,7 @@ class SegLSTM(nn.Module):
     def __init__(
         self,
         Distribution: nn.Module,
-        params: nnts.hyperparams.Hyperparams,
+        params: utils.Hyperparams,
         scaling_fn: callable,
         output_dim: int,
         segment_length: int,
@@ -74,7 +72,7 @@ class SegLSTM(nn.Module):
 
         Args:
             Distribution (nn.Module): The distribution module used for generating output.
-            params (nnts.hyperparams.Hyperparams): Hyperparameters for the model.
+            params (utils.Hyperparams): Hyperparameters for the model.
             scaling_fn (callable): A scaling function applied to the output.
             output_dim (int): The dimension of the output. (ie y + covariates).
             segment_length (int): The segment length (eg seasonality).

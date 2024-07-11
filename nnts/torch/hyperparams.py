@@ -3,12 +3,11 @@ from typing import Callable
 
 import torch
 
-import nnts
-import nnts.hyperparams as hp
+from nnts import utils
 
 
 @dataclass
-class GluonTsDefaultWithOneCycle(nnts.hyperparams.Hyperparams):
+class GluonTsDefaultWithOneCycle(utils.Hyperparams):
     """Class for keeping track of training and model params."""
 
     input_dim: int = 1
@@ -24,7 +23,7 @@ class GluonTsDefaultWithOneCycle(nnts.hyperparams.Hyperparams):
     early_stopper_patience: int = 30
     batches_per_epoch: int = 50
     weight_decay: float = 1e-8
-    training_method: hp.TrainingMethod = hp.TrainingMethod.TEACHER_FORCING
-    scheduler: hp.Scheduler = hp.Scheduler.ONE_CYCLE
+    training_method: utils.TrainingMethod = utils.TrainingMethod.TEACHER_FORCING
+    scheduler: utils.Scheduler = utils.Scheduler.ONE_CYCLE
     optimizer: Callable = torch.optim.AdamW
     loss_fn: Callable = torch.nn.NLLLoss

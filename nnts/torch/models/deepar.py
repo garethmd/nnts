@@ -8,6 +8,7 @@ from torch.distributions import AffineTransform, Distribution, TransformedDistri
 
 import nnts.data
 import nnts.torch.preprocessing
+from nnts import utils
 
 from .. import models
 
@@ -157,7 +158,7 @@ class DeepARPoint(nn.Module, DeepARMixin):
     def __init__(
         self,
         Distribution: nn.Module,
-        params: nnts.hyperparams.Hyperparams,
+        params: utils.Hyperparams,
         scaling_fn: callable,
         output_dim: int,
         lag_processor: nnts.torch.preprocessing.LagProcessor,
@@ -263,7 +264,7 @@ class DistrDeepAR(nn.Module, DeepARMixin):
     def __init__(
         self,
         Distribution: nn.Module,
-        params: nnts.hyperparams.Hyperparams,
+        params: utils.Hyperparams,
         scaling_fn: callable,
         output_dim: int,
         lag_processor: nnts.torch.preprocessing.LagProcessor,

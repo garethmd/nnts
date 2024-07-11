@@ -3,7 +3,7 @@ from typing import Dict, Tuple
 import torch
 import torch.nn as nn
 
-import nnts.hyperparams
+from nnts import utils
 
 
 class LinearModel(nn.Module):
@@ -27,7 +27,7 @@ class LinearModel(nn.Module):
 
 
 class BaseLSTMDecoder(nn.Module):
-    def __init__(self, params: nnts.hyperparams.Hyperparams, output_dim: int):
+    def __init__(self, params: utils.Hyperparams, output_dim: int):
         super(BaseLSTMDecoder, self).__init__()
         self.params = params
 
@@ -72,7 +72,7 @@ class BaseLSTM(nn.Module):
     def __init__(
         self,
         Distribution: nn.Module,
-        params: nnts.hyperparams.Hyperparams,
+        params: utils.Hyperparams,
         scaling_fn: callable,
         output_dim: int,
     ):
@@ -139,7 +139,7 @@ class BaseFutureCovariateLSTM(nn.Module):
     def __init__(
         self,
         Distribution: nn.Module,
-        params: nnts.hyperparams.Hyperparams,
+        params: utils.Hyperparams,
         scaling_fn: callable,
         output_dim: int,
         known_future_covariates: int,

@@ -10,11 +10,10 @@ import scipy
 import torch
 
 import nnts.experiments.scenarios
-import nnts.hyperparams
-import nnts.metadata
 import nnts.pandas
 import nnts.torch.models
 import nnts.torch.preprocessing as preprocessing
+from nnts import utils
 
 errors = {
     "us_births": np.linspace(0, 0.195, 8).tolist(),
@@ -119,7 +118,7 @@ def prepare_scenarios(
 
 def univariate_results(
     scenario: nnts.experiments.CovariateScenario,
-    metadata: nnts.metadata.Metadata,
+    metadata: utils.Metadata,
     forecast_horizon: int,
     path: str,
 ):
@@ -227,9 +226,9 @@ def plot_pcc_charts(
 
 def model_factory(
     model_name: str,
-    params: nnts.hyperparams.Hyperparams,
+    params: utils.Hyperparams,
     scenario: nnts.experiments.Scenario,
-    metadata: nnts.metadata.Metadata,
+    metadata: utils.Metadata,
 ):
     if model_name == "base-lstm":
         return nnts.torch.models.BaseLSTM(

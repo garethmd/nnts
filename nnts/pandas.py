@@ -5,20 +5,8 @@ from typing import Tuple
 import pandas as pd
 
 import nnts.data.tsf as tsf
-import nnts.metadata
-import nnts.splitter as splitter
 
-FREQUENCY_MAP: dict = {
-    "minutely": "1min",
-    "10_minutes": "10min",
-    "half_hourly": "30min",
-    "hourly": "1H",
-    "daily": "1D",
-    "weekly": "1W",
-    "monthly": "1M",
-    "quarterly": "1Q",
-    "yearly": "1Y",
-}
+from . import utils
 
 
 def unpack(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
@@ -41,7 +29,7 @@ def read_tsf(path: str, url: str = None) -> pd.DataFrame:
         contain_equal_length,
     ) = tsf.read(path, url)
     df = pd.DataFrame(all_data)
-    freq = FREQUENCY_MAP[frequency]
+    freq = utils.FREQUENCY_MAP[frequency]
     if "start_timestamp" not in df.columns:
         df["start_timestamp"] = pd.Timestamp("1970-01-01")
     df = pd.concat([unpack(df.iloc[x], freq=freq) for x in range(len(df))])
@@ -50,10 +38,10 @@ def read_tsf(path: str, url: str = None) -> pd.DataFrame:
 
 def load(
     dataset_name: str, data_path: str, metadata_filename: str
-) -> Tuple[pd.DataFrame, nnts.metadata.Metadata]:
+) -> Tuple[pd.DataFrame, utils.Metadata]:
 
     metadata_path = os.path.join(data_path, metadata_filename)
-    metadata = nnts.metadata.load(dataset_name, path=metadata_path)
+    metadata = utils.load(dataset_name, path=metadata_path)
     datafile_path = os.path.join(data_path, metadata.filename)
     df, freq, forecast_horizon, *_ = read_tsf(datafile_path)
     metadata.freq = freq
@@ -64,39 +52,24 @@ def load(
 
 def split_test_train_last_horizon(
     data: pd.DataFrame, context_length: int, prediction_length: int
-) -> splitter.SplitTrainTest:
+) -> utils.SplitTrainTest:
     trn = data.groupby("unique_id").head(-prediction_length)
     test = data.groupby("unique_id").tail(context_length + prediction_length)
-    return splitter.SplitTrainTest(train=trn, test=test)
+    return utils.SplitTrainTest(train=trn, test=test)
 
 
 def split_test_val_train_last_horizon(
     data: pd.DataFrame, context_length: int, prediction_length: int
-) -> splitter.SplitTrainTest:
+) -> utils.SplitTrainTest:
     trn_val = data.groupby("unique_id").head(-prediction_length)
     trn = trn_val.groupby("unique_id").head(-prediction_length)
     val = trn_val.groupby("unique_id").tail(context_length + prediction_length)
     test = data.groupby("unique_id").tail(context_length + prediction_length)
-    return splitter.SplitData(train=trn, validation=val, test=test)
+    return utils.SplitData(train=trn, validation=val, test=test)
 
 
 def slice_rows(group: pd.DataFrame, start, end) -> pd.DataFrame:
     return group.iloc[start:end]
-
-
-# class FixedSizeSplitter(splitter.Splitter):
-
-#     def split(
-#         self, data: pd.DataFrame, train_size: int, val_size: int, test_size: int
-#     ) -> splitter.SplitData:
-#         trn = data.groupby("unique_id").head(train_size)
-#         val = (
-#             data.groupby("unique_id")
-#             .apply(slice_rows, train_size, train_size + val_size)
-#             .reset_index(drop=True)
-#         )
-#         test = data.groupby("unique_id").tail(test_size)
-#         return splitter.SplitData(train=trn, validation=val, test=test)
 
 
 class CSVFileAggregator:

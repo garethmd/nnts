@@ -5,6 +5,8 @@ import pandas as pd
 from gluonts.dataset.common import ListDataset
 from gluonts.dataset.field_names import FieldName
 
+from nnts import utils
+
 BASE_DIR = "projects/deepar/data/"
 
 # The name of the column containing time series values after loading data from the .tsf file into a dataframe
@@ -25,19 +27,6 @@ SEASONALITY_MAP = {
     "monthly": 12,
     "quarterly": 4,
     "yearly": 1,
-}
-
-# Frequencies used by GluonTS framework
-FREQUENCY_MAP = {
-    "minutely": "1min",
-    "10_minutes": "10min",
-    "half_hourly": "30min",
-    "hourly": "1H",
-    "daily": "1D",
-    "weekly": "1W",
-    "monthly": "1M",
-    "quarterly": "1Q",
-    "yearly": "1Y",
 }
 
 
@@ -68,7 +57,7 @@ def get_deep_nn_forecasts(
     final_forecasts = []
 
     if frequency is not None:
-        freq = FREQUENCY_MAP[frequency]
+        freq = utils.FREQUENCY_MAP[frequency]
         seasonality = SEASONALITY_MAP[frequency]
     else:
         freq = "1Y"

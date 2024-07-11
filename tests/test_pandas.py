@@ -5,6 +5,7 @@ import pytest
 
 import nnts.data
 import nnts.pandas
+from nnts import utils
 
 
 def test_load_data_should_return_dataframe():
@@ -43,8 +44,8 @@ def sample_data():
 
 
 @pytest.fixture
-def sample_metadata() -> nnts.data.Metadata:
-    metadata = nnts.data.Metadata(
+def sample_metadata() -> utils.Metadata:
+    metadata = utils.Metadata(
         filename="fake_path",
         dataset="fake_dataset",
         context_length=15,
@@ -72,7 +73,7 @@ def test_should_should_contain_correct_counts(sample_data, sample_metadata):
 
 
 def test_validation_should_not_overlap_dates(
-    sample_data: pd.DataFrame, sample_metadata: nnts.data.Metadata
+    sample_data: pd.DataFrame, sample_metadata: utils.Metadata
 ):
     split_data = nnts.pandas.split_test_val_train_last_horizon(
         sample_data, sample_metadata.context_length, sample_metadata.prediction_length
@@ -103,7 +104,7 @@ def test_validation_should_not_overlap_dates(
 def test_train_should_not_overlap_dates(
     splitter_fn: Callable,
     sample_data: pd.DataFrame,
-    sample_metadata: nnts.data.Metadata,
+    sample_metadata: utils.Metadata,
 ):
     split_data = splitter_fn(
         sample_data, sample_metadata.context_length, sample_metadata.prediction_length

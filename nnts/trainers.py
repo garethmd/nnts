@@ -6,7 +6,7 @@ from pydantic import BaseModel, PositiveInt
 
 import nnts.events
 
-from .hyperparams import Hyperparams
+from .utils import Hyperparams
 
 
 class Evaluator(ABC):

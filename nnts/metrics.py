@@ -3,7 +3,7 @@ from typing import Dict, Optional
 import torch
 import torch.nn.functional as F
 
-import nnts.metadata
+from . import utils
 
 
 def _calculate_seasonal_error(
@@ -33,7 +33,7 @@ def _calculate_seasonal_error(
 
 
 def calculate_seasonal_error(
-    trn_dl: torch.utils.data.DataLoader, metadata: nnts.metadata.Metadata
+    trn_dl: torch.utils.data.DataLoader, metadata: utils.Metadata
 ) -> torch.tensor:
     seasonal_errors_per_series = []
     for series, mask in zip(trn_dl.dataset.X[:, :, 0], trn_dl.dataset.pad_mask):

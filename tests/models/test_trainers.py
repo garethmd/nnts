@@ -2,8 +2,8 @@ import types
 
 import pytest
 
-import nnts.hyperparams as hyperparams
 import nnts.trainers as trainers
+from nnts import utils
 
 
 class MockEvaluator(trainers.Evaluator):
@@ -51,7 +51,7 @@ def evaluator():
 
 @pytest.fixture
 def params():
-    return hyperparams.Hyperparams(epochs=5)
+    return utils.Hyperparams(epochs=5)
 
 
 @pytest.fixture
