@@ -35,8 +35,10 @@ class EarlyStopper:
 
 def validate(net, batch, prediction_length, context_length):
     if hasattr(net, "validate"):
+        print("using validate")
         return net.validate(batch, prediction_length, context_length)
     else:
+        print("using generate")
         y = batch["X"][:, context_length : context_length + prediction_length, ...]
         y_hat = net.generate(
             batch["X"][:, :context_length, ...],
@@ -79,6 +81,38 @@ class TorchEvaluator(nnts.trainers.Evaluator):
         hooks=None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         return eval(self.net, dl, prediction_length, context_length, hooks=hooks)
+
+
+class TorchForecaster(nnts.trainers.Forecaster):
+    def __init__(self, net: torch.nn.Module):
+        self.net = net
+
+    def predict(self, batch, prediction_length: int, context_length: int) -> Any:
+        y_hat = self.net.generate(
+            batch["X"],
+            batch["pad_mask"],
+            prediction_length=prediction_length,
+            context_length=context_length,
+        )
+
+        y_hat = y_hat[:, -prediction_length:, ...]
+        return y_hat
+
+    def forecast(
+        self,
+        dl: torch.utils.data.DataLoader,
+        prediction_length: int,
+        context_length: int,
+    ) -> Any:
+        self.net.eval()
+        with torch.no_grad():
+            y_hat_list = []
+            for batch in dl:
+                y_hat = self.predict(batch, prediction_length, context_length)
+                y_hat_list.append(y_hat[:, :, :1])
+
+            y_hat = torch.cat(y_hat_list, dim=0)
+        return y_hat
 
 
 class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):

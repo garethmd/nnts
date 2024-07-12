@@ -16,17 +16,9 @@ class Evaluator(ABC):
         pass
 
 
-class MetricReport:
-    pass
-
-
 class Forecaster(ABC):
     @abstractmethod
-    def forecast(self, data, h: int) -> Tuple[Any, Any]:
-        pass
-
-    @abstractmethod
-    def evaluate(self, test_data, h: int, trn_data) -> MetricReport:
+    def forecast(self, data, h: int) -> Any:
         pass
 
 
