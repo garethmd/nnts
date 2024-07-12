@@ -66,7 +66,7 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
         if self.state.train_loss < self.state.best_loss:
             torch.save(self.net.state_dict(), self.path)
             self.state.best_loss = self.state.train_loss
-            self.events.notify(nnts.models.trainers.EpochBestModel(self.path))
+            self.events.notify(nnts.trainers.EpochBestModel(self.path))
 
         if self.params.scheduler == utils.Scheduler.REDUCE_LR_ON_PLATEAU:
             self.scheduler.step(self.state.train_loss)

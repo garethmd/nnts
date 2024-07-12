@@ -26,26 +26,26 @@ from gluonts.transform import (
 )
 
 FREQ_MAP = {
-    "tourism": "1M",
+    "tourism_monthly": "1M",
     "electricity": "1H",
     "traffic_hourly": "1H",
     "hospital": "1M",
 }
 
 CONTEXT_LENGTH_MAP = {
-    "tourism": 15,
+    "tourism_monthly": 15,
     "electricity": 30,
     "traffic_hourly": 30,
     "hospital": 15,
 }
 PREDICTION_LENGTH_MAP = {
-    "tourism": 24,
+    "tourism_monthly": 24,
     "electricity": 168,
     "traffic_hourly": 168,
     "hospital": 12,
 }
 FILE_NAME_MAP = {
-    "tourism": "tourism_monthly_dataset.tsf",
+    "tourism_monthly": "tourism_monthly_dataset.tsf",
     "electricity": "electricity_hourly_dataset.tsf",
     "traffic_hourly": "traffic_hourly_dataset.tsf",
     "hospital": "hospital_dataset.tsf",

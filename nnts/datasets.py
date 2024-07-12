@@ -81,6 +81,8 @@ def load_metadata(
     # Get the directory of the current script
     with open(path) as f:
         data = json.load(f)
+    if dataset not in data:
+        raise ValueError(f"Dataset {dataset} not found in metadata file.")
     return Metadata(**data[dataset])
 
 

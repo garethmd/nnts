@@ -8,6 +8,8 @@ import pandas as pd
 
 
 def makedirs_if_not_exists(directory: str) -> None:
+    if len(directory) == 0:
+        return
     if not os.path.exists(directory):
         os.makedirs(directory)
 

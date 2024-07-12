@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import timeit
+import types
 from abc import ABC, abstractmethod
 from enum import Enum
 from functools import singledispatchmethod
@@ -35,6 +36,8 @@ def convert_np_float(obj):
         return obj.value
     if isinstance(obj, type):
         return obj.__name__
+    if isinstance(obj, types.FunctionType):
+        return obj.__name__
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
@@ -44,7 +47,6 @@ class JsonFileHandler(Handler):
         self.filename = filename + ".json"
 
     def handle(self, data: Dict[str, Any]) -> None:
-        utils.makedirs_if_not_exists(self.path)
         with open(os.path.join(self.path, self.filename), "w") as json_file:
             json.dump(data, json_file, indent=4, default=convert_np_float)
 
@@ -131,6 +133,7 @@ class LocalFileRun(Run, EpochEventMixin):
         self.name = name
         self.static_data = config
         self.path = path
+        utils.makedirs_if_not_exists(self.path)
         self.handler = Handler(path=path, filename=name)
         self.start_time = timeit.default_timer()
         self.activation_visualizer = ActivationVisualizer()
@@ -140,14 +143,12 @@ class LocalFileRun(Run, EpochEventMixin):
 
     def log_model(self, source_file: str) -> None:
         print(f"Artifact saved to {source_file}")
-        utils.makedirs_if_not_exists(self.path)
         try:
             shutil.copy(source_file, self.path)
         except shutil.SameFileError:
             pass
 
     def log_outputs(self, data: Dict[str, Any]) -> None:
-        utils.makedirs_if_not_exists(self.path)
         numpy_dict = {key: value for key, value in data.items()}
         # Save each numpy array to a separate text file
         for key, value in numpy_dict.items():
@@ -213,6 +214,7 @@ class WandbRun(Run, EpochEventMixin):
             project=self.project, name=self.name, config=self.static_data
         )
         self.path = path
+        utils.makedirs_if_not_exists(self.path)
         self.activation_visualizer = ActivationVisualizer()
 
     def log(self, data: Any) -> None:

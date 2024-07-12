@@ -1,42 +1,28 @@
 import argparse
 import os
 from dataclasses import dataclass, field
-from typing import Iterable, Iterator, List, Optional, Sized
+from typing import Iterator, List, Optional, Sized
 
 import deepar
 import features
-import gluondata
-import gluonts
+import gluonts.time_feature
 import torch
 import torch.distributions as td
 import torch.nn as nn
 import torch.nn.functional as F
-import trainers
+import trainers as project_trainers
 from torch.distributions import AffineTransform, Distribution, TransformedDistribution
 from torch.utils.data import Sampler
 
-import nnts
-import nnts.data
-import nnts.datasets
-import nnts.experiments
-import nnts.loggers
 import nnts.metrics
 import nnts.torch.datasets
 import nnts.torch.models
-import nnts.torch.preprocessing
 import nnts.torch.utils
-from nnts import datasets, utils
+from nnts import datasets, loggers, trainers, utils
 
-
-def calculate_seasonal_error(trn_dl: Iterable, metadata: datasets.Metadata):
-    se_list = []
-    for batch in trn_dl:
-        past_data = batch["target"]
-        se = nnts.metrics.gluon_metrics.calculate_seasonal_error(
-            past_data, metadata.freq, metadata.seasonality
-        )
-        se_list.append(se)
-    return torch.tensor(se_list).unsqueeze(1)
+"""
+The purpose of this script is to train and evaluate a deepar model that is as close as possible to the gluonts implementation.
+"""
 
 
 @dataclass
@@ -63,7 +49,7 @@ class LagScenario(nnts.experiments.scenarios.BaseScenario):
         return f"cov-{self.scaled_covariate_names()}-lags-{len(self.lag_seq)}-ds-{self.dataset}-seed-{self.seed}"
 
 
-def create_scenarios(metadata, lag_seq):
+def create_scenarios(metadata: datasets.Metadata, lag_seq):
     scaled_covariates = ["month", "unix_timestamp", nnts.torch.models.deepar.FEAT_SCALE]
     scaled_covariate_selection_matrix = [
         [0, 0, 1],
@@ -271,56 +257,50 @@ def main(
     base_model_name: str,
     results_path: str,
 ):
-    # Set up paths and load metadata
-
-    metadata_path = os.path.join(data_path, f"{base_model_name}-monash.json")
-    metadata = datasets.load_metadata(dataset_name, path=metadata_path)
-    datafile_path = os.path.join(data_path, metadata.filename)
-    PATH = os.path.join(results_path, model_name, metadata.dataset)
 
     # Load data
-    df_orig, *_ = nnts.datasets.read_tsf(datafile_path)
-    params = utils.Hyperparams(optimizer=torch.optim.Adam, loss_fn=distr_nll)
+    df_orig, metadata = datasets.load_dataset(dataset_name)
+    PATH = os.path.join(results_path, model_name, metadata.dataset)
 
-    # Create output directory if it doesn't exist
-    utils.makedirs_if_not_exists(PATH)
-
-    # Set parameters
-    params.batch_size = 32
-    params.batches_per_epoch = 50
-    params.scheduler = utils.Scheduler.REDUCE_LR_ON_PLATEAU
-    params.training_method = utils.TrainingMethod.TEACHER_FORCING
-    params.optimizer == torch.optim.Adam
+    params = utils.Hyperparams(
+        optimizer=torch.optim.Adam,
+        loss_fn=distr_nll,
+        scheduler=utils.Scheduler.REDUCE_LR_ON_PLATEAU,
+        training_method=utils.TrainingMethod.TEACHER_FORCING,
+        batch_size=32,
+        batches_per_epoch=50,
+    )
 
     # Calculate next month and unix timestamp
     df_orig = features.create_time_features(df_orig)
     df_orig = features.create_dummy_unique_ids(df_orig)
-
     lag_seq = gluonts.time_feature.lag.get_lags_for_frequency(metadata.freq)
     lag_seq = [lag - 1 for lag in lag_seq if lag > 1]
-
     scenario_list = create_lag_scenarios(metadata, lag_seq)
 
     for scenario in scenario_list:
         nnts.torch.utils.seed_everything(scenario.seed)
         df = df_orig.copy()
         context_length = metadata.context_length + max(scenario.lag_seq)
-        split_data = nnts.datasets.split_test_train_last_horizon(
-            df, context_length, metadata.prediction_length
+
+        dataset_options = {
+            "context_length": metadata.context_length,
+            "prediction_length": metadata.prediction_length,
+            "conts": scenario.conts,
+            "lag_seq": scenario.lag_seq,
+        }
+
+        trn_dl, test_dl = nnts.torch.utils.create_dataloaders(
+            df,
+            datasets.split_test_train_last_horizon,
+            context_length,
+            metadata.prediction_length,
+            Dataset=nnts.torch.datasets.TimeseriesLagsDataset,
+            dataset_options=dataset_options,
+            Sampler=nnts.torch.datasets.TimeSeriesSampler,
         )
-        trn_dl, test_dl = nnts.data.create_trn_test_dataloaders(
-            split_data,
-            metadata,
-            scenario,
-            params,
-            nnts.torch.data.datasets.TorchTimeseriesLagsDataLoaderFactory(),
-            Sampler=TimeSeriesSampler,
-        )
-        trn_dl_alt = gluondata.get_train_dl(
-            metadata.dataset, max_lags=max(scenario.lag_seq)
-        )
-        # test_dl = gluonadapt.test_dl
-        logger = nnts.loggers.LocalFileRun(
+
+        logger = loggers.LocalFileRun(
             project=f"{model_name}-{metadata.dataset}",
             name=scenario.name,
             config={
@@ -340,8 +320,8 @@ def main(
                 scaled_features=scenario.scaled_covariates,
                 context_length=metadata.context_length,
             )
-            trner = trainers.TorchEpochTrainer(
-                nnts.trainers.TrainerState(),
+            trner = project_trainers.TorchEpochTrainer(
+                trainers.TrainerState(),
                 net,
                 params,
                 metadata,
@@ -359,8 +339,8 @@ def main(
                 context_length=metadata.context_length,
             )
             print(nnts.torch.utils.count_of_params_in(net))
-            trner = trainers.TorchEpochTrainer(
-                nnts.trainers.TrainerState(),
+            trner = project_trainers.TorchEpochTrainer(
+                trainers.TrainerState(),
                 net,
                 params,
                 metadata,
@@ -375,7 +355,9 @@ def main(
             test_dl, scenario.prediction_length, metadata.context_length
         )
         test_metrics = nnts.metrics.calc_metrics(
-            y_hat, y, nnts.metrics.calculate_seasonal_error(trn_dl, metadata)
+            y_hat,
+            y,
+            nnts.metrics.calculate_seasonal_error(trn_dl, metadata.seasonality),
         )
         logger.log(test_metrics)
         print(test_metrics)
@@ -393,7 +375,7 @@ if __name__ == "__main__":
         help="Name of the model.",
     )
     parser.add_argument(
-        "--dataset", type=str, default="electricity", help="Name of the dataset."
+        "--dataset", type=str, default="tourism_monthly", help="Name of the dataset."
     )
     parser.add_argument(
         "--data-path",

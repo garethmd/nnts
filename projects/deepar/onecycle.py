@@ -15,7 +15,6 @@ import nnts.loggers
 import nnts.metrics
 import nnts.torch
 import nnts.torch.datasets
-import nnts.torch.hyperparams
 import nnts.torch.models
 import nnts.torch.preprocessing
 import nnts.torch.trainers
@@ -104,23 +103,14 @@ def create_scheduler_scenarios(metadata: datasets.Metadata, lag_seq, scheduler_n
 def main(
     model_name: str,
     dataset_name: str,
-    data_path: str,
-    base_model_name: str,
     results_path: str,
 ):
     # Set up paths and load metadata
-    metadata = datasets.load_metadata(
-        dataset_name, path=os.path.join(data_path, f"{base_model_name}-monash.json")
-    )
-    PATH = os.path.join(results_path, model_name, metadata.dataset)
-    utils.makedirs_if_not_exists(PATH)
-
-    # Load data
-    df_orig, *_ = nnts.datasets.read_tsf(os.path.join(data_path, metadata.filename))
+    df_orig, metadata = nnts.datasets.load_dataset(dataset_name)
 
     # Set parameters
     params = utils.GluonTsDefaultWithOneCycle(
-        optimizer=torch.optim.AdamW, loss_fn=F.smooth_l1_loss
+        optimizer=torch.optim.AdamW, loss_fn=nnts.torch.models.deepar.distr_nll
     )
 
     # Calculate next month and unix timestamp
@@ -136,7 +126,7 @@ def main(
         context_length = metadata.context_length + max(scenario.lag_seq)
         # end of experiment setup
 
-        logger = nnts.loggers.WandbRun(
+        logger = nnts.loggers.LocalFileRun(
             project=f"{model_name}-{metadata.dataset}-scheduler",
             name=scenario.name,
             config={
@@ -144,7 +134,7 @@ def main(
                 **metadata.__dict__,
                 **scenario.__dict__,
             },
-            path=PATH,
+            path=os.path.join(results_path, model_name, metadata.dataset),
         )
 
         dataset_options = {
@@ -164,8 +154,11 @@ def main(
             Sampler=nnts.torch.datasets.TimeSeriesSampler,
         )
 
-        trner = create_trainer(
-            model_name, metadata, PATH, params, scenario, lag_processor
+        net = create_net(model_name, metadata, params, scenario, lag_processor)
+        trner = nnts.torch.trainers.TorchEpochTrainer(
+            net,
+            params,
+            metadata,
         )
 
         logger.configure(trner.events)
@@ -185,15 +178,8 @@ def main(
         print(test_metrics)
         logger.finish()
 
-    # csv_aggregator = nnts.utils.CSVFileAggregator(PATH, "results")
-    # results = csv_aggregator()
-    # univariate_results = results.loc[:, ["smape", "mase"]]
-    # print(
-    #    univariate_results.mean(), univariate_results.std(), univariate_results.count()
-    # )
 
-
-def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
+def create_net(model_name, metadata, params, scenario, lag_processor):
     if model_name == "better-deepar-studentt":
         net = nnts.torch.models.DistrDeepAR(
             nnts.torch.models.deepar.StudentTHead,
@@ -205,14 +191,6 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             context_length=metadata.context_length,
             cat_idx=scenario.cat_idx,
             seq_cat_idx=scenario.month_idx,
-        )
-        trner = nnts.torch.trainers.TorchEpochTrainer(
-            nnts.trainers.TrainerState(),
-            net,
-            params,
-            metadata,
-            os.path.join(PATH, f"{scenario.name}.pt"),
-            loss_fn=nnts.torch.models.deepar.distr_nll,
         )
     elif model_name == "better-deepar-point":
         net = nnts.torch.models.DeepARPoint(
@@ -226,29 +204,11 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             cat_idx=scenario.cat_idx,
             seq_cat_idx=scenario.month_idx,
         )
-        trner = trainers.TorchEpochTrainer(
-            nnts.trainers.TrainerState(),
-            net,
-            params,
-            metadata,
-            os.path.join(PATH, f"{scenario.name}.pt"),
-            F.l1_loss,
-        )
+
     else:
         raise ValueError(f"Model {model_name} not recognized.")
 
-    return trner
-
-
-def add_y_hat(df, y_hat, prediction_length):
-    i = 0
-    df_list = []
-    for name, group in df.groupby("unique_id", sort=False):
-        group["y_hat"] = None
-        group["y_hat"][-prediction_length:] = y_hat[i].squeeze()
-        i += 1
-        df_list.append(group)
-    return df_list
+    return net
 
 
 if __name__ == "__main__":
@@ -264,16 +224,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset",
         type=str,
-        default="tourism",
+        default="tourism_monthly",
         help="Name of the dataset.",
     )
-    parser.add_argument(
-        "--data-path",
-        type=str,
-        default="projects/deepar/data",
-        help="Path to the data directory.",
-    )
-
     parser.add_argument(
         "--results-path",
         type=str,
@@ -285,7 +238,5 @@ if __name__ == "__main__":
     main(
         args.model,
         args.dataset,
-        args.data_path,
-        "base-lstm",
         args.results_path,
     )
