@@ -80,7 +80,7 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
         if self.state.valid_loss < self.state.best_loss:
             torch.save(self.net.state_dict(), self.path)
             self.state.best_loss = self.state.valid_loss
-            self.events.notify(nnts.models.trainers.EpochBestModel(self.path))
+            self.events.notify(nnts.trainers.EpochBestModel(self.path))
 
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()

@@ -1,16 +1,14 @@
 from typing import Dict, List
 
 import torch
+import torch.distributions as td
 import torch.nn as nn
+from torch.distributions import AffineTransform, Distribution, TransformedDistribution
 
 from nnts import utils
 from nnts.torch import models
 
 FEAT_SCALE: str = "feat_scale"
-
-
-import torch.distributions as td
-from torch.distributions import AffineTransform, Distribution, TransformedDistribution
 
 
 class AffineTransformed(TransformedDistribution):

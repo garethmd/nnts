@@ -1,11 +1,11 @@
 import argparse
 import os
+from dataclasses import dataclass, field
 from typing import List
 
 import features
 import torch.nn.functional as F
 import torch.optim
-import trainers
 
 import nnts
 import nnts.data
@@ -21,6 +21,48 @@ import nnts.torch.trainers
 import nnts.torch.utils
 import nnts.trainers
 from nnts import datasets, utils
+
+
+@dataclass
+class SchedulerScenario(nnts.experiments.scenarios.BaseScenario):
+    # covariates: int = field(init=False)
+    dataset: str = ""
+    lag_seq: List[int] = field(default_factory=list)
+    scaled_covariates: List[str] = field(default_factory=list)
+    scheduler_name: str = ""
+
+    def copy(self):
+        return SchedulerScenario(
+            prediction_length=self.prediction_length,
+            conts=self.conts.copy(),
+            seed=self.seed,
+            lag_seq=self.lag_seq.copy(),
+            scaled_covariates=self.scaled_covariates.copy(),
+            scheduler_name=self.scheduler_name,
+        )
+
+    def scaled_covariate_names(self):
+        return "-".join(self.scaled_covariates)
+
+    @property
+    def name(self):
+        return f"scheduler-{self.scheduler_name}-ds-{self.dataset}-seed-{self.seed}"
+
+    @property
+    def cat_idx(self):
+        return (
+            self.scaled_covariates.index("unique_id_0") + 1
+            if "unique_id_0" in self.scaled_covariates
+            else None
+        )
+
+    @property
+    def month_idx(self):
+        return (
+            self.scaled_covariates.index("month") + 1
+            if "month" in self.scaled_covariates
+            else None
+        )
 
 
 # EXPERIMENT SETUP
@@ -64,7 +106,7 @@ def create_scenarios(metadata, lag_seq):
                 if select == 1
             ]
             scenario_list.append(
-                features.SchedulerScenario(
+                SchedulerScenario(
                     metadata.prediction_length,
                     conts=[
                         cov
@@ -82,12 +124,12 @@ def create_scenarios(metadata, lag_seq):
 
 def create_scheduler_scenarios(metadata: datasets.Metadata, lag_seq, scheduler_name):
     conts = []
-    scenario_list: List[features.SchedulerScenario] = []
+    scenario_list: List[SchedulerScenario] = []
 
     # BASELINE
     scenario_list = []
     for seed in [42, 43, 44, 45, 46]:
-        scenario = features.SchedulerScenario(
+        scenario = SchedulerScenario(
             metadata.prediction_length,
             conts=conts,
             scaled_covariates=conts,

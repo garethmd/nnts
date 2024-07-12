@@ -1,13 +1,17 @@
+"""
+This script runs the ablation study for the DeepAR model. 
+It trains and evaluates the model on different scenarios and logs the results. 
+"""
+
 import argparse
 import os
 from typing import Iterable, List
 
 import features
-import gluonadapt
 import torch
 import torch.distributions as td
 import torch.nn.functional as F
-import trainers
+import trainers as project_trainers
 
 import nnts
 import nnts.data
@@ -19,6 +23,7 @@ import nnts.torch.datasets
 import nnts.torch.models
 import nnts.torch.preprocessing
 import nnts.torch.utils
+import nnts.trainers
 from nnts import datasets, utils
 
 
@@ -52,7 +57,7 @@ def generate_one_hot_matrix(n):
     return one_hot_matrix
 
 
-def create_scenarios(metadata, lag_seq):
+def create_scenarios(metadata: datasets.Metadata, lag_seq):
     scaled_covariates = [
         "month",
         "unix_timestamp",
@@ -90,7 +95,10 @@ def create_scenarios(metadata, lag_seq):
     return scenario_list
 
 
-def create_lag_scenarios(metadata, lag_seq):
+def create_lag_scenarios(metadata: datasets.Metadata, lag_seq: List[int]):
+    """
+    Creates scenarios that vary the number of lags in the model.
+    """
     conts = [
         "day_of_week",
         "hour",
@@ -105,19 +113,22 @@ def create_lag_scenarios(metadata, lag_seq):
 
     # BASELINE
     scenario_list = []
-    for seed in [42, 43, 44, 45, 46]:
-        scenario = features.LagScenario(
-            metadata.prediction_length,
-            conts=conts,
-            scaled_covariates=conts
-            + [
-                nnts.torch.models.deepar.FEAT_SCALE,
-            ],
-            lag_seq=lag_seq,
-            seed=seed,
-            dataset=metadata.dataset,
-        )
-        scenario_list.append(scenario)
+    i = 1
+    while i < len(lag_seq):
+        for seed in [42, 43, 44, 45, 46]:
+            scenario = features.LagScenario(
+                metadata.prediction_length,
+                conts=conts,
+                scaled_covariates=conts
+                + [
+                    nnts.torch.models.deepar.FEAT_SCALE,
+                ],
+                lag_seq=lag_seq[:i],
+                seed=seed,
+                dataset=metadata.dataset,
+            )
+            scenario_list.append(scenario)
+        i += 1
     return scenario_list
 
 
@@ -135,57 +146,50 @@ def main(
     results_path: str,
 ):
     # Set up paths and load metadata
-    metadata = datasets.load_metadata(
-        dataset_name, path=os.path.join(data_path, f"{base_model_name}-monash.json")
-    )
-    PATH = os.path.join(results_path, model_name, metadata.dataset)
-    utils.makedirs_if_not_exists(PATH)
 
-    # Load data
-    df_orig, *_ = nnts.datasets.read_tsf(os.path.join(data_path, metadata.filename))
+    df_orig, metadata = nnts.datasets.load_dataset(dataset_name)
 
     # Set parameters
-    params = utils.Hyperparams(
+    params = utils.GluonTsDefaultWithOneCycle(
         optimizer=torch.optim.Adam,
-        batch_size=32,
-        batches_per_epoch=100,
         loss_fn=distr_nll,
+        scheduler=utils.Scheduler.REDUCE_LR_ON_PLATEAU,
+        training_method=utils.TrainingMethod.TEACHER_FORCING,
+        batches_per_epoch=100,
     )
+
+    PATH = os.path.join(results_path, model_name, metadata.dataset)
+    utils.makedirs_if_not_exists(PATH)
 
     # Calculate next month and unix timestamp
     df_orig = features.create_time_features(df_orig)
     df_orig = features.create_dummy_unique_ids(df_orig)
-
-    # Normalize data
-    # max_min_scaler = nnts.torch.data.preprocessing.MaxMinScaler()
-    # max_min_scaler.fit(df_orig, ["month"])
-    # df_orig = max_min_scaler.transform(df_orig, ["month"])
-
     lag_seq = features.create_lag_seq(metadata.freq)
-    scenario_list = create_lag_scenarios(metadata, lag_seq)
+    scenario_list = create_scenarios(metadata, lag_seq)
+    scenario_list += create_lag_scenarios(metadata, lag_seq)
 
-    params.training_method = utils.TrainingMethod.TEACHER_FORCING
-    params.scheduler = utils.Scheduler.REDUCE_LR_ON_PLATEAU
-
-    for scenario in scenario_list[:1]:
+    for scenario in scenario_list:
         nnts.torch.utils.seed_everything(scenario.seed)
         df = df_orig.copy()
         lag_processor = nnts.torch.preprocessing.LagProcessor(scenario.lag_seq)
 
         context_length = metadata.context_length + max(scenario.lag_seq)
-        split_data = nnts.datasets.split_test_train_last_horizon(
-            df, context_length, metadata.prediction_length
-        )
-        trn_dl, test_dl = nnts.data.create_trn_test_dataloaders(
-            split_data,
-            metadata,
-            scenario,
-            params,
-            nnts.torch.data.datasets.TorchTimeseriesLagsDataLoaderFactory(),
+
+        dataset_options = {
+            "context_length": metadata.context_length,
+            "prediction_length": metadata.prediction_length,
+            "conts": scenario.conts,
+            "lag_seq": scenario.lag_seq,
+        }
+        trn_dl, test_dl = nnts.torch.utils.create_dataloaders(
+            df,
+            datasets.split_test_train_last_horizon,
+            context_length,
+            metadata.prediction_length,
+            Dataset=nnts.torch.datasets.TimeseriesLagsDataset,
+            dataset_options=dataset_options,
             Sampler=nnts.torch.datasets.TimeSeriesSampler,
         )
-        # trn_dl = gluonadapt.trn_dl
-        # test_dl = gluonadapt.test_dl
         logger = nnts.loggers.LocalFileRun(
             project=f"{model_name}-{metadata.dataset}",
             name=scenario.name,
@@ -203,21 +207,20 @@ def main(
 
         evaluator = trner.train(trn_dl)
 
-        # net = gluonadapt.load_gluonts_weights(net)
-        # evaluator = nnts.torch.models.trainers.TorchEvaluator(net)
-
         y_hat, y = evaluator.evaluate(
             test_dl, scenario.prediction_length, metadata.context_length
         )
 
         test_metrics = nnts.metrics.calc_metrics(
-            y_hat, y, nnts.metrics.calculate_seasonal_error(trn_dl, metadata)
+            y_hat,
+            y,
+            nnts.metrics.calculate_seasonal_error(trn_dl, metadata.seasonality),
         )
         logger.log(test_metrics)
         print(test_metrics)
         logger.finish()
 
-    csv_aggregator = nnts.datasets.CSVFileAggregator(PATH, "results")
+    csv_aggregator = utils.CSVFileAggregator(PATH, "results")
     results = csv_aggregator()
     univariate_results = results.loc[:, ["smape", "mase"]]
     print(
@@ -237,7 +240,7 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             context_length=metadata.context_length,
             cat_idx=scenario.cat_idx,
         )
-        trner = trainers.TorchEpochTrainer(
+        trner = project_trainers.TorchEpochTrainer(
             nnts.trainers.TrainerState(),
             net,
             params,
@@ -256,7 +259,7 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
             context_length=metadata.context_length,
             cat_idx=scenario.cat_idx,
         )
-        trner = trainers.TorchEpochTrainer(
+        trner = project_trainers.TorchEpochTrainer(
             nnts.trainers.TrainerState(),
             net,
             params,
@@ -270,17 +273,6 @@ def create_trainer(model_name, metadata, PATH, params, scenario, lag_processor):
     return trner
 
 
-def add_y_hat(df, y_hat, prediction_length):
-    i = 0
-    df_list = []
-    for name, group in df.groupby("unique_id", sort=False):
-        group["y_hat"] = None
-        group["y_hat"][-prediction_length:] = y_hat[i].squeeze()
-        i += 1
-        df_list.append(group)
-    return df_list
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run the model training and evaluation script."
@@ -292,7 +284,7 @@ if __name__ == "__main__":
         help="Name of the model.",
     )
     parser.add_argument(
-        "--dataset", type=str, default="traffic_hourly", help="Name of the dataset."
+        "--dataset", type=str, default="tourism_monthly", help="Name of the dataset."
     )
     parser.add_argument(
         "--data-path",
