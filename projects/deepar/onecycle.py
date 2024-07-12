@@ -177,7 +177,9 @@ def main(
         )
 
         test_metrics = nnts.metrics.calc_metrics(
-            y_hat, y, nnts.metrics.calculate_seasonal_error(trn_dl, metadata)
+            y_hat,
+            y,
+            nnts.metrics.calculate_seasonal_error(trn_dl, metadata.seasonality),
         )
         logger.log(test_metrics)
         print(test_metrics)

@@ -66,7 +66,7 @@ def run_scenario(
         test_dl, scenario.prediction_length, metadata.context_length
     )
     test_metrics = nnts.metrics.calc_metrics(
-        y, y_hat, nnts.metrics.calculate_seasonal_error(trn_dl, metadata)
+        y, y_hat, nnts.metrics.calculate_seasonal_error(trn_dl, metadata.seasonality)
     )
     logger.log(test_metrics)
     logger.finish()
