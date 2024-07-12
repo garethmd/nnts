@@ -251,7 +251,7 @@
         "seasonality": 52,
         "url": "https://zenodo.org/records/4656151/files/solar_weekly_dataset.zip"
     },
-    "electricity_daily": {
+    "electricity_hourly": {
         "filename": "electricity_hourly_dataset.tsf",
         "dataset": "electricity_hourly",
         "context_length": 30,

@@ -16,7 +16,6 @@ import trainers as project_trainers
 import nnts
 import nnts.data
 import nnts.datasets
-import nnts.experiments
 import nnts.loggers
 import nnts.metrics
 import nnts.torch.datasets

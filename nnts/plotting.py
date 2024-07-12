@@ -1,13 +1,11 @@
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from . import CovariateScenario
-
 
 def subplot_forecast_horizon(
-    selected_scenarios: List[CovariateScenario],
+    selected_scenarios: List[Any],
     dataset: str,
     model_name: str,
     ax: plt.Axes,
@@ -26,7 +24,7 @@ def subplot_forecast_horizon(
 
 
 def plot_forecast_horizon_trajectories(
-    selected_scenarios: List[CovariateScenario],
+    selected_scenarios: List[Any],
     dataset: str,
     covariates: List[int] | int,
     model_names: List[str] = None,

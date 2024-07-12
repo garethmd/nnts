@@ -7,9 +7,9 @@
         "freq": "1D",
         "seasonality": 52
     },
-    "tourism": {
+    "tourism_monthly": {
         "filename": "tourism_monthly_dataset.tsf",
-        "dataset": "tourism",
+        "dataset": "tourism_monthly",
         "context_length": 73,
         "prediction_length": 24,
         "freq": "M",
@@ -23,25 +23,25 @@
         "freq": "M",
         "seasonality": 12
     },
-    "solar": {
+    "solar_weekly": {
         "filename": "solar_weekly_dataset.tsf",
-        "dataset": "solar",
+        "dataset": "solar_weekly",
         "context_length": 19,
         "prediction_length": 6,
         "freq": "1W",
         "seasonality": 52
     },
-    "electricity": {
+    "electricity_hourly": {
         "filename": "electricity_hourly_dataset.tsf",
-        "dataset": "electricity",
+        "dataset": "electricity_hourly",
         "context_length": 505,
         "prediction_length": 168,
         "freq": "1H",
         "seasonality": 24
     },
-    "traffic": {
+    "traffic_weekly": {
         "filename": "traffic_weekly_dataset.tsf",
-        "dataset": "traffic",
+        "dataset": "traffic_weekly",
         "context_length": 65,
         "prediction_length": 8,
         "freq": "1W",

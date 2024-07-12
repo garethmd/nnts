@@ -2,7 +2,6 @@ import pytest
 
 import nnts.data
 import nnts.datasets
-import nnts.experiments
 import nnts.torch.datasets
 from nnts import datasets, utils
 
@@ -26,7 +25,7 @@ def sample_metadata():
 
 @pytest.fixture
 def sample_scenario():
-    return nnts.experiments.CovariateScenario(
+    return covs.CovariateScenario(
         prediction_length=12, error=0, conts=["cont1", "cont2"]
     )
 

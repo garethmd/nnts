@@ -82,7 +82,9 @@ def load_metadata(
     with open(path) as f:
         data = json.load(f)
     if dataset not in data:
-        raise ValueError(f"Dataset {dataset} not found in metadata file.")
+        raise ValueError(
+            f"Dataset {dataset} not found in metadata {path} choose from {data.keys()}"
+        )
     return Metadata(**data[dataset])
 
 

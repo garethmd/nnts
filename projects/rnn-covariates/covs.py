@@ -1,5 +1,6 @@
 import json
 import os
+from dataclasses import dataclass, field
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -10,31 +11,61 @@ import scipy
 import torch
 
 import nnts.datasets
-import nnts.experiments.scenarios
 import nnts.torch.models
 import nnts.torch.preprocessing as preprocessing
 from nnts import datasets, utils
 
+
+@dataclass
+class CovariateScenario:
+    prediction_length: int
+    error: int
+    conts: list = field(default_factory=list)
+    pearson: float = 0
+    noise: float = 0
+    covariates: int = 0
+    seed: int = 42
+    skip: int = 0
+
+    def copy(self):
+        return self.__class__(
+            prediction_length=self.prediction_length,
+            error=self.error,
+            conts=self.conts.copy(),
+            pearson=self.pearson,
+            noise=self.noise,
+            covariates=self.covariates,
+            seed=self.seed,
+            skip=self.skip,
+        )
+
+    @property
+    def name(self):
+        if self.skip == 1:
+            return f"cov-{self.covariates}-pearsn-{str(round(self.pearson, 2))}-pl-{str(self.prediction_length)}-seed-{self.seed}-skip-{self.skip}"
+        return f"cov-{self.covariates}-pearsn-{str(round(self.pearson, 2))}-pl-{str(self.prediction_length)}-seed-{self.seed}"
+
+
 errors = {
     "us_births": np.linspace(0, 0.195, 8).tolist(),
-    "tourism": np.linspace(0, 1.65, 8).tolist(),
+    "tourism_monthly": np.linspace(0, 1.65, 8).tolist(),
     "solar": np.linspace(0, 0.702, 8).tolist(),
     "hospital": np.linspace(0, 1.65, 8).tolist(),
-    "electricity": np.linspace(0, 1.65, 8).tolist(),
-    "traffic": np.linspace(0, 0.6, 8).tolist(),
+    "electricity_hourly": np.linspace(0, 1.65, 8).tolist(),
+    "traffic_weekly": np.linspace(0, 0.6, 8).tolist(),
 }
 
 
 file_map = {
-    "tourism": "tourism_monthly_dataset.tsf",
+    "tourism_monthly": "tourism_monthly_dataset.tsf",
     "hospital": "hospital_dataset.tsf",
-    "traffic": "traffic_weekly_dataset.tsf",
-    "electricity": "electricity_hourly_dataset.tsf",
+    "traffic_weekly": "traffic_weekly_dataset.tsf",
+    "electricity_hourly": "electricity_hourly_dataset.tsf",
 }
 
 
 def list_available_datasets() -> List[str]:
-    return ["traffic", "electricity", "tourism", "hospital"]
+    return ["traffic_weekly", "electricity_hourly", "tourism_monthly", "hospital"]
 
 
 def list_available_models() -> List[str]:
@@ -106,8 +137,8 @@ def add_y_hat(df, y_hat, prediction_length):
 
 
 def prepare_scenarios(
-    df_orig, scenario_list: List[nnts.experiments.CovariateScenario]
-) -> List[nnts.experiments.CovariateScenario]:
+    df_orig, scenario_list: List[CovariateScenario]
+) -> List[CovariateScenario]:
     new_scenario_list = []
     for scenario in scenario_list:
         nnts.torch.utils.seed_everything(scenario.seed)
@@ -117,7 +148,7 @@ def prepare_scenarios(
 
 
 def univariate_results(
-    scenario: nnts.experiments.CovariateScenario,
+    scenario: CovariateScenario,
     metadata: datasets.Metadata,
     forecast_horizon: int,
     path: str,
@@ -151,17 +182,15 @@ def plot_pcc_charts(
             metadata_filename=f"{model_name}-monash.json",
         )
         PATH = os.path.join(results_path, model_name, metadata.dataset)
-        scenario_list: List[nnts.experiments.CovariateScenario] = []
+        scenario_list: List[CovariateScenario] = []
         # Models for full forecast horizon with covariates
         scenario_list.append(
-            nnts.experiments.CovariateScenario(
-                metadata.prediction_length, 0, covariates=0
-            ),
+            CovariateScenario(metadata.prediction_length, 0, covariates=0),
         )
         for covariates in [scenario_covariate]:
             for error in errors[metadata.dataset]:
                 scenario_list.append(
-                    nnts.experiments.CovariateScenario(
+                    CovariateScenario(
                         metadata.prediction_length, error, covariates=covariates
                     )
                 )
@@ -227,7 +256,7 @@ def plot_pcc_charts(
 def model_factory(
     model_name: str,
     params: utils.Hyperparams,
-    scenario: nnts.experiments.Scenario,
+    scenario: CovariateScenario,
     metadata: datasets.Metadata,
 ):
     if model_name == "base-lstm":

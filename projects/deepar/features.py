@@ -6,12 +6,25 @@ import numpy as np
 import pandas as pd
 
 import nnts
-import nnts.experiments
 import nnts.torch.preprocessing
 
 
 @dataclass
-class LagScenario(nnts.experiments.scenarios.BaseScenario):
+class BaseScenario:
+    prediction_length: int
+    conts: list = field(default_factory=list)
+    seed: int = 42
+
+    def copy(self):
+        return self.__class__(
+            prediction_length=self.prediction_length,
+            conts=self.conts.copy(),
+            seed=self.seed,
+        )
+
+
+@dataclass
+class LagScenario(BaseScenario):
     # covariates: int = field(init=False)
     dataset: str = ""
     lag_seq: List[int] = field(default_factory=list)

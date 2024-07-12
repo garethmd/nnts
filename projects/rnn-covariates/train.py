@@ -7,39 +7,44 @@ import metric_generator
 import pandas as pd
 import torch.nn.functional as F
 import torch.optim
+import trainers
 
 import nnts
 import nnts.data
 import nnts.datasets
-import nnts.experiments
 import nnts.loggers
 import nnts.metrics
-import nnts.models
 import nnts.torch.data
 import nnts.torch.datasets
 import nnts.torch.models
-import nnts.torch.trainers as trainers
+import nnts.torch.trainers
+import nnts.torch.utils
+import nnts.trainers
 from nnts import datasets, utils
 
 
 def run_scenario(
-    scenario: nnts.experiments.CovariateScenario,
+    scenario: covs.CovariateScenario,
     df_orig: pd.DataFrame,
     metadata: datasets.Metadata,
     params: utils.Hyperparams,
-    splitter: callable,
     model_name: str,
     path: str,
 ):
     nnts.torch.utils.seed_everything(scenario.seed)
     df, scenario = covs.prepare(df_orig.copy(), scenario.copy())
-    split_data = splitter(df, metadata.context_length, metadata.prediction_length)
-    trn_dl, val_dl, test_dl = nnts.data.create_trn_val_test_dataloaders(
-        split_data,
-        metadata,
-        scenario,
-        params,
-        nnts.torch.data.TorchTimeseriesDataLoaderFactory(),
+    trn_dl, val_dl, test_dl = nnts.torch.utils.create_dataloaders(
+        df,
+        nnts.datasets.split_test_val_train_last_horizon,
+        metadata.context_length,
+        metadata.prediction_length,
+        Dataset=nnts.torch.datasets.TimeseriesDataset,
+        dataset_options={
+            "context_length": metadata.context_length,
+            "prediction_length": metadata.prediction_length,
+            "conts": scenario.conts,
+        },
+        batch_size=params.batch_size,
     )
     logger = nnts.loggers.LocalFileRun(
         project=f"{model_name}-{metadata.dataset}",
@@ -53,8 +58,8 @@ def run_scenario(
     )
 
     net = covs.model_factory(model_name, params, scenario, metadata)
-    trner = trainers.TorchEpochTrainer(
-        nnts.trainers.TrainerState(),
+    trner = trainers.ValidationTorchEpochTrainer(
+        trainers.TrainerState(),
         net,
         params,
         metadata,
@@ -97,16 +102,15 @@ def run_experiment(
             params = utils.Hyperparams(
                 optimizer=torch.optim.AdamW, loss_fn=F.smooth_l1_loss
             )
-            splitter = nnts.datasets.LastHorizonSplitter()
             path = os.path.join(results_path, model_name, metadata.dataset)
             utils.makedirs_if_not_exists(path)
 
-            scenario_list: List[nnts.experiments.CovariateScenario] = []
+            scenario_list: List[covs.CovariateScenario] = []
 
             # Add the baseline scenarios
             for seed in [42, 43, 44, 45, 46]:
                 scenario_list.append(
-                    nnts.experiments.CovariateScenario(
+                    covs.CovariateScenario(
                         metadata.prediction_length, error=0.0, covariates=0, seed=seed
                     )
                 )
@@ -115,13 +119,13 @@ def run_experiment(
             for covariates in [1, 2, 3]:
                 for error in covs.errors[metadata.dataset]:
                     scenario_list.append(
-                        nnts.experiments.CovariateScenario(
+                        covs.CovariateScenario(
                             metadata.prediction_length, error, covariates=covariates
                         )
                     )
 
             scenario_list.append(
-                nnts.experiments.CovariateScenario(
+                covs.CovariateScenario(
                     metadata.prediction_length, 0, covariates=3, skip=1
                 )
             )
@@ -132,11 +136,10 @@ def run_experiment(
                     df_orig,
                     metadata,
                     params,
-                    splitter,
                     model_name,
                     path,
                 )
-            csv_aggregator = nnts.datasets.CSVFileAggregator(path, "results")
+            csv_aggregator = utils.CSVFileAggregator(path, "results")
             csv_aggregator()
 
             if generate_metrics:

@@ -7,9 +7,9 @@
         "freq": "1D",
         "seasonality": 52
     },
-    "tourism": {
+    "tourism_monthly": {
         "filename": "tourism_monthly_dataset.tsf",
-        "dataset": "tourism",
+        "dataset": "tourism_monthly",
         "context_length": 15,
         "prediction_length": 24,
         "freq": "M",

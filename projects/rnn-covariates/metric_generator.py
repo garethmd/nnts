@@ -6,10 +6,10 @@ import pandas as pd
 import torch
 
 import nnts.datasets
-import nnts.experiments
 import nnts.torch.datasets
 import nnts.torch.models
 import nnts.torch.trainers
+import nnts.torch.utils
 from nnts import datasets, utils
 
 
@@ -33,7 +33,7 @@ def calculate_forecast_horizon_metrics(y_hat, y, metadata, metric="mae"):
 
 
 def generate(
-    scenario_list: List[nnts.experiments.CovariateScenario],
+    scenario_list: List[covs.CovariateScenario],
     df_orig: pd.DataFrame,
     metadata: datasets.Metadata,
     params: utils.Hyperparams,
@@ -41,17 +41,25 @@ def generate(
     path: str,
 ):
     for scenario in scenario_list:
+        assert isinstance(scenario, covs.CovariateScenario)
+        assert isinstance(df_orig, pd.DataFrame)
         nnts.torch.utils.seed_everything(scenario.seed)
         df, scenario = covs.prepare(df_orig.copy(), scenario.copy())
-        splitter = nnts.datasets.LastHorizonSplitter()
-        split_data = splitter(df, metadata.context_length, metadata.prediction_length)
-        _, _, test_dl = nnts.data.create_trn_val_test_dataloaders(
-            split_data,
-            metadata,
-            scenario,
-            params,
-            nnts.torch.data.TorchTimeseriesDataLoaderFactory(),
+
+        _, _, test_dl = nnts.torch.utils.create_dataloaders(
+            df,
+            nnts.datasets.split_test_val_train_last_horizon,
+            metadata.context_length,
+            metadata.prediction_length,
+            Dataset=nnts.torch.datasets.TimeseriesDataset,
+            dataset_options={
+                "context_length": metadata.context_length,
+                "prediction_length": metadata.prediction_length,
+                "conts": scenario.conts,
+            },
+            batch_size=params.batch_size,
         )
+
         net = covs.model_factory(model_name, params, scenario, metadata)
         best_state_dict = torch.load(f"{path}/{scenario.name}.pt")
         net.load_state_dict(best_state_dict)

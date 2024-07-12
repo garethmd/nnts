@@ -9,6 +9,7 @@ from pydantic import BaseModel, PositiveInt
 import nnts.events
 import nnts.trainers
 from nnts import datasets, utils
+from nnts.trainers import EpochBestModel, EpochTrainComplete, EpochValidateComplete
 from nnts.utils import Hyperparams
 
 
@@ -98,26 +99,6 @@ class TrainerState(BaseModel):
     train_loss: float = 0
     valid_loss: float = 0
     best_loss: float = np.inf
-
-
-class TrainerEvent:
-    def __init__(self, state: TrainerState):
-        self.state = state
-
-
-class EpochValidateComplete(TrainerEvent):
-    def __init__(self, state: TrainerState):
-        super().__init__(state)
-
-
-class EpochTrainComplete(TrainerEvent):
-    def __init__(self, state: TrainerState):
-        super().__init__(state)
-
-
-class EpochBestModel:
-    def __init__(self, path: str):
-        self.path = path
 
 
 class EpochTrainer(Trainer):
@@ -249,7 +230,7 @@ class ValidationTorchEpochTrainer(EpochTrainer):
         if self.state.valid_loss < self.state.best_loss:
             torch.save(self.net.state_dict(), self.path)
             self.state.best_loss = self.state.valid_loss
-            self.events.notify(nnts.trainers.EpochBestModel(self.path))
+            self.events.notify(EpochBestModel(self.path))
 
         if self.params.scheduler == utils.Scheduler.REDUCE_LR_ON_PLATEAU:
             self.scheduler.step(self.state.valid_loss)

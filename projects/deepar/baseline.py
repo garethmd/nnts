@@ -26,7 +26,7 @@ The purpose of this script is to train and evaluate a deepar model that is as cl
 
 
 @dataclass
-class LagScenario(nnts.experiments.scenarios.BaseScenario):
+class LagScenario(features.BaseScenario):
     # covariates: int = field(init=False)
     dataset: str = ""
     lag_seq: List[int] = field(default_factory=list)

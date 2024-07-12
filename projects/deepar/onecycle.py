@@ -10,7 +10,6 @@ import torch.optim
 import nnts
 import nnts.data
 import nnts.datasets
-import nnts.experiments
 import nnts.loggers
 import nnts.metrics
 import nnts.torch
@@ -24,7 +23,7 @@ from nnts import datasets, utils
 
 
 @dataclass
-class SchedulerScenario(nnts.experiments.scenarios.BaseScenario):
+class SchedulerScenario(features.BaseScenario):
     # covariates: int = field(init=False)
     dataset: str = ""
     lag_seq: List[int] = field(default_factory=list)
