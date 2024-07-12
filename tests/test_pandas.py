@@ -3,16 +3,14 @@ from typing import Callable
 import pandas as pd
 import pytest
 
-import nnts.data
-import nnts.pandas
-from nnts import utils
+from nnts import datasets
 
 
 def test_load_data_should_return_dataframe():
     # Arrange
 
     # Act
-    data, *_ = nnts.pandas.read_tsf("tests/artifacts/hospital_dataset.tsf")
+    data, *_ = datasets.read_tsf("tests/artifacts/hospital_dataset.tsf")
 
     # Assert
     assert isinstance(data, pd.DataFrame)
@@ -44,8 +42,8 @@ def sample_data():
 
 
 @pytest.fixture
-def sample_metadata() -> utils.Metadata:
-    metadata = utils.Metadata(
+def sample_metadata() -> datasets.Metadata:
+    metadata = datasets.Metadata(
         filename="fake_path",
         dataset="fake_dataset",
         context_length=15,
@@ -57,7 +55,7 @@ def sample_metadata() -> utils.Metadata:
 
 
 def test_should_should_contain_correct_counts(sample_data, sample_metadata):
-    split_data = nnts.pandas.split_test_val_train_last_horizon(
+    split_data = datasets.split_test_val_train_last_horizon(
         sample_data, sample_metadata.context_length, sample_metadata.prediction_length
     )  # 50 records for each unique_id
 
@@ -73,9 +71,9 @@ def test_should_should_contain_correct_counts(sample_data, sample_metadata):
 
 
 def test_validation_should_not_overlap_dates(
-    sample_data: pd.DataFrame, sample_metadata: utils.Metadata
+    sample_data: pd.DataFrame, sample_metadata: datasets.Metadata
 ):
-    split_data = nnts.pandas.split_test_val_train_last_horizon(
+    split_data = datasets.split_test_val_train_last_horizon(
         sample_data, sample_metadata.context_length, sample_metadata.prediction_length
     )  # 50 records for each unique_id
 
@@ -97,14 +95,14 @@ def test_validation_should_not_overlap_dates(
 @pytest.mark.parametrize(
     "splitter_fn",
     [
-        nnts.pandas.split_test_train_last_horizon,
-        nnts.pandas.split_test_val_train_last_horizon,
+        datasets.split_test_train_last_horizon,
+        datasets.split_test_val_train_last_horizon,
     ],
 )
 def test_train_should_not_overlap_dates(
     splitter_fn: Callable,
     sample_data: pd.DataFrame,
-    sample_metadata: utils.Metadata,
+    sample_metadata: datasets.Metadata,
 ):
     split_data = splitter_fn(
         sample_data, sample_metadata.context_length, sample_metadata.prediction_length
@@ -121,7 +119,7 @@ def test_train_should_not_overlap_dates(
 def test_should_should_contain_correct_counts_given_train_test_split(
     sample_data, sample_metadata
 ):
-    split_data = nnts.pandas.split_test_train_last_horizon(
+    split_data = datasets.split_test_train_last_horizon(
         sample_data, sample_metadata.context_length, sample_metadata.prediction_length
     )  # 50 records for each unique_id
 

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Callable, Iterable, List, Tuple, Type
 
 import pandas as pd
@@ -5,6 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 
 import nnts.preprocessing
+import nnts.utils
 
 
 def count_of_params_in(net: torch.nn.Module):
@@ -127,3 +129,19 @@ def create_dataloaders(
         )
         return trn_dl, val_dl, test_dl
     return trn_dl, test_dl
+
+
+def seed_everything(seed: int):
+    import os
+    import random
+
+    import numpy as np
+    import torch
+
+    random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True

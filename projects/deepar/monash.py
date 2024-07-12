@@ -5,7 +5,7 @@ import pandas as pd
 from gluonts.dataset.common import ListDataset
 from gluonts.dataset.field_names import FieldName
 
-from nnts import utils
+from nnts import datasets
 
 BASE_DIR = "projects/deepar/data/"
 
@@ -57,7 +57,7 @@ def get_deep_nn_forecasts(
     final_forecasts = []
 
     if frequency is not None:
-        freq = utils.FREQUENCY_MAP[frequency]
+        freq = datasets.FREQUENCY_MAP[frequency]
         seasonality = SEASONALITY_MAP[frequency]
     else:
         freq = "1Y"

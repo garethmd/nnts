@@ -5,31 +5,33 @@ from typing import List
 import covs
 import metric_generator
 import pandas as pd
+import torch.nn.functional as F
+import torch.optim
 
 import nnts
 import nnts.data
+import nnts.datasets
 import nnts.experiments
 import nnts.loggers
 import nnts.metrics
 import nnts.models
-import nnts.pandas
 import nnts.torch.data
 import nnts.torch.datasets
 import nnts.torch.models
 import nnts.torch.trainers as trainers
-from nnts import utils
+from nnts import datasets, utils
 
 
 def run_scenario(
     scenario: nnts.experiments.CovariateScenario,
     df_orig: pd.DataFrame,
-    metadata: utils.Metadata,
+    metadata: datasets.Metadata,
     params: utils.Hyperparams,
     splitter: callable,
     model_name: str,
     path: str,
 ):
-    nnts.torch.datasets.seed_everything(scenario.seed)
+    nnts.torch.utils.seed_everything(scenario.seed)
     df, scenario = covs.prepare(df_orig.copy(), scenario.copy())
     split_data = splitter(df, metadata.context_length, metadata.prediction_length)
     trn_dl, val_dl, test_dl = nnts.data.create_trn_val_test_dataloaders(
@@ -85,17 +87,19 @@ def run_experiment(
 
     for dataset_name in dataset_names:
         for model_name in model_names:
-            metadata = utils.load(
+            metadata = datasets.load_metadata(
                 dataset_name, path=os.path.join(data_path, f"{model_name}-monash.json")
             )
-            df_orig, *_ = nnts.pandas.read_tsf(
+            df_orig, *_ = nnts.datasets.read_tsf(
                 os.path.join(data_path, covs.file_map[dataset_name])
             )
 
-            params = utils.Hyperparams()
-            splitter = nnts.pandas.LastHorizonSplitter()
+            params = utils.Hyperparams(
+                optimizer=torch.optim.AdamW, loss_fn=F.smooth_l1_loss
+            )
+            splitter = nnts.datasets.LastHorizonSplitter()
             path = os.path.join(results_path, model_name, metadata.dataset)
-            nnts.loggers.makedirs_if_not_exists(path)
+            utils.makedirs_if_not_exists(path)
 
             scenario_list: List[nnts.experiments.CovariateScenario] = []
 
@@ -132,7 +136,7 @@ def run_experiment(
                     model_name,
                     path,
                 )
-            csv_aggregator = nnts.pandas.CSVFileAggregator(path, "results")
+            csv_aggregator = nnts.datasets.CSVFileAggregator(path, "results")
             csv_aggregator()
 
             if generate_metrics:

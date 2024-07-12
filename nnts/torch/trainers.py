@@ -1,13 +1,16 @@
-from typing import Any
+import os
+from typing import Any, Tuple
 
 import numpy as np
 import torch
 import torch.nn.functional as F
+import torch.utils.data
 
 import nnts.data
 import nnts.loggers
+import nnts.metrics
 import nnts.trainers
-from nnts import utils
+from nnts import datasets, utils
 
 
 class EarlyStopper:
@@ -65,29 +68,35 @@ def eval(net, dl, prediction_length: int, context_length: int, hooks: Any = None
 
 
 class TorchEvaluator(nnts.trainers.Evaluator):
-    def __init__(self, net):
+    def __init__(self, net: torch.nn.Module):
         self.net = net
 
-    def evaluate(self, dl, prediction_length, context_length, hooks=None):
+    def evaluate(
+        self,
+        dl: torch.utils.data.DataLoader,
+        prediction_length: int,
+        context_length: int,
+        hooks=None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         return eval(self.net, dl, prediction_length, context_length, hooks=hooks)
 
 
 class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
+
     def __init__(
         self,
-        state: nnts.trainers.TrainerState,
         net: torch.nn.Module,
         params: utils.Hyperparams,
-        metadata: utils.Metadata,
-        path: str,
-        loss_fn=F.l1_loss,
+        metadata: datasets.Metadata,
+        state: nnts.trainers.TrainerState = nnts.trainers.TrainerState(),
     ):
         super().__init__(state, params)
         self.net = net
         self.metadata = metadata
-        self.path = path
-        self.loss_fn = loss_fn
-        self.Optimizer = params.optimizer or torch.optim.AdamW
+        utils.makedirs_if_not_exists(params.model_file_path)
+        self.path = os.path.join(params.model_file_path, "best_model.pt")
+        self.loss_fn = params.loss_fn
+        self.Optimizer = params.optimizer
 
     def before_train(self, train_dl):
         print(self.net)
@@ -98,7 +107,7 @@ class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
         )
         if self.params.scheduler == utils.Scheduler.REDUCE_LR_ON_PLATEAU:
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer, mode="min", factor=0.5, patience=10
+                self.optimizer, mode="min", factor=0.5, patience=self.params.patience
             )
         elif self.params.scheduler == utils.Scheduler.ONE_CYCLE:
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
@@ -176,19 +185,18 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
 
     def __init__(
         self,
-        state: nnts.trainers.TrainerState,
         net: torch.nn.Module,
         params: utils.Hyperparams,
-        metadata: utils.Metadata,
-        path: str,
-        loss_fn=F.l1_loss,
+        metadata: datasets.Metadata,
+        state: nnts.trainers.TrainerState = nnts.trainers.TrainerState(),
     ):
         super().__init__(state, params)
         self.net = net
         self.metadata = metadata
-        self.path = path
-        self.loss_fn = loss_fn
-        self.Optimizer = params.optimizer or torch.optim.AdamW
+        utils.makedirs_if_not_exists(params.model_file_path)
+        self.path = os.path.join(params.model_file_path, "best_model.pt")
+        self.loss_fn = params.loss_fn
+        self.Optimizer = params.optimizer
 
     def before_train(self, train_dl):
         print(self.net)
@@ -199,7 +207,7 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
         )
         if self.params.scheduler == utils.Scheduler.REDUCE_LR_ON_PLATEAU:
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer, mode="min", factor=0.5, patience=10
+                self.optimizer, mode="min", factor=0.5, patience=self.params.patience
             )
         elif self.params.scheduler == utils.Scheduler.ONE_CYCLE:
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(

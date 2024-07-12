@@ -11,7 +11,7 @@ import nnts.torch
 import nnts.torch.models
 import nnts.torch.trainers
 import nnts.trainers
-from nnts import utils
+from nnts import datasets, utils
 
 
 class TorchEpochTrainer(nnts.trainers.EpochTrainer):
@@ -28,7 +28,7 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
         state: nnts.trainers.TrainerState,
         net: torch.nn.Module,
         params: utils.Hyperparams,
-        metadata: utils.Metadata,
+        metadata: datasets.Metadata,
         path: str,
         loss_fn=F.l1_loss,
     ):

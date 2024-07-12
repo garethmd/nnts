@@ -4,14 +4,15 @@ from typing import List
 
 import features
 import torch.nn.functional as F
+import torch.optim
 import trainers
 
 import nnts
 import nnts.data
+import nnts.datasets
 import nnts.experiments
 import nnts.loggers
 import nnts.metrics
-import nnts.pandas
 import nnts.torch
 import nnts.torch.datasets
 import nnts.torch.hyperparams
@@ -20,7 +21,7 @@ import nnts.torch.preprocessing
 import nnts.torch.trainers
 import nnts.torch.utils
 import nnts.trainers
-from nnts import utils
+from nnts import datasets, utils
 
 
 # EXPERIMENT SETUP
@@ -80,7 +81,7 @@ def create_scenarios(metadata, lag_seq):
     return scenario_list
 
 
-def create_scheduler_scenarios(metadata, lag_seq, scheduler_name):
+def create_scheduler_scenarios(metadata: datasets.Metadata, lag_seq, scheduler_name):
     conts = []
     scenario_list: List[features.SchedulerScenario] = []
 
@@ -108,17 +109,19 @@ def main(
     results_path: str,
 ):
     # Set up paths and load metadata
-    metadata = utils.load(
+    metadata = datasets.load_metadata(
         dataset_name, path=os.path.join(data_path, f"{base_model_name}-monash.json")
     )
     PATH = os.path.join(results_path, model_name, metadata.dataset)
-    nnts.loggers.makedirs_if_not_exists(PATH)
+    utils.makedirs_if_not_exists(PATH)
 
     # Load data
-    df_orig, *_ = nnts.pandas.read_tsf(os.path.join(data_path, metadata.filename))
+    df_orig, *_ = nnts.datasets.read_tsf(os.path.join(data_path, metadata.filename))
 
     # Set parameters
-    params = nnts.torch.hyperparams.GluonTsDefaultWithOneCycle()
+    params = utils.GluonTsDefaultWithOneCycle(
+        optimizer=torch.optim.AdamW, loss_fn=F.smooth_l1_loss
+    )
 
     # Calculate next month and unix timestamp
     df_orig = features.create_dummy_unique_ids(df_orig)
@@ -126,7 +129,7 @@ def main(
     scenario_list = create_scheduler_scenarios(metadata, lag_seq, "ONE_CYCLE")
 
     for scenario in scenario_list:
-        nnts.torch.datasets.seed_everything(scenario.seed)
+        nnts.torch.utils.seed_everything(scenario.seed)
         df = df_orig.copy()
         lag_processor = nnts.torch.preprocessing.LagProcessor(scenario.lag_seq)
 
@@ -153,7 +156,7 @@ def main(
 
         trn_dl, test_dl = nnts.torch.utils.create_dataloaders(
             df,
-            nnts.pandas.split_test_train_last_horizon,
+            nnts.datasets.split_test_train_last_horizon,
             context_length,
             metadata.prediction_length,
             Dataset=nnts.torch.datasets.TimeseriesLagsDataset,
@@ -180,7 +183,7 @@ def main(
         print(test_metrics)
         logger.finish()
 
-    # csv_aggregator = nnts.pandas.CSVFileAggregator(PATH, "results")
+    # csv_aggregator = nnts.utils.CSVFileAggregator(PATH, "results")
     # results = csv_aggregator()
     # univariate_results = results.loc[:, ["smape", "mase"]]
     # print(

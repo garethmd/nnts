@@ -8,7 +8,7 @@ from pydantic import BaseModel, PositiveInt
 
 import nnts.events
 import nnts.trainers
-from nnts import utils
+from nnts import datasets, utils
 from nnts.utils import Hyperparams
 
 
@@ -190,12 +190,13 @@ class EpochTrainer(Trainer):
 
 
 class ValidationTorchEpochTrainer(EpochTrainer):
+
     def __init__(
         self,
         state: nnts.trainers.TrainerState,
         net: torch.nn.Module,
         params: utils.Hyperparams,
-        metadata: utils.Metadata,
+        metadata: datasets.Metadata,
         path: str,
         loss_fn=F.l1_loss,
     ):

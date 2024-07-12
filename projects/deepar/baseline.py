@@ -17,18 +17,18 @@ from torch.utils.data import Sampler
 
 import nnts
 import nnts.data
+import nnts.datasets
 import nnts.experiments
 import nnts.loggers
 import nnts.metrics
-import nnts.pandas
 import nnts.torch.datasets
 import nnts.torch.models
 import nnts.torch.preprocessing
 import nnts.torch.utils
-from nnts import utils
+from nnts import datasets, utils
 
 
-def calculate_seasonal_error(trn_dl: Iterable, metadata: utils.Metadata):
+def calculate_seasonal_error(trn_dl: Iterable, metadata: datasets.Metadata):
     se_list = []
     for batch in trn_dl:
         past_data = batch["target"]
@@ -101,7 +101,7 @@ def create_scenarios(metadata, lag_seq):
     return scenario_list
 
 
-def create_lag_scenarios(metadata: utils.Metadata, lag_seq: List[int]):
+def create_lag_scenarios(metadata: datasets.Metadata, lag_seq: List[int]):
     if metadata.freq == "1H":
         conts = [
             "hour",
@@ -274,16 +274,16 @@ def main(
     # Set up paths and load metadata
 
     metadata_path = os.path.join(data_path, f"{base_model_name}-monash.json")
-    metadata = utils.load(dataset_name, path=metadata_path)
+    metadata = datasets.load_metadata(dataset_name, path=metadata_path)
     datafile_path = os.path.join(data_path, metadata.filename)
     PATH = os.path.join(results_path, model_name, metadata.dataset)
 
     # Load data
-    df_orig, *_ = nnts.pandas.read_tsf(datafile_path)
-    params = utils.Hyperparams()
+    df_orig, *_ = nnts.datasets.read_tsf(datafile_path)
+    params = utils.Hyperparams(optimizer=torch.optim.Adam, loss_fn=distr_nll)
 
     # Create output directory if it doesn't exist
-    nnts.loggers.makedirs_if_not_exists(PATH)
+    utils.makedirs_if_not_exists(PATH)
 
     # Set parameters
     params.batch_size = 32
@@ -302,10 +302,10 @@ def main(
     scenario_list = create_lag_scenarios(metadata, lag_seq)
 
     for scenario in scenario_list:
-        nnts.torch.datasets.seed_everything(scenario.seed)
+        nnts.torch.utils.seed_everything(scenario.seed)
         df = df_orig.copy()
         context_length = metadata.context_length + max(scenario.lag_seq)
-        split_data = nnts.pandas.split_test_train_last_horizon(
+        split_data = nnts.datasets.split_test_train_last_horizon(
             df, context_length, metadata.prediction_length
         )
         trn_dl, test_dl = nnts.data.create_trn_test_dataloaders(

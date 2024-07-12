@@ -5,12 +5,12 @@ import metrics_old
 import pandas as pd
 import torch
 
+import nnts.datasets
 import nnts.experiments
-import nnts.pandas
 import nnts.torch.datasets
 import nnts.torch.models
 import nnts.torch.trainers
-from nnts import utils
+from nnts import datasets, utils
 
 
 def save_results(y_hat, y, path, name):
@@ -35,15 +35,15 @@ def calculate_forecast_horizon_metrics(y_hat, y, metadata, metric="mae"):
 def generate(
     scenario_list: List[nnts.experiments.CovariateScenario],
     df_orig: pd.DataFrame,
-    metadata: utils.Metadata,
+    metadata: datasets.Metadata,
     params: utils.Hyperparams,
     model_name: str,
     path: str,
 ):
     for scenario in scenario_list:
-        nnts.torch.datasets.seed_everything(scenario.seed)
+        nnts.torch.utils.seed_everything(scenario.seed)
         df, scenario = covs.prepare(df_orig.copy(), scenario.copy())
-        splitter = nnts.pandas.LastHorizonSplitter()
+        splitter = nnts.datasets.LastHorizonSplitter()
         split_data = splitter(df, metadata.context_length, metadata.prediction_length)
         _, _, test_dl = nnts.data.create_trn_val_test_dataloaders(
             split_data,

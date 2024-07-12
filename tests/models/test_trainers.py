@@ -49,9 +49,24 @@ def evaluator():
     return MockEvaluator()
 
 
+class FakeAdam:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def zero_grad(self):
+        pass
+
+    def step(self):
+        pass
+
+
+def fake_loss(y_pred, y_true):
+    return 0
+
+
 @pytest.fixture
 def params():
-    return utils.Hyperparams(epochs=5)
+    return utils.Hyperparams(optimizer=FakeAdam, loss_fn=fake_loss, epochs=5)
 
 
 @pytest.fixture

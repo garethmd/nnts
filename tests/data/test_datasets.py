@@ -1,7 +1,7 @@
 import pandas as pd
 
-import nnts.pandas
-from nnts import utils
+import nnts.datasets
+from nnts import datasets
 
 
 def test_load_metadata_should_return_metadata():
@@ -9,10 +9,10 @@ def test_load_metadata_should_return_metadata():
     dataset = "hospital"
 
     # Act
-    metadata = utils.load(dataset, path="tests/artifacts/monash.json")
+    metadata = datasets.load_metadata(dataset, path="tests/artifacts/monash.json")
 
     # Assert
-    assert isinstance(metadata, utils.Metadata)
+    assert isinstance(metadata, datasets.Metadata)
     assert metadata.dataset == dataset
     assert metadata.context_length > 0
     assert metadata.prediction_length > 0
@@ -21,15 +21,15 @@ def test_load_metadata_should_return_metadata():
 
 
 def test_should_load_monash_metadata():
-    metadata = utils.load("hospital", path="tests/artifacts/monash.json")
-    assert isinstance(metadata, utils.Metadata)
+    metadata = datasets.load_metadata("hospital", path="tests/artifacts/monash.json")
+    assert isinstance(metadata, datasets.Metadata)
 
 
 def test_should_load_monash_metadata_and_data():
-    response = nnts.pandas.load(
+    response = nnts.datasets.load(
         "hospital",
         data_path="tests/artifacts",
         metadata_filename="monash.json",
     )
     assert isinstance(response[0], pd.DataFrame)
-    assert isinstance(response[1], utils.Metadata)
+    assert isinstance(response[1], datasets.Metadata)

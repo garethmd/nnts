@@ -11,14 +11,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-import nnts.events
-import nnts.trainers
 import wandb
 
-
-def makedirs_if_not_exists(directory: str) -> None:
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+from . import events, trainers, utils
 
 
 class Handler(ABC):
@@ -49,19 +44,19 @@ class JsonFileHandler(Handler):
         self.filename = filename + ".json"
 
     def handle(self, data: Dict[str, Any]) -> None:
-        makedirs_if_not_exists(self.path)
+        utils.makedirs_if_not_exists(self.path)
         with open(os.path.join(self.path, self.filename), "w") as json_file:
             json.dump(data, json_file, indent=4, default=convert_np_float)
 
 
-class EpochEventMixin(nnts.events.Listener):
+class EpochEventMixin(events.Listener):
 
     @singledispatchmethod
     def notify(self, event: Dict[str, Any]) -> None:
         self.log(event)
 
-    @notify.register(nnts.trainers.EpochTrainComplete)
-    def _(self, event: nnts.trainers.EpochTrainComplete) -> None:
+    @notify.register(trainers.EpochTrainComplete)
+    def _(self, event: trainers.EpochTrainComplete) -> None:
         self.log(
             {
                 "epoch": event.state.epoch,
@@ -69,8 +64,8 @@ class EpochEventMixin(nnts.events.Listener):
             }
         )
 
-    @notify.register(nnts.trainers.EpochValidateComplete)
-    def _(self, event: nnts.trainers.EpochValidateComplete) -> None:
+    @notify.register(trainers.EpochValidateComplete)
+    def _(self, event: trainers.EpochValidateComplete) -> None:
         self.log(
             {
                 "valid_loss": event.state.valid_loss.detach().item(),
@@ -80,14 +75,14 @@ class EpochEventMixin(nnts.events.Listener):
             f"Epoch {event.state.epoch} train loss: {event.state.train_loss.detach().item()}, valid loss: {event.state.valid_loss.detach().item()}"
         )
 
-    @notify.register(nnts.trainers.EpochBestModel)
-    def _(self, event: nnts.trainers.EpochBestModel) -> None:
+    @notify.register(trainers.EpochBestModel)
+    def _(self, event: trainers.EpochBestModel) -> None:
         self.log_model(event.path)
 
-    def configure(self, evts: nnts.events.EventManager) -> None:
-        evts.add_listener(nnts.trainers.EpochTrainComplete, self)
-        evts.add_listener(nnts.trainers.EpochValidateComplete, self)
-        evts.add_listener(nnts.trainers.EpochBestModel, self)
+    def configure(self, evts: events.EventManager) -> None:
+        evts.add_listener(trainers.EpochTrainComplete, self)
+        evts.add_listener(trainers.EpochValidateComplete, self)
+        evts.add_listener(trainers.EpochBestModel, self)
 
 
 class Run(ABC):
@@ -145,13 +140,14 @@ class LocalFileRun(Run, EpochEventMixin):
 
     def log_model(self, source_file: str) -> None:
         print(f"Artifact saved to {source_file}")
+        utils.makedirs_if_not_exists(self.path)
         try:
             shutil.copy(source_file, self.path)
         except shutil.SameFileError:
             pass
 
     def log_outputs(self, data: Dict[str, Any]) -> None:
-        makedirs_if_not_exists(self.path)
+        utils.makedirs_if_not_exists(self.path)
         numpy_dict = {key: value for key, value in data.items()}
         # Save each numpy array to a separate text file
         for key, value in numpy_dict.items():

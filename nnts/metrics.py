@@ -1,9 +1,6 @@
 from typing import Dict, Optional
 
 import torch
-import torch.nn.functional as F
-
-from . import utils
 
 
 def _calculate_seasonal_error(
@@ -33,12 +30,12 @@ def _calculate_seasonal_error(
 
 
 def calculate_seasonal_error(
-    trn_dl: torch.utils.data.DataLoader, metadata: utils.Metadata
+    trn_dl: torch.utils.data.DataLoader, seasonality: int
 ) -> torch.tensor:
     seasonal_errors_per_series = []
     for series, mask in zip(trn_dl.dataset.X[:, :, 0], trn_dl.dataset.pad_mask):
         past_data = series[mask]
-        error = _calculate_seasonal_error(past_data, metadata.seasonality)
+        error = _calculate_seasonal_error(past_data, seasonality)
         if error == 0.0:
             error = _calculate_seasonal_error(past_data, 1)
 

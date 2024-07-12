@@ -9,11 +9,11 @@ import pandas as pd
 import scipy
 import torch
 
+import nnts.datasets
 import nnts.experiments.scenarios
-import nnts.pandas
 import nnts.torch.models
 import nnts.torch.preprocessing as preprocessing
-from nnts import utils
+from nnts import datasets, utils
 
 errors = {
     "us_births": np.linspace(0, 0.195, 8).tolist(),
@@ -110,7 +110,7 @@ def prepare_scenarios(
 ) -> List[nnts.experiments.CovariateScenario]:
     new_scenario_list = []
     for scenario in scenario_list:
-        nnts.torch.datasets.seed_everything(scenario.seed)
+        nnts.torch.utils.seed_everything(scenario.seed)
         new_scenario_list.append(prepare(df_orig.copy(), scenario)[1])
     scenario_list = new_scenario_list
     return scenario_list
@@ -118,7 +118,7 @@ def prepare_scenarios(
 
 def univariate_results(
     scenario: nnts.experiments.CovariateScenario,
-    metadata: utils.Metadata,
+    metadata: datasets.Metadata,
     forecast_horizon: int,
     path: str,
 ):
@@ -145,7 +145,7 @@ def plot_pcc_charts(
         nrows=1, ncols=len(dataset_list), figsize=(20, 5), sharey=True
     )
     for i, dataset_name in enumerate(dataset_list):
-        df_orig, metadata = nnts.pandas.load(
+        df_orig, metadata = nnts.datasets.load(
             dataset_name,
             data_path,
             metadata_filename=f"{model_name}-monash.json",
@@ -228,7 +228,7 @@ def model_factory(
     model_name: str,
     params: utils.Hyperparams,
     scenario: nnts.experiments.Scenario,
-    metadata: utils.Metadata,
+    metadata: datasets.Metadata,
 ):
     if model_name == "base-lstm":
         return nnts.torch.models.BaseLSTM(

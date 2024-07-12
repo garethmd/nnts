@@ -11,18 +11,18 @@ import trainers
 
 import nnts
 import nnts.data
+import nnts.datasets
 import nnts.experiments
 import nnts.loggers
 import nnts.metrics
-import nnts.pandas
 import nnts.torch.datasets
 import nnts.torch.models
 import nnts.torch.preprocessing
 import nnts.torch.utils
-from nnts import utils
+from nnts import datasets, utils
 
 
-def calculate_seasonal_error(trn_dl: Iterable, metadata: utils.Metadata):
+def calculate_seasonal_error(trn_dl: Iterable, metadata: datasets.Metadata):
     se_list = []
     for batch in trn_dl:
         past_data = batch["target"]
@@ -135,19 +135,22 @@ def main(
     results_path: str,
 ):
     # Set up paths and load metadata
-    metadata = utils.load(
+    metadata = datasets.load_metadata(
         dataset_name, path=os.path.join(data_path, f"{base_model_name}-monash.json")
     )
     PATH = os.path.join(results_path, model_name, metadata.dataset)
-    nnts.loggers.makedirs_if_not_exists(PATH)
+    utils.makedirs_if_not_exists(PATH)
 
     # Load data
-    df_orig, *_ = nnts.pandas.read_tsf(os.path.join(data_path, metadata.filename))
+    df_orig, *_ = nnts.datasets.read_tsf(os.path.join(data_path, metadata.filename))
 
     # Set parameters
-    params = utils.Hyperparams()
-    params.batch_size = 32
-    params.batches_per_epoch = 100
+    params = utils.Hyperparams(
+        optimizer=torch.optim.Adam,
+        batch_size=32,
+        batches_per_epoch=100,
+        loss_fn=distr_nll,
+    )
 
     # Calculate next month and unix timestamp
     df_orig = features.create_time_features(df_orig)
@@ -165,12 +168,12 @@ def main(
     params.scheduler = utils.Scheduler.REDUCE_LR_ON_PLATEAU
 
     for scenario in scenario_list[:1]:
-        nnts.torch.datasets.seed_everything(scenario.seed)
+        nnts.torch.utils.seed_everything(scenario.seed)
         df = df_orig.copy()
         lag_processor = nnts.torch.preprocessing.LagProcessor(scenario.lag_seq)
 
         context_length = metadata.context_length + max(scenario.lag_seq)
-        split_data = nnts.pandas.split_test_train_last_horizon(
+        split_data = nnts.datasets.split_test_train_last_horizon(
             df, context_length, metadata.prediction_length
         )
         trn_dl, test_dl = nnts.data.create_trn_test_dataloaders(
@@ -214,7 +217,7 @@ def main(
         print(test_metrics)
         logger.finish()
 
-    csv_aggregator = nnts.pandas.CSVFileAggregator(PATH, "results")
+    csv_aggregator = nnts.datasets.CSVFileAggregator(PATH, "results")
     results = csv_aggregator()
     univariate_results = results.loc[:, ["smape", "mase"]]
     print(

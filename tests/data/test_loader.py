@@ -1,19 +1,20 @@
 import pytest
 
 import nnts.data
+import nnts.datasets
 import nnts.experiments
 import nnts.torch.datasets
-from nnts import utils
+from nnts import datasets, utils
 
 
 @pytest.fixture
 def sample_split_data():
-    return utils.SplitData(train="train", validation="validation", test="test")
+    return nnts.datasets.SplitData(train="train", validation="validation", test="test")
 
 
 @pytest.fixture
 def sample_metadata():
-    return utils.Metadata(
+    return datasets.Metadata(
         filename="fake_path",
         dataset="fake_dataset",
         context_length=15,
