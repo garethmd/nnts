@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "nnts"
+version = "0.1.0"
+description = "Lightweight pytorch time series forecasting"
+authors = ["Gareth Davies <garethmd@googlemail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+torch = "^2.3.1"
+pandas = "^2.2.2"
+matplotlib = "^3.9.1"
+wandb = "^0.17.4"
+seaborn = "^0.13.2"
+plotly = "^5.22.0"
+scipy = "^1.14.0"
+gluonts = "^0.15.1"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.2.2"
+
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+black = "^24.4.2"
+flake8 = "^7.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
