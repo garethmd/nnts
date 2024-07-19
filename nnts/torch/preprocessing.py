@@ -8,7 +8,10 @@ import nnts.preprocessing
 
 
 def masked_mean_abs_scaling(
-    seq: torch.Tensor, mask: torch.Tensor = None, eps: float = 1e-10, dim: int = 1
+    seq: torch.Tensor,
+    mask: torch.Tensor | None = None,
+    eps: float = 1e-10,
+    dim: int = 1,
 ):
     if mask is None:
         mask = torch.ones_like(seq)

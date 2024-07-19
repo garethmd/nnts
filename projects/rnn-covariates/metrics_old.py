@@ -17,7 +17,7 @@ def rmse(x: torch.Tensor, y: torch.Tensor, reduction="mean"):
         return (x - y).pow(2).mean(1).sqrt()
 
 
-def calc_metrics(y, y_hat, period="M", seasonality=12):
+def calc_metrics(y, y_hat, period="ME", seasonality=12):
     mae = mean_absolute_error(y, y_hat).mean().item()
     test_rmse = rmse(y, y_hat).mean()
     mse = metrics.mse(y.numpy(), y_hat.numpy())

@@ -4,7 +4,7 @@
         "dataset": "m1_monthly",
         "context_length": 15,
         "prediction_length": 18,
-        "freq": "M",
+        "freq": "ME",
         "seasonality": 12,
         "url": "https://zenodo.org/records/4656159/files/m1_monthly_dataset.zip"
     },
@@ -31,7 +31,7 @@
         "dataset": "m3_monthly",
         "context_length": 15,
         "prediction_length": 18,
-        "freq": "M",
+        "freq": "ME",
         "seasonality": 12,
         "url": "https://zenodo.org/records/4656298/files/m3_monthly_dataset.zip"
     },
@@ -85,7 +85,7 @@
         "dataset": "m4_monthly",
         "context_length": 15,
         "prediction_length": 18,
-        "freq": "M",
+        "freq": "ME",
         "seasonality": 12,
         "url": "https://zenodo.org/records/4656480/files/m4_monthly_dataset.zip"
     },
@@ -112,7 +112,7 @@
         "dataset": "tourism_monthly",
         "context_length": 15,
         "prediction_length": 24,
-        "freq": "M",
+        "freq": "ME",
         "seasonality": 12,
         "url": "https://zenodo.org/records/4656096/files/tourism_monthly_dataset.zip"
     },
@@ -139,7 +139,7 @@
         "dataset": "cif_2016",
         "context_length": 15,
         "prediction_length": 12,
-        "freq": "M",
+        "freq": "ME",
         "seasonality": 12,
         "url": "https://zenodo.org/records/4656042/files/cif_2016_dataset.zip"
     },
@@ -274,7 +274,7 @@
         "dataset": "car_parts",
         "context_length": 15,
         "prediction_length": 12,
-        "freq": "M",
+        "freq": "ME",
         "seasonality": 12,
         "url": "https://zenodo.org/records/4656021/files/car_parts_dataset_without_missing_values.zip"
     },
@@ -283,7 +283,7 @@
         "dataset": "fred_md",
         "context_length": 15,
         "prediction_length": 12,
-        "freq": "M",
+        "freq": "ME",
         "seasonality": 12,
         "url": "https://zenodo.org/records/4654833/files/fred_md_dataset.zip"
     },
@@ -319,7 +319,7 @@
         "dataset": "hospital",
         "context_length": 15,
         "prediction_length": 12,
-        "freq": "M",
+        "freq": "ME",
         "seasonality": 12,
         "url": "https://zenodo.org/records/4656014/files/hospital_dataset.zip"
     },

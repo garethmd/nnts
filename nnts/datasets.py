@@ -27,7 +27,17 @@ FREQUENCY_MAP: dict = {
 
 
 class Metadata(BaseModel):
-    """Class for storing dataset metadata"""
+    """Class for storing metadata information about a dataset.
+
+    Attributes:
+    filename (str): The name of the file containing the dataset.
+    dataset (str): The name of the dataset.
+    context_length (int): The number of past observations used as context for making predictions.
+    prediction_length (int): The number of future observations to predict.
+    freq (str): The frequency of the time series data (e.g., 'D' for daily, 'H' for hourly).
+    seasonality (int): The seasonal period of the time series data.
+    url (str, optional): The URL where the dataset can be accessed. Defaults to None.
+    """
 
     filename: str
     dataset: str
@@ -38,7 +48,7 @@ class Metadata(BaseModel):
     url: str = None
 
 
-def unpack(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
+def unpack(df: pd.DataFrame, freq: str = "ME") -> pd.DataFrame:
     try:
         timesteps = pd.date_range(
             df["start_timestamp"], periods=len(df["series_value"]), freq=freq
@@ -59,6 +69,38 @@ def unpack(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
 
 
 def read_tsf(path: str, url: str = None) -> pd.DataFrame:
+    """Reads a time series forecasting (TSF) file from a specified path or URL and returns
+    the data as a pandas DataFrame along with metadata.
+
+    Parameters
+    ----------
+    path: str
+        The file path to the TSF file.
+    url: :obj: `str` optional
+        The URL to the TSF file. If specified, the file will be downloaded from the URL. Defaults to None.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing the time series data with the necessary transformations applied.
+    str
+        The frequency of the time series data.
+    int
+        The forecast horizon.
+    bool
+        Indicator whether the data contains missing values.
+    bool
+        Indicator whether the time series data have equal lengths.
+
+    Example
+    -------
+    >>> df, freq, forecast_horizon, contain_missing_values, contain_equal_length = read_tsf('path/to/file.tsf')
+    >>> print(df.head())
+    >>> print(freq)
+    >>> print(forecast_horizon)
+    >>> print(contain_missing_values)
+    >>> print(contain_equal_length)
+    """
     (
         all_data,
         frequency,
@@ -78,12 +120,37 @@ def load_metadata(
     dataset: str,
     path: str = None,
 ) -> Metadata:
-    # Get the directory of the current script
+    """
+    Loads metadata for a specified dataset from a JSON file.
+
+    Parameters
+    ----------
+    dataset: str
+        The name of the dataset for which to load metadata.
+    path: :obj: `str` optional
+        The path to the JSON file containing metadata. If not specified, a default path should be provided by the caller.
+
+    Returns
+    -------
+    Metadata
+        An instance of the Metadata class initialized with the data corresponding to the specified dataset.
+
+    Raises
+    ------
+    ValueError
+        If the specified dataset is not found in the metadata JSON file.
+
+    Example
+    -------
+    >>> metadata = load_metadata('my_dataset', 'path/to/metadata.json')
+    >>> print(metadata)
+    Metadata(attribute1=value1, attribute2=value2, ...)
+    """
     with open(path) as f:
         data = json.load(f)
     if dataset not in data:
         raise ValueError(
-            f"Dataset {dataset} not found in metadata {path} choose from {data.keys()}"
+            f"Dataset {dataset} not found in metadata {path} choose from: {', '.join(data.keys())}"
         )
     return Metadata(**data[dataset])
 
@@ -94,12 +161,17 @@ def load_dataset(
     """
     Load dataset and its metadata.
 
-    Parameters:
-    - name (str): Name of the dataset to load.
-    - repository (str): Name of the repository where the dataset metadata is stored. Default is 'monash'.
+    Parameters
+    ----------
+    name: str
+        Name of the dataset to load.
+    repository: str
+        Name of the repository where the dataset metadata is stored. Default is 'monash'.
 
-    Returns:
-    - Tuple[pd.DataFrame, Metadata]: A tuple containing the loaded DataFrame and its metadata.
+    Returns
+    -------
+    Tuple[pd.DataFrame, Metadata]
+        A tuple containing the loaded DataFrame and its metadata.
     """
     path = os.path.join(DATA_PATH, f"{repository}.json")
     metadata = load_metadata(name, path=path)
@@ -125,6 +197,27 @@ def load(
 def split_test_train_last_horizon(
     data: pd.DataFrame, context_length: int, prediction_length: int
 ) -> SplitTrainTest:
+    """
+    Splits the given time series data into training and testing sets based on the
+    specified context length and prediction length.
+
+    Parameters
+    ----------
+    data: pd.DataFrame
+        The input time series data containing a 'unique_id' column to identify different series.
+    context_length: int
+        The number of past observations to use as context for making predictions.
+    prediction_length: int
+        The number of future observations to predict.
+
+    Returns
+    -------
+    SplitTrainTest
+        A named tuple containing two DataFrames:
+            - train: The training set, which excludes the last 'prediction_length' observations for each unique series.
+            - test: The testing set, which includes the last 'context_length + prediction_length' observations for each unique series.
+
+    """
     trn = data.groupby("unique_id").head(-prediction_length)
     test = data.groupby("unique_id").tail(context_length + prediction_length)
     return SplitTrainTest(train=trn, test=test)
@@ -133,12 +226,29 @@ def split_test_train_last_horizon(
 def split_test_val_train_last_horizon(
     data: pd.DataFrame, context_length: int, prediction_length: int
 ) -> SplitTrainTest:
+    """
+    Splits the given time series data into training, validation, and testing sets based
+    on the specified context length and prediction length.
+
+    Parameters
+    ----------
+    data: pd.DataFrame
+        The input time series data containing a 'unique_id' column to identify different series.
+    context_length: int
+        The number of past observations to use as context for making predictions.
+    prediction_length: int
+        The number of future observations to predict.
+
+    Returns
+    -------
+    SplitData
+        A named tuple containing three DataFrames:
+            - train: The training set, which excludes the last '2 * prediction_length' observations for each unique series.
+            - validation: The validation set, which excludes the last 'prediction_length' and includes a time-range of context_length + prediction_length or each unique series.
+            - test: The testing set, which includes the last 'context_length + prediction_length' observations for each unique series.
+    """
     trn_val = data.groupby("unique_id").head(-prediction_length)
     trn = trn_val.groupby("unique_id").head(-prediction_length)
     val = trn_val.groupby("unique_id").tail(context_length + prediction_length)
     test = data.groupby("unique_id").tail(context_length + prediction_length)
     return SplitData(train=trn, validation=val, test=test)
-
-
-def slice_rows(group: pd.DataFrame, start, end) -> pd.DataFrame:
-    return group.iloc[start:end]

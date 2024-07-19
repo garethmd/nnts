@@ -1,109 +1,268 @@
 from typing import Dict, Optional
 
 import torch
+import torch.utils.data
 
 
 def _calculate_seasonal_error(
-    past_data: torch.tensor,
-    seasonality: Optional[int] = None,
-) -> torch.tensor:
-    r"""
-    .. math::
-
-        seasonal\_error = mean(|Y[t] - Y[t-m]|)
-
-    where m is the seasonal frequency. See [HA21]_ for more details.
+    past_data: torch.Tensor,
+    seasonality: Optional[int] = 1,
+) -> torch.Tensor:
     """
-    # Check if the length of the time series is larger than the seasonal
-    # frequency
+    Calculates the seasonal error for a given time series data based on the specified seasonality.
+
+    The seasonal error is computed by comparing the values of the time series with those
+    lagged by the seasonality period. If the seasonality is larger than the length of the
+    time series, the lag is set to 1 (t-1).
+
+    Parameters
+    ----------
+    past_data: torch.Tensor
+        A tensor containing the past time series data.
+    seasonality: :obj:`int`
+        The seasonality period. If not specified or if the length of past_data is less than the seasonality, a fallback value of 1 (i.e., t-1) is used.
+
+    Returns
+    -------
+    torch.Tensor
+        A tensor containing the mean absolute seasonal error.
+
+    Example
+    -------
+    >>> past_data = torch.tensor([10.0, 20.0, 30.0, 40.0, 50.0])
+    >>> seasonality = 2
+    >>> error = _calculate_seasonal_error(past_data, seasonality)
+    >>> print(error)
+    tensor(20.0)
+    """
     if seasonality < len(past_data):
         forecast_freq = seasonality
     else:
-        forecast_freq = 1
+        forecast_freq = 1  # Fallback to t-1 if series length < seasonality. From Monash
+        # https://github.com/rakshitha123/TSForecasting/blob/d187b057af25a203f8b321ad52edf11bc3c8b619/utils/error_calculator.R#L57
 
     y_t = past_data[:-forecast_freq]
     y_tm = past_data[forecast_freq:]
 
     result = torch.mean(torch.abs(y_t - y_tm))
-    # assert torch.isfinite(result)
     return result
 
 
 def calculate_seasonal_error(
     trn_dl: torch.utils.data.DataLoader, seasonality: int
-) -> torch.tensor:
+) -> torch.Tensor:
     seasonal_errors_per_series = []
     for series, mask in zip(trn_dl.dataset.X[:, :, 0], trn_dl.dataset.pad_mask):
         past_data = series[mask]
         error = _calculate_seasonal_error(past_data, seasonality)
-        if error == 0.0:
-            error = _calculate_seasonal_error(past_data, 1)
-
         seasonal_errors_per_series.append(error)
     seasonal_errors = torch.stack(seasonal_errors_per_series, dim=0)
-    # assert torch.isfinite(seasonal_errors).all()
     return seasonal_errors.unsqueeze(1)
 
 
 def mse(y_hat: torch.tensor, y: torch.tensor, dim=1) -> torch.tensor:
+    """
+    Calculates the Mean Squared Error (MSE) between the predicted values and the actual values.
+
+    The function computes the MSE by taking the element-wise difference between the predicted
+    values and the actual values, squaring these differences, and then averaging them. If the
+    input tensors have more than one dimension, the averaging is done along the specified dimension.
+
+    Parameters
+    ----------
+    y_hat: torch.tensor
+        The predicted values.
+    y: torch.tensor
+        The actual values.
+    dim: :obj: `int`, optional
+        The dimension along which to compute the mean if the input tensors have more than one dimension. Defaults to 1.
+
+    Returns
+    -------
+    torch.tensor
+        A tensor containing the mean squared error.
+
+    Example
+    -------
+    >>> y_hat = torch.tensor([2.5, 0.0, 2.0, 8.0])
+    >>> y = torch.tensor([3.0, -0.5, 2.0, 7.0])
+    >>> error = mse(y_hat, y)
+    >>> print(error)
+    tensor(0.3750)
+    """
     return (
         ((y_hat - y) ** 2).mean(dim=dim)
-        if dim is not None
+        if len(y.shape) > 1
         else ((y_hat - y) ** 2).mean()
     )
 
 
 def abs_error(y_hat: torch.tensor, y: torch.tensor, dim=1) -> torch.tensor:
+    """
+    Calculates the absolute error between the predicted values and the actual values.
+
+    The function computes the absolute error by taking the element-wise absolute difference
+    between the predicted values and the actual values, and then summing these differences.
+    If the input tensors have more than one dimension, the summation is done along dimension 1.
+
+    Parameters
+    ----------
+    y_hat: torch.tensor
+        The predicted values.
+    y: torch.tensor
+        The actual values.
+
+    Returns
+    -------
+    torch.tensor:
+        A tensor containing the sum of absolute errors.
+
+    Example
+    -------
+    >>> y_hat = torch.tensor([2.5, 0.0, 2.0, 8.0])
+    >>> y = torch.tensor([3.0, -0.5, 2.0, 7.0])
+    >>> error = abs_error(y_hat, y)
+    >>> print(error)
+    tensor(2.0)
+    """
     return (
-        (y_hat - y).abs().sum(dim=dim) if dim is not None else (y_hat - y).abs().sum()
+        (y_hat - y).abs().sum(dim=dim) if len(y.shape) > 1 else (y_hat - y).abs().sum()
     )
 
 
-def abs_target_sum(y: torch.tensor, dim: int = 1):
-    return y.abs().sum(dim=dim) if dim is not None else y.abs().sum()
+def abs_target_sum(y: torch.tensor, dim: int = 1) -> torch.tensor:
+    """
+    Calculates the sum of the absolute values of the target tensor.
+
+    The function computes the sum of the absolute values of the target tensor. If the input
+    tensor has more than one dimension, the summation is done along the specified dimension.
+
+    Parameters
+    ----------
+    y: torch.tensor
+        The target values.
+    dim: :obj: `int`, optional
+        The dimension along which to compute the sum if the input tensor has more than one dimension. Defaults to 1.
+
+    Returns
+    -------
+    torch.tensor
+        A tensor containing the sum of absolute values.
+
+    Example
+    -------
+    >>> y = torch.tensor([3.0, -0.5, 2.0, -7.0])
+    >>> result = abs_target_sum(y)
+    >>> print(result)
+    tensor(12.5)
+    """
+    return y.abs().sum(dim=dim) if len(y.shape) > 1 else y.abs().sum()
 
 
-def abs_target_mean(y, dim=1):
-    return y.abs().mean(dim=dim) if dim is not None else y.abs().mean()
+def abs_target_mean(y: torch.tensor, dim: int = 1) -> torch.tensor:
+    """
+    Calculates the mean of the absolute values of the target tensor.
+
+    The function computes the mean of the absolute values of the target tensor. If the input
+    tensor has more than one dimension, the mean is calculated along the specified dimension.
+
+    Parameters
+    ----------
+    y: torch.tensor
+        The target values.
+    dim: :obj: `int`, optional
+        The dimension along which to compute the mean if the input tensor has more than one dimension. Defaults to 1.
+
+    Returns
+    -------
+    torch.tensor
+        A tensor containing the mean of absolute values.
+
+    Example
+    -------
+    >>> y = torch.tensor([[1.0, 2.0, 3.0, 4.0], [2.0, 4.0, 6.0, 8.0]])
+    >>> result = abs_target_mean(y)
+    >>> print(result)
+    tensor([2.5, 5.0])
+    """
+    return y.abs().mean(dim=dim) if len(y.shape) > 1 else y.abs().mean()
 
 
-def mae(y_hat, y, dim=1) -> torch.tensor:
+def mae(y_hat: torch.tensor, y: torch.tensor, dim: int = 1) -> torch.tensor:
+    """
+    Calculates the Mean Absolute Error (MAE) between the predicted values and the actual values.
+
+    The function computes the MAE by taking the element-wise absolute difference between the
+    predicted values and the actual values, and then averaging these differences. If the input
+    tensors have more than one dimension, the averaging is done along the specified dimension.
+
+    Parameters
+    ----------
+    y_hat: torch.tensor)
+        The predicted values.
+    y: torch.tensor
+        The actual values.
+    dim: :obj:`int`, optional
+        The dimension along which to compute the mean if the input tensors have more than one dimension. Defaults to 1.
+
+    Returns
+    -------
+    torch.tensor
+        A tensor containing the mean absolute error.
+
+    Example
+    -------
+    >>> y_hat = torch.tensor([[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]])
+    >>> y = torch.tensor([[2.0, 4.0, 6.0, 8.0], [1.0, 2.0, 3.0, 4.0]])
+    >>> error = mae(y_hat, y)
+    >>> print(error)
+    tensor([2.5, 0.0])
+    """
     return (
-        (y_hat - y).abs().mean(dim=dim) if dim is not None else (y_hat - y).abs().mean()
+        (y_hat - y).abs().mean(dim=dim)
+        if len(y.shape) > 1
+        else (y_hat - y).abs().mean()
     )
-
-
-def _single_ts_mase(
-    y_hat: torch.tensor, y: torch.tensor, seasonal_errors: torch.tensor
-) -> torch.tensor:
-    ape = (y_hat - y).abs() / y.abs()
-    mask = torch.isfinite(ape)
-    ape_filtered = ape[mask]
-    result = torch.mean(ape_filtered)
-    result /= seasonal_errors
-    # assert torch.isfinite(result)
-    return result
-
-
-def _mase(
-    y_hat: torch.tensor, y: torch.tensor, seasonal_errors: torch.tensor
-) -> torch.tensor:
-    if len(y.shape) > 1:
-        result = torch.stack(
-            [
-                _single_ts_mase(y_hat[i], y[i], seasonal_errors[i])
-                for i in range(y.shape[0])
-            ],
-            dim=0,
-        )
-        return result
-    else:
-        return _single_ts_mase(y_hat, y, seasonal_errors)
 
 
 def mase(
-    y_hat: torch.tensor, y: torch.tensor, seasonal_errors: torch.tensor, dim: int = 1
+    y_hat: torch.tensor,
+    y: torch.tensor,
+    seasonal_errors: torch.tensor,
+    dim: int = 1,
 ) -> torch.tensor:
+    """
+    Calculates the Mean Absolute Scaled Error (MASE) between the predicted values and the actual values.
+
+    The function computes the MASE by dividing the mean absolute error (MAE) by the seasonal
+    errors. If the input tensors have more than one dimension, the MAE is calculated along the
+    specified dimension.
+
+    Parameters
+    ----------
+    y_hat: torch.tensor)
+        The predicted values.
+    y: torch.tensor
+        The actual values.
+    seasonal_errors: torch.tensor)
+        The seasonal errors used for scaling the mean absolute error (MAE).
+    dim: :obj:`int`, optional
+        The dimension along which to compute the mean if the input tensors have more than one dimension. Defaults to 1.
+
+    Returns
+    -------
+    torch.tensor: A tensor containing the mean absolute scaled error.
+
+    Example
+    -------
+
+    >>> y_hat = torch.tensor([1.0, 2.0, 3.0, 4.0])
+    >>> y = torch.tensor([0.0, 4.0, 6.0, 8.0])
+    >>> seasonal_errors = torch.tensor([2.0])
+    >>> error = mase(y_hat, y, seasonal_errors)
+    >>> print(error)
+    tensor([1.25])
+    """
     return mae(y_hat, y, dim=dim) / seasonal_errors
 
 
@@ -116,6 +275,39 @@ def _single_ts_mape(y_hat: torch.tensor, y: torch.tensor) -> torch.tensor:
 
 
 def mape(y_hat: torch.tensor, y: torch.tensor) -> torch.tensor:
+    """
+    Calculates the Mean Absolute Percentage Error (MAPE) between the predicted values and the actual values.
+
+    The function computes the MAPE by calculating the absolute percentage error for each time
+    series and then averaging these errors. If the input tensors contain multiple time series
+    (i.e., are two-dimensional), the MAPE is calculated for each time series independently.
+
+    Parameters
+    ----------
+    y_hat: torch.tensor
+        The predicted values.
+    y: torch.tensor)
+        The actual values.
+
+    Returns
+    -------
+    torch.tensor: A tensor containing the mean absolute percentage error for each time series.
+
+    Example
+    -------
+    >>> y_hat = torch.tensor([1.0, 2.0, 3.0, 4.0])
+    >>> y = torch.tensor([1.0, 1.0, 1.0, 1.0])
+    >>> error = mape(y_hat, y)
+    >>> print(error)
+    tensor([1.5])
+
+    >>> y_hat = torch.tensor([[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]])
+    >>> y = torch.tensor([[0.0, 4.0, 6.0, 8.0], [0.0, 2.0, 3.0, 4.0]])
+    >>> error = mape(y_hat, y)
+    >>> print(error)
+    tensor([0.5, 0.0])
+
+    """
     if len(y.shape) > 1:
         return torch.stack(
             [_single_ts_mape(y_hat[i], y[i]) for i in range(y.shape[0])], dim=0
@@ -125,8 +317,80 @@ def mape(y_hat: torch.tensor, y: torch.tensor) -> torch.tensor:
 
 
 def smape(y_hat: torch.tensor, y: torch.tensor, dim: int = 1) -> torch.tensor:
+    """
+    Calculates the Symmetric Mean Absolute Percentage Error (sMAPE) between the predicted values and the actual values.
+
+    The function computes the sMAPE by calculating the symmetric absolute percentage error
+    for each prediction, which is given by the formula 2 * |y_hat - y| / (|y| + |y_hat|).
+    If the input tensors have more than one dimension, the mean is calculated along the specified dimension.
+
+    Parameters
+    ----------
+    y_hat: torch.tensor
+        The predicted values.
+    y: torch.tensor
+        The actual values.
+    dim: :obj:`int`, optional
+        The dimension along which to compute the mean if the input tensors have more than one dimension. Defaults to 1.
+
+    Returns
+    -------
+    torch.tensor
+        A tensor containing the symmetric mean absolute percentage error.
+
+    Example
+    -------
+    >>> y_hat = torch.tensor([[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]])
+    >>> y = torch.tensor([[0.0, 4.0, 6.0, 8.0], [0.0, 2.0, 3.0, 4.0]])
+    >>> error = smape(y_hat, y)
+    >>> print(error)
+    tensor([1.0, 0.5])
+
+    """
     pe = 2 * (y_hat - y).abs() / (y.abs() + y_hat.abs())
-    return pe.mean(dim=dim) if dim is not None else pe.mean()
+    return pe.mean(dim=dim) if len(y.shape) > 1 else pe.mean()
+
+
+def msmape(y_hat: torch.tensor, y: torch.tensor, dim: int = 1, eps=0.1) -> torch.tensor:
+    """
+    Calculates the Modified Symmetric Mean Absolute Percentage Error (msMAPE) between the predicted values and the actual values.
+
+    The function computes the msMAPE by calculating the modified symmetric absolute percentage error
+    for each prediction, which is given by the formula 2 * |y_hat - y| / max((|y| + |y_hat| + eps), (0.5 + eps)).
+    If the input tensors have more than one dimension, the mean is calculated along the specified dimension.
+
+    Parameters
+    ----------
+    y_hat: torch.tensor)
+        The predicted values.
+    y: torch.tensor)
+        The actual values.
+    dim: :obj:`int`, optional
+        The dimension along which to compute the mean if the input tensors have more than one dimension. Defaults to 1.
+    eps: :obj:`float`, optional
+        Epsilon value to prevent division by zero. Defaults to 0.1.
+
+    Returns
+    -------
+    torch.tensor
+        A tensor containing the modified symmetric mean absolute percentage error.
+
+
+    Example
+    -------
+    >>> y_hat = torch.tensor([[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]])
+    >>> y = torch.tensor([[0.0, 4.0, 6.0, 8.0], [0.0, 2.0, 3.0, 4.0]])
+    >>> error = msmape(y_hat, y)
+    >>> print(error)
+    tensor([1.0, 0.5])
+
+    """
+    pe = (
+        2
+        * (y_hat - y).abs()
+        / torch.max((y.abs() + y_hat.abs() + eps), torch.ones_like(y) * 0.5 + eps)
+    )
+    return pe.mean(dim=dim) if len(y.shape) > 1 else pe.mean()
 
 
 def nd(y_hat: torch.tensor, y: torch.tensor, dim: int = 1) -> torch.tensor:

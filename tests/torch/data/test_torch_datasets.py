@@ -29,7 +29,7 @@ def sample_data():
                 {
                     "unique_id": unique_id,
                     "y": range(1, 51),
-                    "ds": pd.date_range(start="2024-04-01", periods=50, freq="M"),
+                    "ds": pd.date_range(start="2024-04-01", periods=50, freq="ME"),
                 }
             )
             for unique_id in unique_ids
