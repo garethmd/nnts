@@ -50,7 +50,9 @@ def validate(net, batch, prediction_length, context_length):
         return y_hat, y
 
 
-def eval(net, dl, prediction_length: int, context_length: int, hooks: Any = None):
+def eval(
+    net, dl, prediction_length: int, context_length: int, hooks: Any = None
+) -> Tuple[torch.Tensor, torch.Tensor]:
     net.eval()
     with torch.no_grad():
         y_list = []
@@ -87,7 +89,7 @@ class TorchForecaster(nnts.trainers.Forecaster):
     def __init__(self, net: torch.nn.Module):
         self.net = net
 
-    def predict(self, batch, prediction_length: int, context_length: int) -> Any:
+    def forecast_batch(self, batch, prediction_length: int, context_length: int) -> Any:
         y_hat = self.net.generate(
             batch["X"],
             batch["pad_mask"],
@@ -108,7 +110,7 @@ class TorchForecaster(nnts.trainers.Forecaster):
         with torch.no_grad():
             y_hat_list = []
             for batch in dl:
-                y_hat = self.predict(batch, prediction_length, context_length)
+                y_hat = self.forecast_batch(batch, prediction_length, context_length)
                 y_hat_list.append(y_hat[:, :, :1])
 
             y_hat = torch.cat(y_hat_list, dim=0)
@@ -266,15 +268,6 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
 
         print(f"Epoch {self.state.epoch} Train Loss: {self.state.train_loss}")
 
-    def before_validate_epoch(self) -> None:
-        self.net.eval()
-
-    def after_validate_epoch(self) -> None:
-        if self.state.valid_loss < self.state.best_loss:
-            torch.save(self.net.state_dict(), self.path)
-            self.state.best_loss = self.state.valid_loss
-            self.events.notify(nnts.trainers.EpochBestModel(self.path))
-
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()
 
@@ -301,15 +294,7 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
         return L
 
     def _validate_batch(self, i, batch):
-        with torch.no_grad():
-            y_hat, y = validate(
-                self.net,
-                batch,
-                self.metadata.prediction_length,
-                self.metadata.context_length,
-            )
-            L = self.loss_fn(y_hat, y)
-        return L
+        pass
 
     def create_evaluator(self) -> nnts.trainers.Evaluator:
         state_dict = torch.load(self.path)
