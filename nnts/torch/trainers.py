@@ -35,10 +35,8 @@ class EarlyStopper:
 
 def validate(net, batch, prediction_length, context_length):
     if hasattr(net, "validate"):
-        print("using validate")
         return net.validate(batch, prediction_length, context_length)
     else:
-        print("using generate")
         y = batch["X"][:, context_length : context_length + prediction_length, ...]
         y_hat = net.generate(
             batch["X"][:, :context_length, ...],
@@ -259,6 +257,7 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
 
     def after_train_epoch(self) -> None:
         if self.state.train_loss < self.state.best_loss:
+            print("saving model")
             torch.save(self.net.state_dict(), self.path)
             self.state.best_loss = self.state.train_loss
             self.events.notify(nnts.trainers.EpochBestModel(self.path))

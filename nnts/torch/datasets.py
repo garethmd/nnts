@@ -43,7 +43,7 @@ class TimeseriesDataset(torch.utils.data.Dataset):
             - context_length
             - prediction_length
             + 1  # we return x and y so add 1 for teacher forcing
-        )
+        ).clip(1)
         cum_lengths = lengths.cumsum()
         self.shifted_cum_lengths = torch.tensor(
             cum_lengths.shift().fillna(0).astype(int).values

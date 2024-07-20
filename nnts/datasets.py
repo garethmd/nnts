@@ -1,5 +1,6 @@
 import json
 import os
+import warnings
 from collections import namedtuple
 from typing import Tuple
 
@@ -8,6 +9,8 @@ from pandas.errors import OutOfBoundsDatetime
 from pydantic import BaseModel
 
 import nnts.data.tsf as tsf
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "data")
 SplitData = namedtuple("SplitData", ["train", "validation", "test"])
