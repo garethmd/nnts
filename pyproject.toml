@@ -31,6 +31,7 @@ sphinx-autodoc-typehints = "^2.2.2"
 sphinxcontrib-katex = "^0.9.10"
 sphinx-rtd-theme = "^2.0.0"
 coverage = "^7.6.0"
+pytorch-sphinx-theme = {git = "https://github.com/shiftlab/pytorch_sphinx_theme.git"}
 
 [build-system]
 requires = ["poetry-core"]

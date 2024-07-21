@@ -1,9 +1,11 @@
-from typing import Dict
+from typing import Dict, Tuple
 
 import torch
 import torch.nn as nn
 
 from nnts import utils
+
+from .. import datasets
 
 
 class UnrolledLSTMDecoder(nn.Module):
@@ -101,10 +103,10 @@ class UnrolledLSTM(nn.Module):
         return y_hat
 
     def free_running(
-        self, data: Dict, context_length: int, prediction_length: int
-    ) -> torch.tensor:
-        x = data["X"]
-        pad_mask = data["pad_mask"]
+        self, batch: datasets.PaddedData, context_length: int, prediction_length: int
+    ) -> Tuple[torch.tensor, torch.tensor]:
+        x = batch.data
+        pad_mask = batch.pad_mask
 
         y = x[:, 1:, :]
 
@@ -117,12 +119,11 @@ class UnrolledLSTM(nn.Module):
         y = y[pad_mask[:, 1:]]
         return y_hat, y
 
-    def teacher_forcing_output(self, data):
-        """
-        data: dict with keys "X" and "pad_mask"
-        """
-        x = data["X"]
-        pad_mask = data["pad_mask"]
+    def teacher_forcing_output(
+        self, batch: datasets.PaddedData
+    ) -> Tuple[torch.tensor, torch.tensor]:
+        x = batch.data
+        pad_mask = batch.pad_mask
         y_hat = self(x[:, :-1, :], pad_mask[:, :-1], H=0)
         y = x[:, 1:, :]
         y_hat = y_hat[pad_mask[:, 1:]]

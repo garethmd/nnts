@@ -10,7 +10,8 @@ import torch.distributions as td
 import torch.nn as nn
 import torch.nn.functional as F
 import trainers as project_trainers
-from torch.distributions import AffineTransform, Distribution, TransformedDistribution
+from torch.distributions import (AffineTransform, Distribution,
+                                 TransformedDistribution)
 from torch.utils.data import Sampler
 
 import nnts.lags
@@ -295,7 +296,7 @@ def main(
             datasets.split_test_train_last_horizon,
             context_length,
             metadata.prediction_length,
-            Dataset=nnts.torch.datasets.TimeseriesLagsDataset,
+            Dataset=nnts.torch.datasets.TimeseriesDataset,
             dataset_options=dataset_options,
             Sampler=nnts.torch.datasets.TimeSeriesSampler,
         )
@@ -398,4 +399,5 @@ if __name__ == "__main__":
         args.data_path,
         "base-lstm",
         args.results_path,
+    )
     )

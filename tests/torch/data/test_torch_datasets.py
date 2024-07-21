@@ -59,35 +59,35 @@ class TestTimeseriesDataset:
     def test_should_index_correctly(self, sample_data):
         ds = datasets.TimeseriesDataset(sample_data, 15, 24)
         ds.build()
-        data = ds[0]
-        assert data["X"].shape == (15 + 24, 1)
+        data = ds[0].data
+        assert data.shape == (15 + 24, 1)
 
     def test_should_iterate_whole_dataset_start(self, sample_data):
         ds = datasets.TimeseriesDataset(sample_data, 15, 24)
         ds.build()
-        data = ds[0]
+        data = ds[0].data
         expected = sample_data.head(15 + 24)
         assert torch.allclose(
-            torch.tensor(expected["y"].values).float(), data["X"].squeeze().float()
+            torch.tensor(expected["y"].values).float(), data.squeeze().float()
         )
 
     def test_should_iterate_whole_dataset_second(self, sample_data):
         ds = datasets.TimeseriesDataset(sample_data, 15, 24)
         ds.build()
-        data = ds[1]
+        data = ds[1].data
         expected = sample_data[1 : 1 + 15 + 24]
         assert torch.allclose(
-            torch.tensor(expected["y"].values).float(), data["X"].squeeze().float()
+            torch.tensor(expected["y"].values).float(), data.squeeze().float()
         )
 
     def test_should_iterate_whole_dataset_end(self, sample_data):
         ds = datasets.TimeseriesDataset(sample_data, 15, 24)
         ds.build()
         last_idx = len(ds) - 1
-        data = ds[last_idx]
+        data = ds[last_idx].data
         expected = sample_data.tail(15 + 24)
         assert torch.allclose(
-            torch.tensor(expected["y"].values).float(), data["X"].squeeze().float()
+            torch.tensor(expected["y"].values).float(), data.squeeze().float()
         )
 
 

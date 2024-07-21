@@ -5,6 +5,8 @@ import torch.nn as nn
 
 from nnts import utils
 
+from .. import datasets
+
 
 class LinearModel(nn.Module):
     """
@@ -120,12 +122,9 @@ class BaseLSTM(nn.Module):
             pad_mask = torch.cat((pad_mask, torch.ones_like(preds[:, :, 0])), dim=1)
         return torch.cat(pred_list, 1)
 
-    def teacher_forcing_output(self, data, *args, **kwargs):
-        """
-        data: dict with keys "X" and "pad_mask"
-        """
-        x = data["X"]
-        pad_mask = data["pad_mask"]
+    def teacher_forcing_output(self, batch: datasets.PaddedData, *args, **kwargs):
+        x = batch.data
+        pad_mask = batch.pad_mask
         y_hat = self(x[:, :-1, :], pad_mask[:, :-1])
         y = x[:, 1:, :]
 
@@ -168,12 +167,14 @@ class BaseFutureCovariateLSTM(nn.Module):
         distr = self.distribution(out, target_scale=target_scale)
         return distr
 
-    def teacher_forcing_output(self, data: Dict) -> Tuple[torch.tensor, torch.tensor]:
-        x = data["X"]
+    def teacher_forcing_output(
+        self, batch: datasets.PaddedData
+    ) -> Tuple[torch.tensor, torch.tensor]:
+        x = batch.data
         conts_future = x[:, :, -self.known_future_covariates :]
         x = x[:, :, : -self.known_future_covariates]
 
-        pad_mask = data["pad_mask"]
+        pad_mask = batch.pad_mask
         y_hat = self(
             x[:, :-1, :], pad_mask[:, :-1], conts_future=conts_future[:, :-1, :]
         )
@@ -223,13 +224,13 @@ class BaseFutureCovariateLSTM(nn.Module):
 
         return y_hat
 
-    def validate(self, batch, prediction_length, context_length):
-        y = batch["X"][
+    def validate(self, batch: datasets.PaddedData, prediction_length, context_length):
+        y = batch.data[
             :, context_length : context_length + prediction_length, : self.output_dim
         ]
         y_hat = self.generate(
-            batch["X"],
-            batch["pad_mask"],
+            batch.data,
+            batch.pad_mask,
             prediction_length=prediction_length,
             context_length=context_length,
         )

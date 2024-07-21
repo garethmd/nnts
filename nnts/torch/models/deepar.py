@@ -10,7 +10,7 @@ import nnts.data
 import nnts.torch.preprocessing
 from nnts import utils
 
-from .. import models
+from .. import datasets, models
 
 FEAT_SCALE: str = "feat_scale"
 
@@ -99,21 +99,21 @@ class DeepARMixin:
         y_hat = y_hat[:, -prediction_length:, :]
         return y_hat
 
-    def validate(self, batch, prediction_length, context_length):
-        y = batch["X"][:, -prediction_length:, : self.output_dim]
+    def validate(self, batch: datasets.PaddedData, prediction_length, context_length):
+        y = batch.data[:, -prediction_length:, : self.output_dim]
         y_hat = self.generate(
-            batch["X"],
-            batch["pad_mask"],
+            batch.data,
+            batch.pad_mask,
             prediction_length=prediction_length,
             context_length=context_length,
         )
         return y_hat, y
 
     def free_running(
-        self, data: Dict, prediction_length: int, context_length: int
+        self, batch: datasets.PaddedData, prediction_length: int, context_length: int
     ) -> torch.tensor:
-        x = data["X"]
-        pad_mask = data["pad_mask"]
+        x = batch.data
+        pad_mask = batch.pad_mask
         y = x[:, 1 - context_length - prediction_length :, : self.output_dim]
         y_hat = self(
             x,
@@ -245,12 +245,14 @@ class DeepARPoint(nn.Module, DeepARMixin):
         y_hat = y_hat * target_scale[:, :, : self.output_dim]
         return y_hat
 
-    def teacher_forcing_output(self, data, prediction_length, context_length):
+    def teacher_forcing_output(
+        self, batch: datasets.PaddedData, prediction_length, context_length
+    ):
         """
         data: dict with keys "X" and "pad_mask"
         """
-        x = data["X"]
-        pad_mask = data["pad_mask"]
+        x = batch.data
+        pad_mask = batch.pad_mask
         y = x[:, 1:, : self.output_dim]
         y_hat = self(
             x[:, :-1, :], pad_mask[:, :-1], 0, context_length + prediction_length - 1
@@ -411,12 +413,14 @@ class DistrDeepAR(nn.Module, DeepARMixin):
         y_hat = y_hat.median(dim=0)[0]
         return y_hat.unsqueeze(-1)
 
-    def teacher_forcing_output(self, data, prediction_length, context_length):
+    def teacher_forcing_output(
+        self, batch: datasets.PaddedData, prediction_length, context_length
+    ):
         """
         data: dict with keys "X" and "pad_mask"
         """
-        x = data["X"]
-        pad_mask = data["pad_mask"]
+        x = batch.data
+        pad_mask = batch.pad_mask
         y = x[:, 1:, : self.output_dim]
         y_hat = self._distr(
             x[:, :-1, :], pad_mask[:, :-1], 0, context_length + prediction_length - 1
