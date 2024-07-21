@@ -6,6 +6,8 @@
 Welcome to nnts's documentation!
 ================================
 
+A lightweight Pytorch based library for Time Series applications. 
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

@@ -5,16 +5,15 @@ from typing import Iterator, List, Optional, Sized
 
 import deepar
 import features
-import gluonts.time_feature
 import torch
 import torch.distributions as td
 import torch.nn as nn
 import torch.nn.functional as F
 import trainers as project_trainers
-from torch.distributions import (AffineTransform, Distribution,
-                                 TransformedDistribution)
+from torch.distributions import AffineTransform, Distribution, TransformedDistribution
 from torch.utils.data import Sampler
 
+import nnts.lags
 import nnts.metrics
 import nnts.torch.datasets
 import nnts.torch.models
@@ -275,7 +274,7 @@ def main(
     # Calculate next month and unix timestamp
     df_orig = features.create_time_features(df_orig)
     df_orig = features.create_dummy_unique_ids(df_orig)
-    lag_seq = gluonts.time_feature.lag.get_lags_for_frequency(metadata.freq)
+    lag_seq = nnts.lags.get_lags_for_frequency(metadata.freq)
     lag_seq = [lag - 1 for lag in lag_seq if lag > 1]
     scenario_list = create_lag_scenarios(metadata, lag_seq)
 
@@ -399,5 +398,4 @@ if __name__ == "__main__":
         args.data_path,
         "base-lstm",
         args.results_path,
-    )
     )

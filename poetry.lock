@@ -918,36 +918,6 @@ doc = ["sphinx (==4.3.2)", "sphinx-autodoc-typehints", "sphinx-rtd-theme", "sphi
 test = ["coverage[toml]", "ddt (>=1.1.1,!=1.4.3)", "mock", "mypy", "pre-commit", "pytest (>=7.3.1)", "pytest-cov", "pytest-instafail", "pytest-mock", "pytest-sugar", "typing-extensions"]
 
 [[package]]
-name = "gluonts"
-version = "0.15.1"
-description = "Probabilistic time series modeling in Python."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "gluonts-0.15.1-py3-none-any.whl", hash = "sha256:ead5d976aac67c2feace55a83ccd3991351f90063048302cce94f2a7cf24f69f"},
-    {file = "gluonts-0.15.1.tar.gz", hash = "sha256:af1a12b9f22f8db071f31da518a9c61f1539b0036d857826c88091032bb9a845"},
-]
-
-[package.dependencies]
-numpy = ">=1.16,<2.0"
-pandas = ">=1.0,<3"
-pydantic = ">=1.7,<3"
-toolz = ">=0.10,<1.0"
-tqdm = ">=4.23,<5.0"
-typing-extensions = ">=4.0,<5.0"
-
-[package.extras]
-arrow = ["pyarrow"]
-dev = ["black", "click", "docutils (<=0.16)", "flask (>=2.0,<3.0)", "fsspec (>=0.8,<0.9)", "furo (==2022.6.4.1)", "holidays (>=0.9,<1.0)", "ipykernel (>=6.5,<7.0)", "ipython", "lxml (>=5.1.0,<5.2.0)", "m2r2", "matplotlib (>=3.6,<4.0)", "myst-parser", "nbconvert (>=6.5.1,<6.6.0)", "nbsphinx (>=0.8.8,<0.9.0)", "notedown", "optuna (>=2.10,<3.0)", "orjson", "pandas (>=1.1)", "pyarrow", "pytest (>7.0)", "pytest-cov (>4.0,<5.0)", "pytest-rerunfailures (>=13.0,<14.0)", "pytest-runner (>=2.11,<3.0)", "pytest-timeout (>2.0,<3.0)", "pytest-xdist (>3.0,<4.0)", "recommonmark", "requests", "s3fs (>=0.5,<1.0)", "s3fs (>=0.6,<1.0)", "sagemaker (>2.214.3,<3.0)", "sphinx (>=4.0,<5.0)", "ujson", "waitress (>=2.1.2,<2.2.0)"]
-docs = ["black", "click", "docutils (<=0.16)", "furo (==2022.6.4.1)", "holidays (>=0.9,<1.0)", "ipykernel (>=6.5,<7.0)", "ipython", "lxml (>=5.1.0,<5.2.0)", "m2r2", "matplotlib (>=3.6,<4.0)", "myst-parser", "nbconvert (>=6.5.1,<6.6.0)", "nbsphinx (>=0.8.8,<0.9.0)", "notedown", "optuna (>=2.10,<3.0)", "orjson", "pytest-runner (>=2.11,<3.0)", "recommonmark", "sphinx (>=4.0,<5.0)"]
-mxnet = ["mxnet (>=1.7,<2.0)", "numpy (<1.24)"]
-pro = ["orjson", "pyarrow"]
-prophet = ["prophet (>=1.0,<2.0)"]
-r = ["rpy2 (>=3.5,<4.0)"]
-shell = ["flask (>=2.0,<3.0)", "waitress (>=2.1.2,<2.2.0)"]
-torch = ["lightning (>=2.0,<2.2)", "pytorch-lightning (>=2.0,<2.2)", "scipy (>=1.10,<2.0)", "scipy (>=1.7.3,<1.8.0)", "torch (>=1.9,<3)"]
-
-[[package]]
 name = "h11"
 version = "0.14.0"
 description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
@@ -2230,8 +2200,8 @@ files = [
 
 [package.dependencies]
 numpy = [
-    {version = ">=1.23.2", markers = "python_version == \"3.11\""},
     {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
+    {version = ">=1.23.2", markers = "python_version == \"3.11\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -2595,8 +2565,8 @@ files = [
 annotated-types = ">=0.4.0"
 pydantic-core = "2.20.1"
 typing-extensions = [
-    {version = ">=4.6.1", markers = "python_version < \"3.13\""},
     {version = ">=4.12.2", markers = "python_version >= \"3.13\""},
+    {version = ">=4.6.1", markers = "python_version < \"3.13\""},
 ]
 
 [package.extras]
@@ -3804,17 +3774,6 @@ doc = ["sphinx", "sphinx_rtd_theme"]
 test = ["pytest", "ruff"]
 
 [[package]]
-name = "toolz"
-version = "0.12.1"
-description = "List processing tools and functional utilities"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "toolz-0.12.1-py3-none-any.whl", hash = "sha256:d22731364c07d72eea0a0ad45bafb2c2937ab6fd38a3507bf55eae8744aa7d85"},
-    {file = "toolz-0.12.1.tar.gz", hash = "sha256:ecca342664893f177a13dac0e6b41cbd8ac25a358e5f215316d43e2100224f4d"},
-]
-
-[[package]]
 name = "torch"
 version = "2.3.1"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
@@ -3887,26 +3846,6 @@ files = [
     {file = "tornado-6.4.1-cp38-abi3-win_amd64.whl", hash = "sha256:b24b8982ed444378d7f21d563f4180a2de31ced9d8d84443907a0a64da2072e7"},
     {file = "tornado-6.4.1.tar.gz", hash = "sha256:92d3ab53183d8c50f8204a51e6f91d18a15d5ef261e84d452800d4ff6fc504e9"},
 ]
-
-[[package]]
-name = "tqdm"
-version = "4.66.4"
-description = "Fast, Extensible Progress Meter"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "tqdm-4.66.4-py3-none-any.whl", hash = "sha256:b75ca56b413b030bc3f00af51fd2c1a1a5eac6a0c1cca83cbb37a5c52abce644"},
-    {file = "tqdm-4.66.4.tar.gz", hash = "sha256:e4d936c9de8727928f3be6079590e97d9abfe8d39a590be678eb5919ffc186bb"},
-]
-
-[package.dependencies]
-colorama = {version = "*", markers = "platform_system == \"Windows\""}
-
-[package.extras]
-dev = ["pytest (>=6)", "pytest-cov", "pytest-timeout", "pytest-xdist"]
-notebook = ["ipywidgets (>=6)"]
-slack = ["slack-sdk"]
-telegram = ["requests"]
 
 [[package]]
 name = "traitlets"
@@ -4119,4 +4058,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "6139228fd5646137508540bc55a931170ac6d57ac60d53cff92cfb892be9a63e"
+content-hash = "86ee6ef281e6fe71eac26499f416446a6ec5fa0d78df08ed9c53b10a3e7b2769"

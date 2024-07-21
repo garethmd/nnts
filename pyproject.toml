@@ -15,7 +15,7 @@ wandb = "^0.17.4"
 seaborn = "^0.13.2"
 plotly = "^5.22.0"
 scipy = "^1.14.0"
-gluonts = "^0.15.1"
+pydantic = "^2.8.2"
 
 
 [tool.poetry.group.test.dependencies]

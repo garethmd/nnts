@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 from typing import List
 
-import gluonts.time_feature
 import numpy as np
 import pandas as pd
 
 import nnts
+import nnts.lags
 import nnts.torch.preprocessing
 
 
@@ -93,6 +93,6 @@ def create_dummy_unique_ids(df_orig: pd.DataFrame):
 
 
 def create_lag_seq(freq: str):
-    lag_seq = gluonts.time_feature.lag.get_lags_for_frequency(freq)
+    lag_seq = nnts.lags.get_lags_for_frequency(freq)
     lag_seq = [lag - 1 for lag in lag_seq if lag > 1]
     return lag_seq
