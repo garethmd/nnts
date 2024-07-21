@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nnts"
-version = "0.1.0"
+version = "0.1.1"
 description = "Lightweight pytorch time series forecasting"
 authors = ["Gareth Davies <garethmd@googlemail.com>"]
 license = "MIT"
