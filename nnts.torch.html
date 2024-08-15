@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>nnts.torch package &mdash; nnts 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=01f34227"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            nnts
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">nnts.torch package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-nnts.torch.datasets">nnts.torch.datasets module</a><ul>
+<li><a class="reference internal" href="#nnts.torch.datasets.PaddedData"><code class="docutils literal notranslate"><span class="pre">PaddedData</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.datasets.PaddedData.data"><code class="docutils literal notranslate"><span class="pre">PaddedData.data</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.datasets.PaddedData.pad_mask"><code class="docutils literal notranslate"><span class="pre">PaddedData.pad_mask</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.datasets.TimeSeriesSampler"><code class="docutils literal notranslate"><span class="pre">TimeSeriesSampler</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.datasets.TimeSeriesSampler.data_source"><code class="docutils literal notranslate"><span class="pre">TimeSeriesSampler.data_source</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.datasets.TimeseriesDataset"><code class="docutils literal notranslate"><span class="pre">TimeseriesDataset</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.datasets.TimeseriesDataset.build"><code class="docutils literal notranslate"><span class="pre">TimeseriesDataset.build()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.datasets.right_pad_sequence"><code class="docutils literal notranslate"><span class="pre">right_pad_sequence()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-nnts.torch.preprocessing">nnts.torch.preprocessing module</a><ul>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.LagProcessor"><code class="docutils literal notranslate"><span class="pre">LagProcessor</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.LagProcessor.create"><code class="docutils literal notranslate"><span class="pre">LagProcessor.create()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.LagProcessor.max"><code class="docutils literal notranslate"><span class="pre">LagProcessor.max()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.MaxMinScaler"><code class="docutils literal notranslate"><span class="pre">MaxMinScaler</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.MaxMinScaler.fit"><code class="docutils literal notranslate"><span class="pre">MaxMinScaler.fit()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.MaxMinScaler.inverse_transform"><code class="docutils literal notranslate"><span class="pre">MaxMinScaler.inverse_transform()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.MaxMinScaler.transform"><code class="docutils literal notranslate"><span class="pre">MaxMinScaler.transform()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.StandardScaler"><code class="docutils literal notranslate"><span class="pre">StandardScaler</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.StandardScaler.fit"><code class="docutils literal notranslate"><span class="pre">StandardScaler.fit()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.StandardScaler.inverse_transform"><code class="docutils literal notranslate"><span class="pre">StandardScaler.inverse_transform()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.StandardScaler.transform"><code class="docutils literal notranslate"><span class="pre">StandardScaler.transform()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.create_lags"><code class="docutils literal notranslate"><span class="pre">create_lags()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.preprocessing.masked_mean_abs_scaling"><code class="docutils literal notranslate"><span class="pre">masked_mean_abs_scaling()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-nnts.torch.trainers">nnts.torch.trainers module</a><ul>
+<li><a class="reference internal" href="#nnts.torch.trainers.EarlyStopper"><code class="docutils literal notranslate"><span class="pre">EarlyStopper</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.trainers.EarlyStopper.early_stopping"><code class="docutils literal notranslate"><span class="pre">EarlyStopper.early_stopping()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.trainers.TorchEpochTrainer"><code class="docutils literal notranslate"><span class="pre">TorchEpochTrainer</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.trainers.TorchEpochTrainer.after_train_epoch"><code class="docutils literal notranslate"><span class="pre">TorchEpochTrainer.after_train_epoch()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.trainers.TorchEpochTrainer.before_train"><code class="docutils literal notranslate"><span class="pre">TorchEpochTrainer.before_train()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.trainers.TorchEpochTrainer.before_train_epoch"><code class="docutils literal notranslate"><span class="pre">TorchEpochTrainer.before_train_epoch()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.trainers.TorchEpochTrainer.create_evaluator"><code class="docutils literal notranslate"><span class="pre">TorchEpochTrainer.create_evaluator()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.trainers.TorchEvaluator"><code class="docutils literal notranslate"><span class="pre">TorchEvaluator</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.trainers.TorchEvaluator.evaluate"><code class="docutils literal notranslate"><span class="pre">TorchEvaluator.evaluate()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.trainers.TorchForecaster"><code class="docutils literal notranslate"><span class="pre">TorchForecaster</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.trainers.TorchForecaster.forecast"><code class="docutils literal notranslate"><span class="pre">TorchForecaster.forecast()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.trainers.TorchForecaster.forecast_batch"><code class="docutils literal notranslate"><span class="pre">TorchForecaster.forecast_batch()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.trainers.ValidationTorchEpochTrainer"><code class="docutils literal notranslate"><span class="pre">ValidationTorchEpochTrainer</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.trainers.ValidationTorchEpochTrainer.after_validate_epoch"><code class="docutils literal notranslate"><span class="pre">ValidationTorchEpochTrainer.after_validate_epoch()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.trainers.ValidationTorchEpochTrainer.before_train"><code class="docutils literal notranslate"><span class="pre">ValidationTorchEpochTrainer.before_train()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.trainers.ValidationTorchEpochTrainer.before_train_epoch"><code class="docutils literal notranslate"><span class="pre">ValidationTorchEpochTrainer.before_train_epoch()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.trainers.ValidationTorchEpochTrainer.before_validate_epoch"><code class="docutils literal notranslate"><span class="pre">ValidationTorchEpochTrainer.before_validate_epoch()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.trainers.ValidationTorchEpochTrainer.create_evaluator"><code class="docutils literal notranslate"><span class="pre">ValidationTorchEpochTrainer.create_evaluator()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.trainers.eval"><code class="docutils literal notranslate"><span class="pre">eval()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.trainers.validate"><code class="docutils literal notranslate"><span class="pre">validate()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-nnts.torch.utils">nnts.torch.utils module</a><ul>
+<li><a class="reference internal" href="#nnts.torch.utils.DataLoaderBuilder"><code class="docutils literal notranslate"><span class="pre">DataLoaderBuilder</span></code></a><ul>
+<li><a class="reference internal" href="#nnts.torch.utils.DataLoaderBuilder.set_Sampler"><code class="docutils literal notranslate"><span class="pre">DataLoaderBuilder.set_Sampler()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.utils.DataLoaderBuilder.set_dataloader"><code class="docutils literal notranslate"><span class="pre">DataLoaderBuilder.set_dataloader()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.utils.DataLoaderBuilder.set_dataset"><code class="docutils literal notranslate"><span class="pre">DataLoaderBuilder.set_dataset()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.utils.DataLoaderBuilder.set_transforms"><code class="docutils literal notranslate"><span class="pre">DataLoaderBuilder.set_transforms()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.utils.DataLoaderBuilder.to_dataloader"><code class="docutils literal notranslate"><span class="pre">DataLoaderBuilder.to_dataloader()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nnts.torch.utils.count_of_params_in"><code class="docutils literal notranslate"><span class="pre">count_of_params_in()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.utils.create_dataloaders"><code class="docutils literal notranslate"><span class="pre">create_dataloaders()</span></code></a></li>
+<li><a class="reference internal" href="#nnts.torch.utils.seed_everything"><code class="docutils literal notranslate"><span class="pre">seed_everything()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-nnts.torch">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">nnts</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">nnts.torch package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/nnts.torch.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="nnts-torch-package">
+<h1>nnts.torch package<a class="headerlink" href="#nnts-torch-package" title="Link to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nnts.torch.models.html">nnts.torch.models package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nnts.torch.models.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nnts.torch.models.html#module-nnts.torch.models.baselstm">nnts.torch.models.baselstm module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseFutureCovariateLSTM"><code class="docutils literal notranslate"><span class="pre">BaseFutureCovariateLSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseFutureCovariateLSTM.forward"><code class="docutils literal notranslate"><span class="pre">BaseFutureCovariateLSTM.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseFutureCovariateLSTM.generate"><code class="docutils literal notranslate"><span class="pre">BaseFutureCovariateLSTM.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseFutureCovariateLSTM.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">BaseFutureCovariateLSTM.teacher_forcing_output()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseFutureCovariateLSTM.validate"><code class="docutils literal notranslate"><span class="pre">BaseFutureCovariateLSTM.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseLSTM"><code class="docutils literal notranslate"><span class="pre">BaseLSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseLSTM.forward"><code class="docutils literal notranslate"><span class="pre">BaseLSTM.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseLSTM.generate"><code class="docutils literal notranslate"><span class="pre">BaseLSTM.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseLSTM.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">BaseLSTM.teacher_forcing_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseLSTMDecoder"><code class="docutils literal notranslate"><span class="pre">BaseLSTMDecoder</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseLSTMDecoder.forward"><code class="docutils literal notranslate"><span class="pre">BaseLSTMDecoder.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.BaseLSTMDecoder.init_hidden_zeros"><code class="docutils literal notranslate"><span class="pre">BaseLSTMDecoder.init_hidden_zeros()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.LinearModel"><code class="docutils literal notranslate"><span class="pre">LinearModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.baselstm.LinearModel.forward"><code class="docutils literal notranslate"><span class="pre">LinearModel.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nnts.torch.models.html#module-nnts.torch.models.deepar">nnts.torch.models.deepar module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.AffineTransformed"><code class="docutils literal notranslate"><span class="pre">AffineTransformed</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.AffineTransformed.mean"><code class="docutils literal notranslate"><span class="pre">AffineTransformed.mean</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.AffineTransformed.stddev"><code class="docutils literal notranslate"><span class="pre">AffineTransformed.stddev</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.AffineTransformed.variance"><code class="docutils literal notranslate"><span class="pre">AffineTransformed.variance</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DeepARMixin"><code class="docutils literal notranslate"><span class="pre">DeepARMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DeepARMixin.free_running"><code class="docutils literal notranslate"><span class="pre">DeepARMixin.free_running()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DeepARMixin.generate"><code class="docutils literal notranslate"><span class="pre">DeepARMixin.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DeepARMixin.prep_input"><code class="docutils literal notranslate"><span class="pre">DeepARMixin.prep_input()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DeepARMixin.validate"><code class="docutils literal notranslate"><span class="pre">DeepARMixin.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DeepARPoint"><code class="docutils literal notranslate"><span class="pre">DeepARPoint</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DeepARPoint.forward"><code class="docutils literal notranslate"><span class="pre">DeepARPoint.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DeepARPoint.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">DeepARPoint.teacher_forcing_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DistrDeepAR"><code class="docutils literal notranslate"><span class="pre">DistrDeepAR</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DistrDeepAR.forward"><code class="docutils literal notranslate"><span class="pre">DistrDeepAR.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.DistrDeepAR.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">DistrDeepAR.teacher_forcing_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.StudentTHead"><code class="docutils literal notranslate"><span class="pre">StudentTHead</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.StudentTHead.PARAMS"><code class="docutils literal notranslate"><span class="pre">StudentTHead.PARAMS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.StudentTHead.forward"><code class="docutils literal notranslate"><span class="pre">StudentTHead.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.deepar.distr_nll"><code class="docutils literal notranslate"><span class="pre">distr_nll()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nnts.torch.models.html#module-nnts.torch.models.seglstm">nnts.torch.models.seglstm module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.seglstm.SegLSTM"><code class="docutils literal notranslate"><span class="pre">SegLSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.seglstm.SegLSTM.forward"><code class="docutils literal notranslate"><span class="pre">SegLSTM.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.seglstm.SegLSTM.generate"><code class="docutils literal notranslate"><span class="pre">SegLSTM.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.seglstm.SegLSTM.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">SegLSTM.teacher_forcing_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.seglstm.SegLSTMDecoder"><code class="docutils literal notranslate"><span class="pre">SegLSTMDecoder</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.seglstm.SegLSTMDecoder.forward"><code class="docutils literal notranslate"><span class="pre">SegLSTMDecoder.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.seglstm.SegLSTMDecoder.init_hidden_zeros"><code class="docutils literal notranslate"><span class="pre">SegLSTMDecoder.init_hidden_zeros()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nnts.torch.models.html#module-nnts.torch.models.unrolledlstm">nnts.torch.models.unrolledlstm module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.unrolledlstm.UnrolledLSTM"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.unrolledlstm.UnrolledLSTM.forward"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTM.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.unrolledlstm.UnrolledLSTM.free_running"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTM.free_running()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.unrolledlstm.UnrolledLSTM.generate"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTM.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.unrolledlstm.UnrolledLSTM.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTM.teacher_forcing_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.unrolledlstm.UnrolledLSTMDecoder"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTMDecoder</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.unrolledlstm.UnrolledLSTMDecoder.forward"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTMDecoder.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.unrolledlstm.UnrolledLSTMDecoder.init_hidden_zeros"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTMDecoder.init_hidden_zeros()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nnts.torch.models.html#module-nnts.torch.models">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.BaseFutureCovariateLSTM"><code class="docutils literal notranslate"><span class="pre">BaseFutureCovariateLSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.BaseFutureCovariateLSTM.forward"><code class="docutils literal notranslate"><span class="pre">BaseFutureCovariateLSTM.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.BaseFutureCovariateLSTM.generate"><code class="docutils literal notranslate"><span class="pre">BaseFutureCovariateLSTM.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.BaseFutureCovariateLSTM.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">BaseFutureCovariateLSTM.teacher_forcing_output()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.BaseFutureCovariateLSTM.validate"><code class="docutils literal notranslate"><span class="pre">BaseFutureCovariateLSTM.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.BaseLSTM"><code class="docutils literal notranslate"><span class="pre">BaseLSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.BaseLSTM.forward"><code class="docutils literal notranslate"><span class="pre">BaseLSTM.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.BaseLSTM.generate"><code class="docutils literal notranslate"><span class="pre">BaseLSTM.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.BaseLSTM.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">BaseLSTM.teacher_forcing_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.DeepARPoint"><code class="docutils literal notranslate"><span class="pre">DeepARPoint</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.DeepARPoint.forward"><code class="docutils literal notranslate"><span class="pre">DeepARPoint.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.DeepARPoint.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">DeepARPoint.teacher_forcing_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.DistrDeepAR"><code class="docutils literal notranslate"><span class="pre">DistrDeepAR</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.DistrDeepAR.forward"><code class="docutils literal notranslate"><span class="pre">DistrDeepAR.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.DistrDeepAR.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">DistrDeepAR.teacher_forcing_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.LinearModel"><code class="docutils literal notranslate"><span class="pre">LinearModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.LinearModel.forward"><code class="docutils literal notranslate"><span class="pre">LinearModel.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.SegLSTM"><code class="docutils literal notranslate"><span class="pre">SegLSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.SegLSTM.forward"><code class="docutils literal notranslate"><span class="pre">SegLSTM.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.SegLSTM.generate"><code class="docutils literal notranslate"><span class="pre">SegLSTM.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.SegLSTM.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">SegLSTM.teacher_forcing_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.UnrolledLSTM"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.UnrolledLSTM.forward"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTM.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.UnrolledLSTM.free_running"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTM.free_running()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.UnrolledLSTM.generate"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTM.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nnts.torch.models.html#nnts.torch.models.UnrolledLSTM.teacher_forcing_output"><code class="docutils literal notranslate"><span class="pre">UnrolledLSTM.teacher_forcing_output()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-nnts.torch.datasets">
+<span id="nnts-torch-datasets-module"></span><h2>nnts.torch.datasets module<a class="headerlink" href="#module-nnts.torch.datasets" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.datasets.PaddedData">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.datasets.</span></span><span class="sig-name descname"><span class="pre">PaddedData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad_mask</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.datasets.PaddedData" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnts.torch.datasets.PaddedData.data">
+<span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#nnts.torch.datasets.PaddedData.data" title="Link to this definition"></a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnts.torch.datasets.PaddedData.pad_mask">
+<span class="sig-name descname"><span class="pre">pad_mask</span></span><a class="headerlink" href="#nnts.torch.datasets.PaddedData.pad_mask" title="Link to this definition"></a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.datasets.TimeSeriesSampler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.datasets.</span></span><span class="sig-name descname"><span class="pre">TimeSeriesSampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sized</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.datasets.TimeSeriesSampler" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Sampler</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnts.torch.datasets.TimeSeriesSampler.data_source">
+<span class="sig-name descname"><span class="pre">data_source</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Sized</span></em><a class="headerlink" href="#nnts.torch.datasets.TimeSeriesSampler.data_source" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.datasets.TimeseriesDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.datasets.</span></span><span class="sig-name descname"><span class="pre">TimeseriesDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lag_seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.datasets.TimeseriesDataset" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.datasets.TimeseriesDataset.build">
+<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#nnts.torch.datasets.TimeseriesDataset" title="nnts.torch.datasets.TimeseriesDataset"><span class="pre">TimeseriesDataset</span></a></span></span><a class="headerlink" href="#nnts.torch.datasets.TimeseriesDataset.build" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnts.torch.datasets.right_pad_sequence">
+<span class="sig-prename descclassname"><span class="pre">nnts.torch.datasets.</span></span><span class="sig-name descname"><span class="pre">right_pad_sequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.datasets.right_pad_sequence" title="Link to this definition"></a></dt>
+<dd><p>Pads a list of 2D tensors to the right with a given padding value.</p>
+</dd></dl>
+
+</section>
+<section id="module-nnts.torch.preprocessing">
+<span id="nnts-torch-preprocessing-module"></span><h2>nnts.torch.preprocessing module<a class="headerlink" href="#module-nnts.torch.preprocessing" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.LagProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.preprocessing.</span></span><span class="sig-name descname"><span class="pre">LagProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lag_seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.LagProcessor" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.LagProcessor.create">
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.LagProcessor.create" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.LagProcessor.max">
+<span class="sig-name descname"><span class="pre">max</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.LagProcessor.max" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.MaxMinScaler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.preprocessing.</span></span><span class="sig-name descname"><span class="pre">MaxMinScaler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.MaxMinScaler" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="nnts.html#nnts.preprocessing.Transformation" title="nnts.preprocessing.Transformation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformation</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.MaxMinScaler.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.MaxMinScaler.fit" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.MaxMinScaler.inverse_transform">
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.MaxMinScaler.inverse_transform" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.MaxMinScaler.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.MaxMinScaler.transform" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.StandardScaler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.preprocessing.</span></span><span class="sig-name descname"><span class="pre">StandardScaler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.StandardScaler" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="nnts.html#nnts.preprocessing.Transformation" title="nnts.preprocessing.Transformation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformation</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.StandardScaler.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.StandardScaler.fit" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.StandardScaler.inverse_transform">
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.StandardScaler.inverse_transform" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.StandardScaler.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.StandardScaler.transform" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.create_lags">
+<span class="sig-prename descclassname"><span class="pre">nnts.torch.preprocessing.</span></span><span class="sig-name descname"><span class="pre">create_lags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lag_seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tensor</span></span></span><a class="headerlink" href="#nnts.torch.preprocessing.create_lags" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnts.torch.preprocessing.masked_mean_abs_scaling">
+<span class="sig-prename descclassname"><span class="pre">nnts.torch.preprocessing.</span></span><span class="sig-name descname"><span class="pre">masked_mean_abs_scaling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.preprocessing.masked_mean_abs_scaling" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-nnts.torch.trainers">
+<span id="nnts-torch-trainers-module"></span><h2>nnts.torch.trainers module<a class="headerlink" href="#module-nnts.torch.trainers" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.trainers.EarlyStopper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.trainers.</span></span><span class="sig-name descname"><span class="pre">EarlyStopper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">patience</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.trainers.EarlyStopper" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.EarlyStopper.early_stopping">
+<span class="sig-name descname"><span class="pre">early_stopping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#nnts.torch.trainers.EarlyStopper.early_stopping" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.trainers.TorchEpochTrainer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.trainers.</span></span><span class="sig-name descname"><span class="pre">TorchEpochTrainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">net</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="nnts.html#nnts.utils.Hyperparams" title="nnts.utils.Hyperparams"><span class="pre">Hyperparams</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="nnts.html#nnts.datasets.Metadata" title="nnts.datasets.Metadata"><span class="pre">Metadata</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="nnts.html#nnts.trainers.TrainerState" title="nnts.trainers.TrainerState"><span class="pre">TrainerState</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">TrainerState(epoch=0,</span> <span class="pre">stop=False,</span> <span class="pre">train_loss=0,</span> <span class="pre">valid_loss=0,</span> <span class="pre">best_loss=inf)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.trainers.TorchEpochTrainer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="nnts.html#nnts.trainers.EpochTrainer" title="nnts.trainers.EpochTrainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">EpochTrainer</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.TorchEpochTrainer.after_train_epoch">
+<span class="sig-name descname"><span class="pre">after_train_epoch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nnts.torch.trainers.TorchEpochTrainer.after_train_epoch" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.TorchEpochTrainer.before_train">
+<span class="sig-name descname"><span class="pre">before_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_dl</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.trainers.TorchEpochTrainer.before_train" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.TorchEpochTrainer.before_train_epoch">
+<span class="sig-name descname"><span class="pre">before_train_epoch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nnts.torch.trainers.TorchEpochTrainer.before_train_epoch" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.TorchEpochTrainer.create_evaluator">
+<span class="sig-name descname"><span class="pre">create_evaluator</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="nnts.html#nnts.trainers.Evaluator" title="nnts.trainers.Evaluator"><span class="pre">Evaluator</span></a></span></span><a class="headerlink" href="#nnts.torch.trainers.TorchEpochTrainer.create_evaluator" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.trainers.TorchEvaluator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.trainers.</span></span><span class="sig-name descname"><span class="pre">TorchEvaluator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">net</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.trainers.TorchEvaluator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="nnts.html#nnts.trainers.Evaluator" title="nnts.trainers.Evaluator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Evaluator</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.TorchEvaluator.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataLoader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hooks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nnts.torch.trainers.TorchEvaluator.evaluate" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.trainers.TorchForecaster">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.trainers.</span></span><span class="sig-name descname"><span class="pre">TorchForecaster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">net</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.trainers.TorchForecaster" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="nnts.html#nnts.trainers.Forecaster" title="nnts.trainers.Forecaster"><code class="xref py py-class docutils literal notranslate"><span class="pre">Forecaster</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.TorchForecaster.forecast">
+<span class="sig-name descname"><span class="pre">forecast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataLoader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#nnts.torch.trainers.TorchForecaster.forecast" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.TorchForecaster.forecast_batch">
+<span class="sig-name descname"><span class="pre">forecast_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#nnts.torch.datasets.PaddedData" title="nnts.torch.datasets.PaddedData"><span class="pre">PaddedData</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#nnts.torch.trainers.TorchForecaster.forecast_batch" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.trainers.ValidationTorchEpochTrainer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.trainers.</span></span><span class="sig-name descname"><span class="pre">ValidationTorchEpochTrainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">net</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="nnts.html#nnts.utils.Hyperparams" title="nnts.utils.Hyperparams"><span class="pre">Hyperparams</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="nnts.html#nnts.datasets.Metadata" title="nnts.datasets.Metadata"><span class="pre">Metadata</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="nnts.html#nnts.trainers.TrainerState" title="nnts.trainers.TrainerState"><span class="pre">TrainerState</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">TrainerState(epoch=0,</span> <span class="pre">stop=False,</span> <span class="pre">train_loss=0,</span> <span class="pre">valid_loss=0,</span> <span class="pre">best_loss=inf)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.trainers.ValidationTorchEpochTrainer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="nnts.html#nnts.trainers.EpochTrainer" title="nnts.trainers.EpochTrainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">EpochTrainer</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.ValidationTorchEpochTrainer.after_validate_epoch">
+<span class="sig-name descname"><span class="pre">after_validate_epoch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nnts.torch.trainers.ValidationTorchEpochTrainer.after_validate_epoch" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.ValidationTorchEpochTrainer.before_train">
+<span class="sig-name descname"><span class="pre">before_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_dl</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.trainers.ValidationTorchEpochTrainer.before_train" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.ValidationTorchEpochTrainer.before_train_epoch">
+<span class="sig-name descname"><span class="pre">before_train_epoch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nnts.torch.trainers.ValidationTorchEpochTrainer.before_train_epoch" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.ValidationTorchEpochTrainer.before_validate_epoch">
+<span class="sig-name descname"><span class="pre">before_validate_epoch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nnts.torch.trainers.ValidationTorchEpochTrainer.before_validate_epoch" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.trainers.ValidationTorchEpochTrainer.create_evaluator">
+<span class="sig-name descname"><span class="pre">create_evaluator</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="nnts.html#nnts.trainers.Evaluator" title="nnts.trainers.Evaluator"><span class="pre">Evaluator</span></a></span></span><a class="headerlink" href="#nnts.torch.trainers.ValidationTorchEpochTrainer.create_evaluator" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnts.torch.trainers.eval">
+<span class="sig-prename descclassname"><span class="pre">nnts.torch.trainers.</span></span><span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">net</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hooks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nnts.torch.trainers.eval" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnts.torch.trainers.validate">
+<span class="sig-prename descclassname"><span class="pre">nnts.torch.trainers.</span></span><span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">net</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_length</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.trainers.validate" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-nnts.torch.utils">
+<span id="nnts-torch-utils-module"></span><h2>nnts.torch.utils module<a class="headerlink" href="#module-nnts.torch.utils" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="nnts.torch.utils.DataLoaderBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nnts.torch.utils.</span></span><span class="sig-name descname"><span class="pre">DataLoaderBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.utils.DataLoaderBuilder" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.utils.DataLoaderBuilder.set_Sampler">
+<span class="sig-name descname"><span class="pre">set_Sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Sampler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#nnts.torch.utils.DataLoaderBuilder" title="nnts.torch.utils.DataLoaderBuilder"><span class="pre">DataLoaderBuilder</span></a></span></span><a class="headerlink" href="#nnts.torch.utils.DataLoaderBuilder.set_Sampler" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.utils.DataLoaderBuilder.set_dataloader">
+<span class="sig-name descname"><span class="pre">set_dataloader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">DataLoader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataloader_options</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#nnts.torch.utils.DataLoaderBuilder" title="nnts.torch.utils.DataLoaderBuilder"><span class="pre">DataLoaderBuilder</span></a></span></span><a class="headerlink" href="#nnts.torch.utils.DataLoaderBuilder.set_dataloader" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.utils.DataLoaderBuilder.set_dataset">
+<span class="sig-name descname"><span class="pre">set_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_options</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#nnts.torch.utils.DataLoaderBuilder" title="nnts.torch.utils.DataLoaderBuilder"><span class="pre">DataLoaderBuilder</span></a></span></span><a class="headerlink" href="#nnts.torch.utils.DataLoaderBuilder.set_dataset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.utils.DataLoaderBuilder.set_transforms">
+<span class="sig-name descname"><span class="pre">set_transforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="nnts.html#nnts.preprocessing.Transformation" title="nnts.preprocessing.Transformation"><span class="pre">Transformation</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#nnts.torch.utils.DataLoaderBuilder" title="nnts.torch.utils.DataLoaderBuilder"><span class="pre">DataLoaderBuilder</span></a></span></span><a class="headerlink" href="#nnts.torch.utils.DataLoaderBuilder.set_transforms" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnts.torch.utils.DataLoaderBuilder.to_dataloader">
+<span class="sig-name descname"><span class="pre">to_dataloader</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span></span></span><a class="headerlink" href="#nnts.torch.utils.DataLoaderBuilder.to_dataloader" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnts.torch.utils.count_of_params_in">
+<span class="sig-prename descclassname"><span class="pre">nnts.torch.utils.</span></span><span class="sig-name descname"><span class="pre">count_of_params_in</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">net</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.utils.count_of_params_in" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnts.torch.utils.create_dataloaders">
+<span class="sig-prename descclassname"><span class="pre">nnts.torch.utils.</span></span><span class="sig-name descname"><span class="pre">create_dataloaders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitter_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Sampler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="nnts.html#nnts.preprocessing.Transformation" title="nnts.preprocessing.Transformation"><span class="pre">Transformation</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Iterable</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nnts.torch.utils.create_dataloaders" title="Link to this definition"></a></dt>
+<dd><p>takes split data -&gt; fits transforms -&gt; creates dataloaders</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnts.torch.utils.seed_everything">
+<span class="sig-prename descclassname"><span class="pre">nnts.torch.utils.</span></span><span class="sig-name descname"><span class="pre">seed_everything</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nnts.torch.utils.seed_everything" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-nnts.torch">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-nnts.torch" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Gareth Davies.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
