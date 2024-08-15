@@ -68,6 +68,9 @@ def get_lags_for_frequency(
         The number of default lags; by default it is 7.
     """
 
+    if freq_str == "ME":
+        freq_str = "M"
+
     # Lags are target values at the same `season` (+/- delta) but in the
     # previous cycle.
     def _make_lags_for_second(multiple, num_cycles=3):

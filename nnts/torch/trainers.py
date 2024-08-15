@@ -12,6 +12,8 @@ import nnts.metrics
 import nnts.trainers
 from nnts import datasets, utils
 
+from .datasets import PaddedData
+
 
 class EarlyStopper:
     def __init__(self, patience: int):
@@ -87,10 +89,12 @@ class TorchForecaster(nnts.trainers.Forecaster):
     def __init__(self, net: torch.nn.Module):
         self.net = net
 
-    def forecast_batch(self, batch, prediction_length: int, context_length: int) -> Any:
+    def forecast_batch(
+        self, batch: PaddedData, prediction_length: int, context_length: int
+    ) -> Any:
         y_hat = self.net.generate(
-            batch["X"],
-            batch["pad_mask"],
+            batch.data,
+            batch.pad_mask,
             prediction_length=prediction_length,
             context_length=context_length,
         )

@@ -10,8 +10,7 @@ import torch.distributions as td
 import torch.nn as nn
 import torch.nn.functional as F
 import trainers as project_trainers
-from torch.distributions import (AffineTransform, Distribution,
-                                 TransformedDistribution)
+from torch.distributions import AffineTransform, Distribution, TransformedDistribution
 from torch.utils.data import Sampler
 
 import nnts.lags
@@ -399,5 +398,4 @@ if __name__ == "__main__":
         args.data_path,
         "base-lstm",
         args.results_path,
-    )
     )
