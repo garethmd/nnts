@@ -190,7 +190,7 @@ def main(
             nnts.datasets.split_test_train_last_horizon,
             context_length,
             metadata.prediction_length,
-            Dataset=nnts.torch.datasets.TimeseriesLagsDataset,
+            Dataset=nnts.torch.datasets.TimeseriesDataset,
             dataset_options=dataset_options,
             Sampler=nnts.torch.datasets.TimeSeriesSampler,
         )

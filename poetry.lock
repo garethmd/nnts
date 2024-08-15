@@ -2758,6 +2758,24 @@ files = [
 ]
 
 [[package]]
+name = "pytorch_sphinx_theme"
+version = "0.0.19"
+description = "PyTorch Sphinx Theme"
+optional = false
+python-versions = "*"
+files = []
+develop = false
+
+[package.dependencies]
+sphinx = "*"
+
+[package.source]
+type = "git"
+url = "https://github.com/shiftlab/pytorch_sphinx_theme.git"
+reference = "HEAD"
+resolved_reference = "e35354d32dd71ac14b87dffa1ef28f8c73b651e7"
+
+[[package]]
 name = "pytz"
 version = "2024.1"
 description = "World timezone definitions, modern and historical"
@@ -4058,4 +4076,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "86ee6ef281e6fe71eac26499f416446a6ec5fa0d78df08ed9c53b10a3e7b2769"
+content-hash = "9c41a19bc60ee38241577b8d71ec76a0808ede6eb62a9216a2631656dfe1a7bb"

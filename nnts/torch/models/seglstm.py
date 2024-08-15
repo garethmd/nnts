@@ -3,6 +3,8 @@ import torch.nn as nn
 
 from nnts import utils
 
+from .. import datasets
+
 
 class SegLSTMDecoder(nn.Module):
 
@@ -128,10 +130,10 @@ class SegLSTM(nn.Module):
             pad_mask = torch.cat((pad_mask, torch.ones_like(preds[:, :, 0])), dim=1)
         return torch.cat(pred_list, 1)
 
-    def teacher_forcing_output(self, data: torch.tensor, *args, **kwargs):
-        x = data["X"]
+    def teacher_forcing_output(self, batch: datasets.PaddedData, *args, **kwargs):
+        x = batch.data
         B, T, C = x.shape
-        pad_mask = data["pad_mask"]
+        pad_mask = batch.pad_mask
         y_hat = self(x[:, :-1, :], pad_mask[:, :-1])
         y_hat = y_hat[:, :, -1:, ...]  # B, T, S, C
         # y_hat = y_hat[:, :, :, ...]  # B, T, S, C

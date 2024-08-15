@@ -1,3 +1,4 @@
+from collections import namedtuple
 from typing import Iterator, List, Optional, Sized
 
 import pandas as pd
@@ -5,6 +6,8 @@ import torch
 import torch.utils
 import torch.utils.data
 from torch.utils.data import Sampler
+
+PaddedData = namedtuple("PaddedData", ["data", "pad_mask"])
 
 
 def right_pad_sequence(
@@ -32,71 +35,12 @@ class TimeseriesDataset(torch.utils.data.Dataset):
         context_length: int,
         prediction_length: int,
         conts: List[int] = [],
-    ):
-        self.df = df.copy()
-        self.conts = conts.copy()
-        self.context_length = torch.tensor(context_length).long()
-        self.prediction_length = torch.tensor(prediction_length).long()
-
-        lengths = (
-            self.df.groupby("unique_id", sort=False)["ds"].count()
-            - context_length
-            - prediction_length
-            + 1  # we return x and y so add 1 for teacher forcing
-        ).clip(1)
-        cum_lengths = lengths.cumsum()
-        self.shifted_cum_lengths = torch.tensor(
-            cum_lengths.shift().fillna(0).astype(int).values
-        )
-        self.len = lengths.sum()
-
-    def build(self):
-        ts = []
-        for unique_id, grp in self.df.groupby("unique_id", sort=False):
-            ts.append(torch.from_numpy(grp[["y"] + self.conts].values))
-        ts, mask = right_pad_sequence(ts)
-        self.X = ts[:, :, :]
-        self.pad_mask = mask
-        return self
-
-    def __len__(self):
-        return self.len
-
-    def __getitem__(self, i):
-        shifted_ln_lt_i = self.shifted_cum_lengths[self.shifted_cum_lengths <= i]
-        result = torch.max(shifted_ln_lt_i, 0)
-        locator = result.indices, i - result.values
-        X = self.X[
-            locator[0],
-            locator[1] : locator[1] + self.context_length + self.prediction_length,
-            ...,
-        ]
-        pad_mask = self.pad_mask[
-            locator[0],
-            locator[1] : locator[1] + self.context_length + self.prediction_length,
-        ]
-        return {
-            "X": X,
-            "pad_mask": pad_mask,
-        }
-
-
-class TimeseriesLagsDataset(torch.utils.data.Dataset):
-    def __init__(
-        self,
-        df: pd.DataFrame,
-        context_length: int,
-        prediction_length: int,
-        conts: List[int] = [],
         lag_seq: List[int] = None,
     ):
         self.df = df.copy()
         self.conts = conts.copy()
 
-        if lag_seq is None:
-            raise ValueError("Lag sequence must be provided.")
-
-        self.lag_length = max(lag_seq)
+        self.lag_length = 0 if lag_seq is None else max(lag_seq)
         self.context_length = torch.tensor(context_length).long()
         self.prediction_length = torch.tensor(prediction_length).long()
 
@@ -115,7 +59,7 @@ class TimeseriesLagsDataset(torch.utils.data.Dataset):
         self.min_length = context_length + prediction_length + self.lag_length
         self.lengths = lengths
 
-    def build(self):
+    def build(self) -> "TimeseriesDataset":
         ts = []
         for unique_id, grp in self.df.groupby("unique_id", sort=False):
             ts.append(torch.from_numpy(grp[["y"] + self.conts].values))
@@ -124,10 +68,10 @@ class TimeseriesLagsDataset(torch.utils.data.Dataset):
         self.pad_mask = mask
         return self
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.len
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: int) -> PaddedData:
         shifted_ln_lt_i = self.shifted_cum_lengths[self.shifted_cum_lengths <= i]
         result = torch.max(shifted_ln_lt_i, 0)
         locator = result.indices, i - result.values
@@ -146,11 +90,7 @@ class TimeseriesLagsDataset(torch.utils.data.Dataset):
             + self.context_length
             + self.prediction_length,
         ]
-        # pad_mask[: self.lag_length] = False
-        return {
-            "X": X,
-            "pad_mask": pad_mask,
-        }
+        return PaddedData(data=X, pad_mask=pad_mask)
 
 
 class TimeSeriesSampler(Sampler[int]):
