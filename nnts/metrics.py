@@ -418,27 +418,61 @@ def get_metrics_per_ts(
     }
 
 
-def aggregate_metrics(metrics_per_ts: Dict[str, torch.tensor]) -> Dict[str, float]:
+def aggregate_base_metrics(metrics_per_ts: Dict[str, torch.tensor]) -> Dict[str, float]:
     aggregate_map = {
         "mse": "mean",
         "abs_error": "sum",
         "abs_target_sum": "sum",
         "abs_target_mean": "mean",
+        "seasonal_error": "mean",
+    }
+    return {
+        k: getattr(v, aggregate_map[k])().item()
+        for k, v in metrics_per_ts.items()
+        if k in aggregate_map
+    }
+
+
+def aggregate_mean_metrics(metrics_per_ts: Dict[str, torch.tensor]) -> Dict[str, float]:
+    aggregate_map = {
         "mase": "mean",
         "mape": "nanmean",
         "smape": "mean",
         "msmape": "mean",
-        "nd": "mean",
         "mae": "mean",
         "rmse": "mean",
-        "seasonal_error": "mean",
     }
-    return {k: getattr(v, aggregate_map[k])().item() for k, v in metrics_per_ts.items()}
+    return {
+        f"mean_{k}": getattr(v, aggregate_map[k])().item()
+        for k, v in metrics_per_ts.items()
+        if k in aggregate_map
+    }
+
+
+def aggregate_median_metrics(
+    metrics_per_ts: Dict[str, torch.tensor]
+) -> Dict[str, float]:
+    aggregate_map = {
+        "mase": "median",
+        # "mape": "nanmedian",
+        "smape": "median",
+        "msmape": "median",
+        "mae": "median",
+        "rmse": "median",
+    }
+    return {
+        f"median_{k}": getattr(v, aggregate_map[k])().item()
+        for k, v in metrics_per_ts.items()
+        if k in aggregate_map
+    }
 
 
 def calc_metrics(
     y_hat: torch.tensor, y: torch.tensor, seasonal_error: torch.tensor
 ) -> Dict[str, float]:
     metrics_per_ts = get_metrics_per_ts(y_hat, y, seasonal_error)
-    result = aggregate_metrics(metrics_per_ts)
-    return result
+    base_metrics = aggregate_base_metrics(metrics_per_ts)
+    mean_metrics = aggregate_mean_metrics(metrics_per_ts)
+    median_metrics = aggregate_median_metrics(metrics_per_ts)
+    metrics = {**base_metrics, **mean_metrics, **median_metrics}
+    return metrics

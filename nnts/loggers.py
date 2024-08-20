@@ -106,6 +106,9 @@ class ActivationVisualizer:
     def __init__(self):
         self.activations = []
 
+    def has_activations(self):
+        return len(self.activations) > 0
+
     def save_heatmap(self, path):
         if len(self.activations) > 0:
             plt.figure(figsize=(10, 6))
@@ -164,12 +167,13 @@ class LocalFileRun(Run, EpochEventMixin):
         run_time = timeit.default_timer() - self.start_time
         self.static_data["run_time"] = run_time
         self.handler.handle(self.static_data)
-        try:
-            self.activation_visualizer.save_heatmap(
-                os.path.join(self.path, "activations.png")
-            )
-        except Exception as e:
-            print(f"Error saving activations: {e}")
+        if self.activation_visualizer.has_activations():
+            try:
+                self.activation_visualizer.save_heatmap(
+                    os.path.join(self.path, "activations.png")
+                )
+            except Exception as e:
+                print(f"Error saving activations: {e}")
         print(f"Run {self.name} finished")
 
 
@@ -229,11 +233,12 @@ class WandbRun(Run, EpochEventMixin):
     def finish(self) -> None:
         print(f"Run {self.name} finished")
 
-        try:
-            activation_image_path = os.path.join(self.path, "activations.png")
-            self.activation_visualizer.save_heatmap(activation_image_path)
-            self.run.log({"activations": wandb.Image(activation_image_path)})
-        except Exception as e:
-            print(f"Error saving activations: {e}")
+        if self.activation_visualizer.has_activations():
+            try:
+                activation_image_path = os.path.join(self.path, "activations.png")
+                self.activation_visualizer.save_heatmap(activation_image_path)
+                self.run.log({"activations": wandb.Image(activation_image_path)})
+            except Exception as e:
+                print(f"Error saving activations: {e}")
 
         self.run.finish()

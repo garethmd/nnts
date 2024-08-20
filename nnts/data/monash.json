@@ -13,7 +13,7 @@
         "dataset": "m1_quarterly",
         "context_length": 5,
         "prediction_length": 8,
-        "freq": "Q",
+        "freq": "QE",
         "seasonality": 4,
         "url": "https://zenodo.org/records/4656154/files/m1_quarterly_dataset.zip"
     },
@@ -22,7 +22,7 @@
         "dataset": "m1_yearly",
         "context_length": 2,
         "prediction_length": 6,
-        "freq": "1Y",
+        "freq": "YE",
         "seasonality": 1,
         "url": "https://zenodo.org/records/4656193/files/m1_yearly_dataset.zip"
     },
@@ -40,7 +40,7 @@
         "dataset": "m3_quarterly",
         "context_length": 5,
         "prediction_length": 8,
-        "freq": "Q",
+        "freq": "QE",
         "seasonality": 4,
         "url": "https://zenodo.org/records/4656262/files/m3_quarterly_dataset.zip"
     },
@@ -49,7 +49,7 @@
         "dataset": "m3_yearly",
         "context_length": 2,
         "prediction_length": 6,
-        "freq": "1Y",
+        "freq": "YE",
         "seasonality": 1,
         "url": "https://zenodo.org/records/4656222/files/m3_yearly_dataset.zip"
     },
@@ -94,7 +94,7 @@
         "dataset": "m4_quarterly",
         "context_length": 5,
         "prediction_length": 8,
-        "freq": "Q",
+        "freq": "QE",
         "seasonality": 4,
         "url": "https://zenodo.org/records/4656410/files/m4_quarterly_dataset.zip"
     },
@@ -103,7 +103,7 @@
         "dataset": "m4_yearly",
         "context_length": 2,
         "prediction_length": 6,
-        "freq": "1Y",
+        "freq": "YE",
         "seasonality": 1,
         "url": "https://zenodo.org/records/4656379/files/m4_yearly_dataset.zip"
     },
@@ -121,7 +121,7 @@
         "dataset": "tourism_quarterly",
         "context_length": 5,
         "prediction_length": 8,
-        "freq": "Q",
+        "freq": "QE",
         "seasonality": 4,
         "url": "https://zenodo.org/records/4656093/files/tourism_quarterly_dataset.zip"
     },
@@ -130,7 +130,7 @@
         "dataset": "tourism_yearly",
         "context_length": 2,
         "prediction_length": 4,
-        "freq": "1Y",
+        "freq": "YE",
         "seasonality": 1,
         "url": "https://zenodo.org/records/4656103/files/tourism_yearly_dataset.zip"
     },
@@ -168,7 +168,7 @@
         "prediction_length": 30,
         "freq": "1D",
         "seasonality": 7,
-        "uri": "https://zenodo.org/records/5122101/files/bitcoin_dataset_without_missing_values.zip"
+        "url": "https://zenodo.org/records/5122101/files/bitcoin_dataset_without_missing_values.zip"
     },
     "pedestrian_counts": {
         "filename": "pedestrian_counts_dataset.tsf",
@@ -256,7 +256,7 @@
         "dataset": "electricity_hourly",
         "context_length": 30,
         "prediction_length": 168,
-        "freq": "1H",
+        "freq": "h",
         "seasonality": 24,
         "url": "https://zenodo.org/records/4656140/files/electricity_hourly_dataset.zip"
     },

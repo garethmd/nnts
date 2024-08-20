@@ -18,7 +18,7 @@ def right_pad_sequence(
     max_lengths = max(max_lengths, min_length)
     padded_tensor = torch.zeros(len(seq), max_lengths, seq[0].shape[1]) + padding_value
     padded_mask = torch.zeros(len(seq), max_lengths).bool()
-    padded_mask[:, :min_length] = True
+    # padded_mask[:, :min_length] = True
     for i in range(len(seq)):
         start = min_length - seq[i].shape[0]
         start = max(0, start)
@@ -26,6 +26,23 @@ def right_pad_sequence(
         padded_mask[i, start : start + seq[i].shape[0]] = True
 
     return padded_tensor, padded_mask
+
+
+def left_pad_sequence(
+    seq: list[torch.Tensor], padding_value: int = 0, min_length: int = 0
+):
+    """Pads a list of 2D tensors to the left with a given padding value."""
+    max_lengths = max([t.shape[0] for t in seq])
+    max_lengths = max(max_lengths, min_length)
+    padded_tensor = torch.full((len(seq), max_lengths, seq[0].shape[1]), padding_value)
+    padded_mask = torch.zeros(len(seq), max_lengths).bool()
+    for i in range(len(seq)):
+        pad_len = max_lengths - seq[i].shape[0]
+        pad_len = max(pad_len, min_length - seq[i].shape[0])
+        padded_tensor[i, pad_len : pad_len + seq[i].shape[0], ...] = seq[i]
+        padded_mask[i, pad_len : pad_len + seq[i].shape[0]] = True
+
+    return padded_tensor.float(), padded_mask
 
 
 class TimeseriesDataset(torch.utils.data.Dataset):
@@ -36,6 +53,7 @@ class TimeseriesDataset(torch.utils.data.Dataset):
         prediction_length: int,
         conts: List[int] = [],
         lag_seq: List[int] = None,
+        pad_fn=right_pad_sequence,
     ):
         self.df = df.copy()
         self.conts = conts.copy()
@@ -58,12 +76,13 @@ class TimeseriesDataset(torch.utils.data.Dataset):
         self.len = lengths.sum()
         self.min_length = context_length + prediction_length + self.lag_length
         self.lengths = lengths
+        self.pad_fn = pad_fn
 
     def build(self) -> "TimeseriesDataset":
         ts = []
         for unique_id, grp in self.df.groupby("unique_id", sort=False):
             ts.append(torch.from_numpy(grp[["y"] + self.conts].values))
-        ts, mask = right_pad_sequence(ts, min_length=self.min_length)
+        ts, mask = self.pad_fn(ts, min_length=self.min_length)
         self.X = ts[:, :, :]
         self.pad_mask = mask
         return self

@@ -1,0 +1,42 @@
+{
+    "weather": {
+        "filename": "WTH.csv",
+        "dataset": "weather",
+        "context_length": 505,
+        "prediction_length": 168,
+        "freq": "1H",
+        "seasonality": 24
+    },
+    "ETTh1": {
+        "filename": "ETTh1.csv",
+        "dataset": "ETTh1",
+        "context_length": 336,
+        "prediction_length": 336,
+        "freq": "1H",
+        "seasonality": 24
+    },
+    "ETTh2": {
+        "filename": "ETTh2.csv",
+        "dataset": "ETTh2",
+        "context_length": 336,
+        "prediction_length": 336,
+        "freq": "1H",
+        "seasonality": 24
+    },
+    "ETTm1": {
+        "filename": "ETTm1.csv",
+        "dataset": "ETTm1",
+        "context_length": 336,
+        "prediction_length": 336,
+        "freq": "15Min",
+        "seasonality": 96
+    },
+    "ETTm2": {
+        "filename": "ETTm2.csv",
+        "dataset": "ETTm2",
+        "context_length": 336,
+        "prediction_length": 336,
+        "freq": "15Min",
+        "seasonality": 96
+    }
+}

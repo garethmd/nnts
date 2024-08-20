@@ -64,6 +64,8 @@ class EpochBestModel:
 class EpochTrainer(Trainer):
 
     def __init__(self, state: TrainerState, params: Hyperparams):
+        if state is None:
+            state = TrainerState()
         self.state = state
         self.params = params
         self.events = nnts.events.EventManager()
@@ -90,6 +92,8 @@ class EpochTrainer(Trainer):
         pass
 
     def _train_epoch(self, train_dl: Iterable) -> Any:
+        if self.params.batches_per_epoch is None:
+            self.params.batches_per_epoch = len(train_dl)
         self.before_train_epoch()
         loss = 0
         for i, batch in enumerate(train_dl):

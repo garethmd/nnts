@@ -415,6 +415,20 @@ class DistrDeepAR(nn.Module):
         y_hat = y_hat[:, -prediction_length:]
         return y_hat
 
+    def train_output(
+        self,
+        batch: PaddedData,
+        prediction_length: int,
+        context_legnth: int,
+        training_method: utils.TrainingMethod,
+    ):
+        if training_method == utils.TrainingMethod.TEACHER_FORCING:
+            return self.teacher_forcing_output(batch, prediction_length, context_legnth)
+        elif training_method == utils.TrainingMethod.FREE_RUNNING:
+            return self.free_running(batch, prediction_length, context_legnth)
+        else:
+            raise ValueError(f"Invalid training method: {training_method}")
+
     def free_running(
         self, batch: PaddedData, prediction_length: int, context_length: int
     ) -> torch.tensor:

@@ -75,8 +75,27 @@ def create_dataloaders(
     transforms: List[nnts.preprocessing.Transformation] = None,
 ) -> Tuple[Iterable, Iterable, Iterable]:
     """takes split data -> fits transforms -> creates dataloaders"""
-
     split_data = splitter_fn(df, context_length, prediction_length)
+    return create_dataloaders_from_split_data(
+        split_data,
+        Dataset,
+        dataset_options,
+        Sampler,
+        batch_size,
+        transforms,
+    )
+
+
+def create_dataloaders_from_split_data(
+    split_data: Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame],
+    Dataset: Type,
+    dataset_options: dict = {},
+    Sampler: Type | None = None,
+    batch_size: int = 32,
+    transforms: List[nnts.preprocessing.Transformation] = None,
+) -> Tuple[Iterable, Iterable, Iterable]:
+    """takes split data -> fits transforms -> creates dataloaders"""
+
     has_validation = hasattr(split_data, "validation")
 
     trn_builder = DataLoaderBuilder(split_data.train)
@@ -98,7 +117,7 @@ def create_dataloaders(
 
     if Sampler is not None:
         trn_builder.set_Sampler(Sampler)
-        test_builder.set_Sampler(Sampler)
+        # test_builder.set_Sampler(Sampler)
         if has_validation:
             val_builder.set_Sampler(Sampler)
 
@@ -107,7 +126,7 @@ def create_dataloaders(
             Dataset,
             dataset_options=dataset_options,
         )
-        .set_dataloader(DataLoader, batch_size=batch_size, shuffle=True)
+        .set_dataloader(DataLoader, batch_size=batch_size, shuffle=True, drop_last=True)
         .to_dataloader()
     )
     test_dl = (
@@ -124,7 +143,9 @@ def create_dataloaders(
                 Dataset,
                 dataset_options=dataset_options,
             )
-            .set_dataloader(DataLoader, batch_size=batch_size, shuffle=False)
+            .set_dataloader(
+                DataLoader, batch_size=batch_size, shuffle=False, drop_last=True
+            )
             .to_dataloader()
         )
         return trn_dl, val_dl, test_dl
