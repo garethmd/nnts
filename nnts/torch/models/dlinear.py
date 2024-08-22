@@ -68,13 +68,16 @@ class DLinear(nn.Module):
     DLinear
     """
 
-    def __init__(self, configs, individual=True, enc_in=1):
+    def __init__(
+        self, configs, individual=True, enc_in=1, kernel_size=25, scaling_fn=None
+    ):
         super(DLinear, self).__init__()
+        print("enc_in", enc_in)
         self.seq_len = configs.context_length
         self.pred_len = configs.prediction_length
+        self.scaling_fn = scaling_fn
 
         # Decompsition Kernel Size
-        kernel_size = 25
         self.decompsition = series_decomp(kernel_size)
         self.individual = individual
         self.channels = enc_in
@@ -100,6 +103,10 @@ class DLinear(nn.Module):
 
     def forward(self, x):
         # x: [Batch, Input length, Channel]
+        if self.scaling_fn is not None:
+            target_scale = self.scaling_fn(x)
+            x = x / target_scale
+
         seasonal_init, trend_init = self.decompsition(x)
         seasonal_init, trend_init = seasonal_init.permute(0, 2, 1), trend_init.permute(
             0, 2, 1
@@ -123,14 +130,23 @@ class DLinear(nn.Module):
             trend_output = self.Linear_Trend(trend_init)
 
         x = seasonal_output + trend_output
-        return x.permute(0, 2, 1)  # to [Batch, Output length, Channel]
+        x = x.permute(0, 2, 1)  # to [Batch, Output length, Channel]
+
+        if self.scaling_fn is not None:
+            x = x * target_scale
+        return x
 
     def train_output(
         self, batch: PaddedData, *args, **kwargs
     ) -> Tuple[torch.tensor, torch.tensor]:
-        x = batch.data
-        y_hat = self(x[:, : self.seq_len, :])
-        y = x[:, self.seq_len :, :]
+        x = batch.data[:, : self.seq_len, :]
+        y_hat = self(x)
+        y = batch.data[:, self.seq_len :, :]
+
+        pad_mask = batch.pad_mask[:, self.seq_len :]
+        y_hat = y_hat[pad_mask]
+        y = y[pad_mask]
+
         return y_hat, y
 
     def generate(

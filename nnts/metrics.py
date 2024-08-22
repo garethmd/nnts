@@ -263,6 +263,8 @@ def mase(
     >>> print(error)
     tensor([1.25])
     """
+    if len(y.shape) > 2 and len(seasonal_errors.shape) == 1:
+        seasonal_errors = seasonal_errors.unsqueeze(-1)
     return mae(y_hat, y, dim=dim) / seasonal_errors
 
 

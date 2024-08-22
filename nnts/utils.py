@@ -16,6 +16,7 @@ class TrainingMethod(Enum):
 class Scheduler(Enum):
     ONE_CYCLE = auto()
     REDUCE_LR_ON_PLATEAU = auto()
+    STEP_LR = auto()
 
 
 @dataclass

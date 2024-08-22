@@ -65,7 +65,7 @@ def unpack(df: pd.DataFrame, freq: str = "ME") -> pd.DataFrame:
         )
 
     unpacked_df = pd.DataFrame(
-        data={"y": df["series_value"].to_numpy(), "ds": timesteps}
+        data={"y": df["series_value"].to_numpy(), "ds": timesteps.astype(str)}
     )
     unpacked_df["unique_id"] = df["series_name"]
     return unpacked_df

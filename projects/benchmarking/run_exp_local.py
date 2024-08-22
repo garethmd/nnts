@@ -19,29 +19,29 @@ import nnts.trainers
 from nnts import utils
 
 DATASET_NAMES = [
-    "bitcoin",
+    # "bitcoin",
     "car_parts",
     "cif_2016",
     "covid_deaths",
-    "dominick",
+    # "dominick",
     "electricity_hourly",
     "electricity_weekly",
     "fred_md",
     "hospital",
-    "kaggle_web_traffic",
+    # "kaggle_web_traffic",
     "kdd_cup",
     "m1_monthly",
     "m1_quarterly",
     "m1_yearly",
-    "m3_monthly",
-    "m3_quarterly",
-    "m3_yearly",
-    "m4_daily",
-    "m4_hourly",
-    "m4_monthly",
-    "m4_quarterly",
-    "m4_weekly",
-    "m4_yearly",
+    # "m3_monthly",
+    # "m3_quarterly",
+    # "m3_yearly",
+    # "m4_daily",
+    # "m4_hourly",
+    # "m4_monthly",
+    # "m4_quarterly",
+    # "m4_yearly",
+    # "m4_weekly",
     "nn5_daily",
     "nn5_weekly",
     "pedestrian_counts",
@@ -50,7 +50,7 @@ DATASET_NAMES = [
     "solar_10_minutes",
     "solar_weekly",
     "sunspot",
-    "temperature_rain",
+    # "temperature_rain",
     "tourism_monthly",
     "tourism_quarterly",
     "tourism_yearly",
@@ -65,15 +65,16 @@ DATASET_NAMES = [
 
 def model_factory(model_name: str, metadata: nnts.datasets.Metadata, **kwargs):
     if model_name == "dlinear":
-        return nnts.torch.models.DLinear(metadata, individual=True, **kwargs)
+        return nnts.torch.models.DLinear(metadata, **kwargs)
     elif model_name == "nlinear":
-        return nnts.torch.models.NLinear(metadata, individual=True, **kwargs)
+        return nnts.torch.models.NLinear(metadata, **kwargs)
     else:
         raise ValueError(f"Unknown model name: {model_name}")
 
 
 def benchmark_dataset(model_name: str, dataset_name: str, results_path: str):
     df, metadata = nnts.datasets.load_dataset(dataset_name)
+    unique_ids = df["unique_id"].unique()
 
     params = nnts.torch.models.dlinear.Hyperparams(
         optimizer=torch.optim.Adam,
@@ -91,20 +92,27 @@ def benchmark_dataset(model_name: str, dataset_name: str, results_path: str):
         "conts": [],
     }
 
-    for seed in [42, 43, 44, 45, 46]:
-        nnts.torch.utils.seed_everything(seed)
-        logger = nnts.loggers.WandbRun(
-            project=model_name + "-global",
-            name=f"{dataset_name}-seed-{seed}",
-            config={
-                **params.__dict__,
-                **metadata.__dict__,
-            },
-            path=os.path.join(results_path, model_name, metadata.dataset),
-        )
+    seed = 42
+    nnts.torch.utils.seed_everything(seed)
+    logger = nnts.loggers.WandbRun(
+        project=model_name + "-local-separate",
+        name=f"{dataset_name}-seed-{seed}",
+        config={
+            **params.__dict__,
+            **metadata.__dict__,
+        },
+        path=os.path.join(results_path, model_name, metadata.dataset),
+    )
+
+    y_hat_list = []
+    y_list = []
+    seasonal_error_list = []
+
+    for unique_id in unique_ids:
+        df_local = df[df["unique_id"] == unique_id]
 
         trn_dl, test_dl = nnts.torch.utils.create_dataloaders(
-            df,
+            df_local,
             nnts.datasets.split_test_train_last_horizon,
             metadata.context_length,
             metadata.prediction_length,
@@ -117,23 +125,30 @@ def benchmark_dataset(model_name: str, dataset_name: str, results_path: str):
             model_name,
             metadata,
             enc_in=trn_dl.dataset[0].data.shape[1],
+            individual=False,
         )
 
         trner = nnts.torch.trainers.TorchEpochTrainer(net, params, metadata)
-        logger.configure(trner.events)
+        trner.events.add_listener(nnts.trainers.EpochTrainComplete, logger)
+        trner.events.add_listener(nnts.trainers.EpochValidateComplete, logger)
         evaluator = trner.train(trn_dl)
         y_hat, y = evaluator.evaluate(
             test_dl, metadata.prediction_length, metadata.context_length
         )
-        # y_hat = y_hat.permute(2, 1, 0)  # .reshape(7, -1)
-        # y = y.permute(2, 1, 0)  # .reshape(7, -1)
-        test_metrics = nnts.metrics.calc_metrics(
-            y_hat,
-            y,
-            nnts.metrics.calculate_seasonal_error(trn_dl, metadata.seasonality),
+        y_hat_list.append(y_hat)
+        y_list.append(y)
+        seasonal_error_list.append(
+            nnts.metrics.calculate_seasonal_error(trn_dl, metadata.seasonality)
         )
-        logger.log(test_metrics)
-        logger.finish()
+
+    y_hat = torch.cat(y_hat_list, dim=0)
+    y = torch.cat(y_list, dim=0)
+    seasonal_error = torch.cat(seasonal_error_list, dim=0)
+
+    test_metrics = nnts.metrics.calc_metrics(y_hat, y, seasonal_error=seasonal_error)
+
+    logger.log(test_metrics)
+    logger.finish()
 
 
 if __name__ == "__main__":

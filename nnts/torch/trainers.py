@@ -59,8 +59,8 @@ def eval(
         y_hat_list = []
         for batch in dl:
             y_hat, y = validate(net, batch, prediction_length, context_length)
-            y_list.append(y[:, :, :1])
-            y_hat_list.append(y_hat[:, :, :1])
+            y_list.append(y[:, :, :])
+            y_hat_list.append(y_hat[:, :, :])
 
             # TODO: improve this. Removing hook after first batch to make visualisation work
             if hooks is not None:
@@ -147,9 +147,10 @@ class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 self.optimizer, mode="min", factor=0.5, patience=self.params.patience
             )
-            # self.scheduler = torch.optim.lr_scheduler.StepLR(
-            #    self.optimizer, step_size=1, gamma=0.5
-            # )
+        elif self.params.scheduler == utils.Scheduler.STEP_LR:
+            self.scheduler = torch.optim.lr_scheduler.StepLR(
+                self.optimizer, step_size=1, gamma=0.5
+            )
         elif self.params.scheduler == utils.Scheduler.ONE_CYCLE:
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 self.optimizer,
@@ -187,6 +188,10 @@ class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
 
         if self.params.scheduler == utils.Scheduler.REDUCE_LR_ON_PLATEAU:
             self.scheduler.step(self.state.valid_loss)
+        elif self.params.scheduler == utils.Scheduler.STEP_LR:
+            if self.state.epoch > 1:
+                print("reducing lr")
+                self.scheduler.step()
 
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()
@@ -249,6 +254,10 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 self.optimizer, mode="min", factor=0.5, patience=self.params.patience
             )
+        elif self.params.scheduler == utils.Scheduler.STEP_LR:
+            self.scheduler = torch.optim.lr_scheduler.StepLR(
+                self.optimizer, step_size=1, gamma=0.5
+            )
         elif self.params.scheduler == utils.Scheduler.ONE_CYCLE:
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 self.optimizer,
@@ -269,6 +278,8 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
 
         if self.params.scheduler == utils.Scheduler.REDUCE_LR_ON_PLATEAU:
             self.scheduler.step(self.state.train_loss)
+        elif self.params.scheduler == utils.Scheduler.STEP_LR:
+            self.scheduler.step()
 
         print(f"Epoch {self.state.epoch} Train Loss: {self.state.train_loss}")
 
