@@ -1,6 +1,7 @@
 from .baselstm import BaseFutureCovariateLSTM, BaseLSTM, LinearModel
 from .deepar import DeepARPoint, DistrDeepAR
 from .dlinear import DLinear
+from .nhits import NHITS
 from .nlinear import NLinear
 from .seglstm import SegLSTM
 from .unrolledlstm import UnrolledLSTM
@@ -15,4 +16,5 @@ __all__ = [
     "DistrDeepAR",
     "NLinear",
     "DLinear",
+    "NHITS",
 ]

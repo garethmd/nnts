@@ -19,17 +19,17 @@ import nnts.trainers
 from nnts import utils
 
 DATASET_NAMES = [
-    # "bitcoin",
-    "car_parts",
-    "cif_2016",
-    "covid_deaths",
+    ##"bitcoin",
+    ##"car_parts",
+    ##"cif_2016",
+    ##"covid_deaths",
     # "dominick",
-    "electricity_hourly",
-    "electricity_weekly",
-    "fred_md",
-    "hospital",
+    ##"electricity_hourly",
+    ##"electricity_weekly",
+    ##"fred_md",
+    ##"hospital",
     # "kaggle_web_traffic",
-    "kdd_cup",
+    ##"kdd_cup",
     "m1_monthly",
     "m1_quarterly",
     "m1_yearly",
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="nlinear",
+        default="dlinear",
         help="Name of the model.",
     )
     parser.add_argument(

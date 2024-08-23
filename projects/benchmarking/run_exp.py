@@ -143,7 +143,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="nlinear",
+        default="dlinear",
         help="Name of the model.",
     )
     parser.add_argument(
