@@ -3,6 +3,7 @@ from typing import Any, Tuple
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from nnts.utils import Scheduler, TrainingMethod
 
@@ -13,19 +14,19 @@ from ..datasets import PaddedData
 class Hyperparams:
     """Class for keeping track of training and model params."""
 
-    optimizer: Any
-    loss_fn: Any
+    optimizer: callable = torch.optim.Adam
+    loss_fn: callable = F.l1_loss
     dropout: float = 0.0
     batch_size: int = 32
-    lr: float = 1e-3
+    lr: float = 0.005
     epochs: int = 100
     patience: int = 10
     early_stopper_patience: int = 30
     batches_per_epoch: int = 50
-    weight_decay: float = 1e-8
+    weight_decay: float = 0.0
     training_method: TrainingMethod = TrainingMethod.DMS
     scheduler: Scheduler = Scheduler.REDUCE_LR_ON_PLATEAU
-    model_file_path: str = ""
+    model_file_path: str = f"logs"
 
 
 class moving_avg(nn.Module):

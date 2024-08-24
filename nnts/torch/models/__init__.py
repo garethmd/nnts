@@ -4,6 +4,7 @@ from .dlinear import DLinear
 from .nhits import NHITS
 from .nlinear import NLinear
 from .seglstm import SegLSTM
+from .tide import TiDE
 from .unrolledlstm import UnrolledLSTM
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "NLinear",
     "DLinear",
     "NHITS",
+    "TiDE",
 ]

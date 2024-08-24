@@ -19,38 +19,38 @@ import nnts.trainers
 from nnts import utils
 
 DATASET_NAMES = [
-    "bitcoin",
-    "car_parts",
-    "cif_2016",
-    "covid_deaths",
-    "dominick",
-    "electricity_hourly",
-    "electricity_weekly",
-    "fred_md",
-    "hospital",
-    "kaggle_web_traffic",
-    "kdd_cup",
-    "m1_monthly",
-    "m1_quarterly",
-    "m1_yearly",
-    "m3_monthly",
-    "m3_quarterly",
-    "m3_yearly",
-    "m4_daily",
-    "m4_hourly",
-    "m4_monthly",
-    "m4_quarterly",
-    "m4_weekly",
-    "m4_yearly",
-    "nn5_daily",
-    "nn5_weekly",
-    "pedestrian_counts",
-    "rideshare",
-    "saugeen_river_flow",
-    "solar_10_minutes",
-    "solar_weekly",
-    "sunspot",
-    "temperature_rain",
+    # "bitcoin",
+    # "car_parts",
+    # "cif_2016",
+    # "covid_deaths",
+    # "dominick",
+    # "electricity_hourly",
+    # "electricity_weekly",
+    # "fred_md",
+    # "hospital",
+    # "kaggle_web_traffic",
+    # "kdd_cup",
+    # "m1_monthly",
+    # "m1_quarterly",
+    # "m1_yearly",
+    # "m3_monthly",
+    # "m3_quarterly",
+    # "m3_yearly",
+    # "m4_daily",
+    # "m4_hourly",
+    # "m4_monthly",
+    # "m4_quarterly",
+    # "m4_weekly",
+    # "m4_yearly",
+    # "nn5_daily",
+    # "nn5_weekly",
+    # "pedestrian_counts",
+    # "rideshare",
+    # "saugeen_river_flow",
+    # "solar_10_minutes",
+    # "solar_weekly",
+    # "sunspot",
+    # "temperature_rain",
     "tourism_monthly",
     "tourism_quarterly",
     "tourism_yearly",
@@ -68,23 +68,40 @@ def model_factory(model_name: str, metadata: nnts.datasets.Metadata, **kwargs):
         return nnts.torch.models.DLinear(metadata, individual=True, **kwargs)
     elif model_name == "nlinear":
         return nnts.torch.models.NLinear(metadata, individual=True, **kwargs)
+    elif model_name == "nhits":
+        return nnts.torch.models.NHITS(
+            h=metadata.prediction_length,
+            input_size=metadata.context_length,
+            n_blocks=[1, 1, 1],
+            mlp_units=[[512, 512], [512, 512]],
+            n_pool_kernel_size=[1, 1, 1],
+            n_freq_downsample=[1, 1, 1],
+        )
+    elif model_name == "tide":
+        return nnts.torch.models.TiDE(
+            h=metadata.prediction_length,
+            input_size=metadata.context_length,
+        )
     else:
         raise ValueError(f"Unknown model name: {model_name}")
 
 
+def get_hyperparams(model_name: str):
+    if model_name == "dlinear":
+        return nnts.torch.models.dlinear.Hyperparams()
+    elif model_name == "nlinear":
+        return nnts.torch.models.dlinear.Hyperparams()
+    elif model_name == "nhits":
+        return nnts.torch.models.nhits.Hyperparams()
+    elif model_name == "tide":
+        return nnts.torch.models.tide.Hyperparams()
+
+
 def benchmark_dataset(model_name: str, dataset_name: str, results_path: str):
     df, metadata = nnts.datasets.load_dataset(dataset_name)
+    metadata.context_length = metadata.prediction_length * 2
 
-    params = nnts.torch.models.dlinear.Hyperparams(
-        optimizer=torch.optim.Adam,
-        loss_fn=F.l1_loss,
-        batch_size=32,
-        batches_per_epoch=50,
-        training_method=utils.TrainingMethod.DMS,
-        model_file_path=f"logs",
-        lr=0.005,
-        weight_decay=0.0,
-    )
+    params = get_hyperparams(model_name)
     dataset_options = {
         "context_length": metadata.context_length,
         "prediction_length": metadata.prediction_length,
@@ -143,7 +160,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="dlinear",
+        default="tide",
         help="Name of the model.",
     )
     parser.add_argument(
