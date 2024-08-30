@@ -17,9 +17,9 @@ import nnts.torch.utils
 from nnts import datasets, utils
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
-model_name = "dlinear"
+model_name = "autoformer"
 data_path = os.path.join(BASE_PATH, "data")
-dataset_name = "ETTh1"
+dataset_name = "ETTh2"
 results_path = os.path.join(BASE_PATH, "nb-results")
 metadata_path = os.path.join(BASE_PATH, "informer.json")
 
@@ -28,22 +28,14 @@ datafile_path = os.path.join(data_path, metadata.filename)
 PATH = os.path.join(results_path, model_name, metadata.dataset)
 df = pd.read_csv(datafile_path)
 df = df.rename({"date": "ds"}, axis="columns")
-FEATURES = ["HUFL", "HULL", "MUFL", "MULL", "LUFL", "LULL", "OT"]
+FEATURES = ["OT"]  # ["HUFL", "HULL", "MUFL", "MULL", "LUFL", "LULL", "OT"]
 utils.makedirs_if_not_exists(PATH)
 
 # DLinear paper params
-params = utils.Hyperparams(
-    optimizer=torch.optim.Adam,
-    loss_fn=torch.nn.MSELoss(),
-    batch_size=32,
-    batches_per_epoch=None,
-    training_method=utils.TrainingMethod.DMS,
-    model_file_path="logs",
-    epochs=10,
-    scheduler=utils.Scheduler.STEP_LR,
-    lr=0.005,
-    weight_decay=0.0,
-)
+params = nnts.torch.models.autoformer.Hyperparams()
+params.epochs = 10
+params.enc_in = 1
+params.dec_in = 1
 
 # scaling
 scaler = sklearn.preprocessing.StandardScaler()
@@ -90,10 +82,11 @@ for seed in [2021]:
         # transforms=[nnts.torch.preprocessing.StandardScaler()],
     )
 
-    net = nnts.torch.models.DLinear(
-        metadata,
-        individual=False,
-        enc_in=trn_dl.dataset[0].data.shape[1],
+    net = nnts.torch.models.Autoformer(
+        h=metadata.prediction_length,
+        input_size=metadata.context_length,
+        c_in=trn_dl.dataset[0].data.shape[1],
+        configs=params,
     )
     trner = nnts.torch.trainers.ValidationTorchEpochTrainer(net, params, metadata)
     evaluator = trner.train(trn_dl, val_dl)

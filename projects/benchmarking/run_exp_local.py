@@ -30,44 +30,48 @@ DATASET_NAMES = [
     ##"hospital",
     # "kaggle_web_traffic",
     ##"kdd_cup",
-    "m1_monthly",
-    "m1_quarterly",
-    "m1_yearly",
+    # "m1_monthly",
+    # "m1_quarterly",
+    # "m1_yearly",
     # "m3_monthly",
     # "m3_quarterly",
     # "m3_yearly",
     # "m4_daily",
     # "m4_hourly",
     # "m4_monthly",
-    # "m4_quarterly",
-    # "m4_yearly",
-    # "m4_weekly",
-    "nn5_daily",
-    "nn5_weekly",
-    "pedestrian_counts",
-    "rideshare",
-    "saugeen_river_flow",
-    "solar_10_minutes",
-    "solar_weekly",
-    "sunspot",
+    "m4_quarterly",
+    "m4_yearly",
+    "m4_weekly",
+    # "nn5_daily",
+    # "nn5_weekly",
+    # "pedestrian_counts",
+    # "rideshare",
+    # "saugeen_river_flow",
+    # "solar_10_minutes",
+    # "solar_weekly",
+    # "sunspot",
     # "temperature_rain",
-    "tourism_monthly",
-    "tourism_quarterly",
-    "tourism_yearly",
-    "traffic_hourly",
-    "traffic_weekly",
-    "us_births",
-    "vehicle_trips",
-    "weather",
-    "australian_electricity_demand",
+    # "tourism_monthly",
+    # "tourism_quarterly",
+    # "tourism_yearly",
+    # "traffic_hourly",
+    # "traffic_weekly",
+    # "us_births",
+    # "vehicle_trips",
+    # "weather",
+    # "australian_electricity_demand",
 ]
 
 
-def model_factory(model_name: str, metadata: nnts.datasets.Metadata, **kwargs):
+def model_factory(model_name: str, metadata: nnts.datasets.Metadata, enc_in, params):
     if model_name == "dlinear":
-        return nnts.torch.models.DLinear(metadata, **kwargs)
+        return nnts.torch.models.DLinear(
+            metadata.prediction_length, metadata.context_length, 1, params
+        )
     elif model_name == "nlinear":
-        return nnts.torch.models.NLinear(metadata, **kwargs)
+        return nnts.torch.models.NLinear(
+            metadata.prediction_length, metadata.context_length, 1, params
+        )
     else:
         raise ValueError(f"Unknown model name: {model_name}")
 
@@ -125,10 +129,12 @@ def benchmark_dataset(model_name: str, dataset_name: str, results_path: str):
             model_name,
             metadata,
             enc_in=trn_dl.dataset[0].data.shape[1],
-            individual=False,
+            params=params,
         )
 
-        trner = nnts.torch.trainers.TorchEpochTrainer(net, params, metadata)
+        trner = nnts.torch.trainers.TorchEpochTrainer(
+            net, params, metadata, model_path="local-model.pt"
+        )
         trner.events.add_listener(nnts.trainers.EpochTrainComplete, logger)
         trner.events.add_listener(nnts.trainers.EpochValidateComplete, logger)
         evaluator = trner.train(trn_dl)
@@ -158,7 +164,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="dlinear",
+        default="nlinear",
         help="Name of the model.",
     )
     parser.add_argument(

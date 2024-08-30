@@ -47,10 +47,10 @@ DATASET_NAMES = [
     # "pedestrian_counts",
     # "rideshare",
     # "saugeen_river_flow",
-    # "solar_10_minutes",
-    # "solar_weekly",
-    # "sunspot",
-    # "temperature_rain",
+    "solar_10_minutes",
+    "solar_weekly",
+    "sunspot",
+    "temperature_rain",
     "tourism_monthly",
     "tourism_quarterly",
     "tourism_yearly",
@@ -63,11 +63,15 @@ DATASET_NAMES = [
 ]
 
 
-def model_factory(model_name: str, metadata: nnts.datasets.Metadata, **kwargs):
+def model_factory(model_name: str, metadata: nnts.datasets.Metadata, enc_in, params):
     if model_name == "dlinear":
-        return nnts.torch.models.DLinear(metadata, individual=True, **kwargs)
+        return nnts.torch.models.DLinear(
+            metadata.prediction_length, metadata.context_length, enc_in, params
+        )
     elif model_name == "nlinear":
-        return nnts.torch.models.NLinear(metadata, individual=True, **kwargs)
+        return nnts.torch.models.NLinear(
+            metadata.prediction_length, metadata.context_length, enc_in, params
+        )
     elif model_name == "nhits":
         return nnts.torch.models.NHITS(
             h=metadata.prediction_length,
@@ -90,14 +94,14 @@ def get_hyperparams(model_name: str):
     if model_name == "dlinear":
         return nnts.torch.models.dlinear.Hyperparams()
     elif model_name == "nlinear":
-        return nnts.torch.models.dlinear.Hyperparams()
+        return nnts.torch.models.nlinear.Hyperparams()
     elif model_name == "nhits":
         return nnts.torch.models.nhits.Hyperparams()
     elif model_name == "tide":
         return nnts.torch.models.tide.Hyperparams()
 
 
-def benchmark_dataset(model_name: str, dataset_name: str, results_path: str):
+def benchmark_dataset(model_name: str, dataset_name: str, results_path: str, seed=42):
     df, metadata = nnts.datasets.load_dataset(dataset_name)
     metadata.context_length = metadata.prediction_length * 2
 
@@ -108,49 +112,53 @@ def benchmark_dataset(model_name: str, dataset_name: str, results_path: str):
         "conts": [],
     }
 
-    for seed in [42, 43, 44, 45, 46]:
-        nnts.torch.utils.seed_everything(seed)
-        logger = nnts.loggers.WandbRun(
-            project=model_name + "-global",
-            name=f"{dataset_name}-seed-{seed}",
-            config={
-                **params.__dict__,
-                **metadata.__dict__,
-            },
-            path=os.path.join(results_path, model_name, metadata.dataset),
-        )
+    nnts.torch.utils.seed_everything(seed)
+    logger = nnts.loggers.WandbRun(
+        project=model_name + "-global",
+        name=f"{dataset_name}-seed-{seed}",
+        config={
+            **params.__dict__,
+            **metadata.__dict__,
+        },
+        path=os.path.join(results_path, model_name, metadata.dataset),
+    )
 
-        trn_dl, test_dl = nnts.torch.utils.create_dataloaders(
-            df,
-            nnts.datasets.split_test_train_last_horizon,
-            metadata.context_length,
-            metadata.prediction_length,
-            Dataset=nnts.torch.datasets.TimeseriesDataset,
-            dataset_options=dataset_options,
-            Sampler=nnts.torch.datasets.TimeSeriesSampler,
-        )
+    trn_dl, test_dl = nnts.torch.utils.create_dataloaders(
+        df,
+        nnts.datasets.split_test_train_last_horizon,
+        metadata.context_length,
+        metadata.prediction_length,
+        Dataset=nnts.torch.datasets.TimeseriesDataset,
+        dataset_options=dataset_options,
+        Sampler=nnts.torch.datasets.TimeSeriesSampler,
+    )
 
-        net = model_factory(
-            model_name,
-            metadata,
-            enc_in=trn_dl.dataset[0].data.shape[1],
-        )
+    net = model_factory(
+        model_name,
+        metadata,
+        enc_in=trn_dl.dataset[0].data.shape[1],
+        params=params,
+    )
 
-        trner = nnts.torch.trainers.TorchEpochTrainer(net, params, metadata)
-        logger.configure(trner.events)
-        evaluator = trner.train(trn_dl)
-        y_hat, y = evaluator.evaluate(
-            test_dl, metadata.prediction_length, metadata.context_length
-        )
-        # y_hat = y_hat.permute(2, 1, 0)  # .reshape(7, -1)
-        # y = y.permute(2, 1, 0)  # .reshape(7, -1)
-        test_metrics = nnts.metrics.calc_metrics(
-            y_hat,
-            y,
-            nnts.metrics.calculate_seasonal_error(trn_dl, metadata.seasonality),
-        )
-        logger.log(test_metrics)
-        logger.finish()
+    trner = nnts.torch.trainers.TorchEpochTrainer(
+        net, params, metadata, model_path="univariate.pth"
+    )
+    logger.configure(trner.events)
+    evaluator = trner.train(trn_dl)
+    y_hat, y = evaluator.evaluate(
+        test_dl, metadata.prediction_length, metadata.context_length
+    )
+    # y_hat = y_hat.permute(2, 1, 0)  # .reshape(7, -1)
+    # y = y.permute(2, 1, 0)  # .reshape(7, -1)
+    test_metrics = nnts.metrics.calc_metrics(
+        y_hat,
+        y,
+        nnts.metrics.calculate_seasonal_error(trn_dl, metadata.seasonality),
+    )
+    logger.log(test_metrics)
+    param_count = nnts.torch.utils.count_of_params_in(net)
+    logger.log({"param_count": param_count})
+    logger.finish()
 
 
 if __name__ == "__main__":
@@ -160,7 +168,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="tide",
+        default="nlinear",
         help="Name of the model.",
     )
     parser.add_argument(
@@ -181,12 +189,14 @@ if __name__ == "__main__":
         raise ValueError(f"Unknown dataset name: {args.dataset}")
 
     if args.dataset == "all":
-        for dataset_name in DATASET_NAMES:
-            benchmark_dataset(
-                args.model,
-                dataset_name,
-                args.results_path,
-            )
+        for seed in [43]:
+            for dataset_name in DATASET_NAMES:
+                benchmark_dataset(
+                    args.model,
+                    dataset_name,
+                    args.results_path,
+                    seed=seed,
+                )
     else:
         benchmark_dataset(
             args.model,

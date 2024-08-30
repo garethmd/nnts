@@ -127,17 +127,20 @@ class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
         params: utils.Hyperparams,
         metadata: datasets.Metadata,
         state: nnts.trainers.TrainerState = None,
+        model_path: str = "best_model.pt",
     ):
         super().__init__(state, params)
         self.net = net
         self.metadata = metadata
         utils.makedirs_if_not_exists(params.model_file_path)
-        self.path = os.path.join(params.model_file_path, "best_model.pt")
+        self.path = os.path.join(params.model_file_path, model_path)
         self.loss_fn = params.loss_fn
         self.Optimizer = params.optimizer
 
     def before_train(self, train_dl):
         print(self.net)
+        if self.params.batches_per_epoch is None:
+            self.params.batches_per_epoch = len(train_dl)
         self.optimizer = self.Optimizer(
             self.net.parameters(),
             lr=self.params.lr,
@@ -154,9 +157,10 @@ class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
         elif self.params.scheduler == utils.Scheduler.ONE_CYCLE:
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 self.optimizer,
-                max_lr=self.params.lr * 3,
+                max_lr=self.params.lr,
                 steps_per_epoch=self.params.batches_per_epoch,
-                epochs=self.params.epochs + 2,
+                epochs=self.params.epochs,
+                pct_start=0.3,
             )
         self.early_stopper = (
             None
@@ -234,12 +238,13 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
         params: utils.Hyperparams,
         metadata: datasets.Metadata,
         state: nnts.trainers.TrainerState = None,
+        model_path: str = "best_model.pt",
     ):
         super().__init__(state, params)
         self.net = net
         self.metadata = metadata
         utils.makedirs_if_not_exists(params.model_file_path)
-        self.path = os.path.join(params.model_file_path, "best_model.pt")
+        self.path = os.path.join(params.model_file_path, model_path)
         self.loss_fn = params.loss_fn
         self.Optimizer = params.optimizer
 

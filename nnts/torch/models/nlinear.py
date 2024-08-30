@@ -1,9 +1,36 @@
-from typing import Tuple
+from dataclasses import dataclass
+from typing import Any, Tuple
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
+from nnts.utils import Scheduler, TrainingMethod
 
 from ..datasets import PaddedData
+
+
+@dataclass
+class Hyperparams:
+    """Class for keeping track of training and model params."""
+
+    optimizer: callable = torch.optim.Adam
+    loss_fn: callable = F.l1_loss
+    dropout: float = 0.0
+    batch_size: int = 32
+    lr: float = 0.005
+    epochs: int = 100
+    patience: int = 10
+    early_stopper_patience: int = 30
+    batches_per_epoch: int = 50
+    weight_decay: float = 0.0
+    training_method: TrainingMethod = TrainingMethod.DMS
+    scheduler: Scheduler = Scheduler.REDUCE_LR_ON_PLATEAU
+    model_file_path: str = f"logs"
+    individual: bool = True
+    kernel_size = 25
+    scaling_fn: Any = None
+    enc_in: int = 1
 
 
 class NLinear(nn.Module):
@@ -11,15 +38,17 @@ class NLinear(nn.Module):
     Normalization-Linear
     """
 
-    def __init__(self, configs, individual=True, enc_in=1):
+    def __init__(self, h: int, input_size: int, c_in: int, configs: Hyperparams):
         super(NLinear, self).__init__()
-        self.seq_len = configs.context_length
-        self.pred_len = configs.prediction_length
+        print("enc_in", configs.enc_in)
+        self.seq_len = input_size
+        self.pred_len = h
+        self.scaling_fn = configs.scaling_fn
 
         # Use this line if you want to visualize the weights
         # self.Linear.weight = nn.Parameter((1/self.seq_len)*torch.ones([self.pred_len,self.seq_len]))
-        self.channels = enc_in
-        self.individual = individual
+        self.channels = c_in
+        self.individual = configs.individual
         if self.individual:
             self.Linear = nn.ModuleList()
             for i in range(self.channels):
