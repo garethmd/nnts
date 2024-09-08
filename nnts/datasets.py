@@ -49,6 +49,8 @@ class Metadata(BaseModel):
     freq: str
     seasonality: int
     url: str = None
+    context_lengths: list = None
+    multivariate: bool = False
 
 
 def unpack(df: pd.DataFrame, freq: str = "ME") -> pd.DataFrame:

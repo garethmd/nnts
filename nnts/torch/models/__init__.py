@@ -2,6 +2,7 @@ from .autoformer import Autoformer
 from .baselstm import BaseFutureCovariateLSTM, BaseLSTM, LinearModel
 from .deepar import DeepARPoint, DistrDeepAR
 from .dlinear import DLinear
+from .nbeats import NBeats
 from .nhits import NHITS
 from .nlinear import NLinear
 from .patchtst import PatchTST
@@ -23,4 +24,5 @@ __all__ = [
     "TiDE",
     "PatchTST",
     "Autoformer",
+    "NBeats",
 ]

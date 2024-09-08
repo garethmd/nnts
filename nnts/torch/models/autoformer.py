@@ -35,20 +35,24 @@ class Hyperparams:
     embed_type: int = 3
     freq: str = field(default="h", metadata={"help": "freq for time features encoding"})
 
-    # Model definition
-    d_model: int = field(default=16, metadata={"help": "dimension of model"})
-    n_heads: int = field(default=4, metadata={"help": "num of heads"})
+    # Model definition Benchmarked
+    # d_model: int = field(default=16, metadata={"help": "dimension of model"})
+    # n_heads: int = field(default=4, metadata={"help": "num of heads"})
+    # e_layers: int = field(default=2, metadata={"help": "num of encoder layers"})
+    # d_layers: int = field(default=1, metadata={"help": "num of decoder layers"})
+    # d_ff: int = field(default=128, metadata={"help": "dimension of fcn"})
+
+    # Model definition Papers
+    d_model: int = field(default=512, metadata={"help": "dimension of model"})
+    n_heads: int = field(default=8, metadata={"help": "num of heads"})
     e_layers: int = field(default=2, metadata={"help": "num of encoder layers"})
     d_layers: int = field(default=1, metadata={"help": "num of decoder layers"})
-    d_ff: int = field(default=128, metadata={"help": "dimension of fcn"})
+    d_ff: int = field(default=2048, metadata={"help": "dimension of fcn"})
 
     moving_avg: int = field(
         default=25, metadata={"help": "window size of moving average"}
     )
     factor: int = field(default=1, metadata={"help": "attn factor"})
-    distil: bool = field(
-        default=True, metadata={"help": "whether to use distilling in encoder"}
-    )
     embed: str = field(default="timeF", metadata={"help": "time features encoding"})
     activation: str = field(default="gelu", metadata={"help": "activation"})
     output_attention: bool = field(
@@ -60,6 +64,72 @@ class Hyperparams:
 
     # Optimization
     des: str = field(default="test", metadata={"help": "exp description"})
+    revin: bool = True
+    affine: bool = False
+    subtract_last = False
+
+
+class RevIN(nn.Module):
+    def __init__(self, num_features: int, eps=1e-5, affine=True, subtract_last=False):
+        """
+        :param num_features: the number of features or channels
+        :param eps: a value added for numerical stability
+        :param affine: if True, RevIN has learnable affine parameters
+        """
+        super(RevIN, self).__init__()
+        self.num_features = num_features
+        self.eps = eps
+        self.affine = affine
+        self.subtract_last = subtract_last
+        if self.affine:
+            self._init_params()
+
+    def forward(self, x, mode: str):
+        if mode == "norm":
+            self._get_statistics(x)
+            x = self._normalize(x)
+        elif mode == "denorm":
+            x = self._denormalize(x)
+        else:
+            raise NotImplementedError
+        return x
+
+    def _init_params(self):
+        # initialize RevIN params: (C,)
+        self.affine_weight = nn.Parameter(torch.ones(self.num_features))
+        self.affine_bias = nn.Parameter(torch.zeros(self.num_features))
+
+    def _get_statistics(self, x):
+        dim2reduce = tuple(range(1, x.ndim - 1))
+        if self.subtract_last:
+            self.last = x[:, -1, :].unsqueeze(1)
+        else:
+            self.mean = torch.mean(x, dim=dim2reduce, keepdim=True).detach()
+        self.stdev = torch.sqrt(
+            torch.var(x, dim=dim2reduce, keepdim=True, unbiased=False) + self.eps
+        ).detach()
+
+    def _normalize(self, x):
+        if self.subtract_last:
+            x = x - self.last
+        else:
+            x = x - self.mean
+        x = x / self.stdev
+        if self.affine:
+            x = x * self.affine_weight
+            x = x + self.affine_bias
+        return x
+
+    def _denormalize(self, x):
+        if self.affine:
+            x = x - self.affine_bias
+            x = x / (self.affine_weight + self.eps * self.eps)
+        x = x * self.stdev
+        if self.subtract_last:
+            x = x + self.last
+        else:
+            x = x + self.mean
+        return x
 
 
 class PositionalEmbedding(nn.Module):
@@ -801,6 +871,13 @@ class Autoformer(nn.Module):
             projection=nn.Linear(configs.d_model, c_in, bias=True),
         )
 
+        # RevIn
+        self.revin = configs.revin
+        if self.revin:
+            self.revin_layer = RevIN(
+                c_in, affine=configs.affine, subtract_last=configs.subtract_last
+            )
+
     def forward(
         self,
         x_enc,
@@ -810,6 +887,11 @@ class Autoformer(nn.Module):
         dec_self_mask=None,
         dec_enc_mask=None,
     ):
+
+        # normalise
+        if self.revin:
+            x_enc = self.revin_layer(x_enc, "norm")
+
         # decomp init
         mean = torch.mean(x_enc, dim=1).unsqueeze(1).repeat(1, self.pred_len, 1)
         zeros = torch.zeros(
@@ -835,11 +917,16 @@ class Autoformer(nn.Module):
         )
         # final
         dec_out = trend_part + seasonal_part
+        dec_out = dec_out[:, -self.pred_len :, :]
+
+        # denorm
+        if self.revin:
+            dec_out = self.revin_layer(dec_out, "denorm")
 
         if self.output_attention:
-            return dec_out[:, -self.pred_len :, :], attns
+            return dec_out, attns
         else:
-            return dec_out[:, -self.pred_len :, :]  # [B, L, D]
+            return dec_out  # [B, L, D]
 
     def train_output(
         self, batch: PaddedData, *args, **kwargs

@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Tuple
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,7 +16,7 @@ class Hyperparams:
 
     optimizer: callable = torch.optim.Adam
     loss_fn: callable = F.l1_loss
-    dropout: float = 0.0
+    dropout: float = 0.3
     batch_size: int = 32
     lr: float = 1e-3
     epochs: int = 100
@@ -28,6 +27,13 @@ class Hyperparams:
     training_method: TrainingMethod = TrainingMethod.DMS
     scheduler: Scheduler = Scheduler.REDUCE_LR_ON_PLATEAU
     model_file_path = f"logs"
+
+    hidden_size: int = 256
+    num_encoder_layers: int = 2
+    num_decoder_layers: int = 2
+    decoder_output_dim: int = 8
+    temporal_decoder_dim: int = 128
+    output_dim: int = 1
 
 
 class ResidualBlock(nn.Module):
@@ -78,13 +84,7 @@ class TiDE(nn.Module):
         self,
         h: int,
         input_size: int,
-        hidden_size: int = 256,
-        num_encoder_layers: int = 2,
-        num_decoder_layers: int = 2,
-        decoder_output_dim: int = 8,
-        temporal_decoder_dim: int = 128,
-        output_dim: int = 1,
-        dropout: float = 0.3,
+        configs: Hyperparams,
     ):
         super(TiDE, self).__init__()
         self.h = h
@@ -92,40 +92,42 @@ class TiDE(nn.Module):
 
         dense_encoder_layers = [
             ResidualBlock(
-                input_dim=input_size if i == 0 else hidden_size,
-                hidden_size=hidden_size,
-                output_dim=hidden_size,
-                dropout=dropout,
+                input_dim=input_size if i == 0 else configs.hidden_size,
+                hidden_size=configs.hidden_size,
+                output_dim=configs.hidden_size,
+                dropout=configs.dropout,
             )
-            for i in range(num_encoder_layers)
+            for i in range(configs.num_encoder_layers)
         ]
         self.dense_encoder = nn.Sequential(*dense_encoder_layers)
 
         # Decoder
-        decoder_output_size = decoder_output_dim * h
+        decoder_output_size = configs.decoder_output_dim * h
         dense_decoder_layers = [
             ResidualBlock(
-                input_dim=hidden_size,
-                hidden_size=hidden_size,
+                input_dim=configs.hidden_size,
+                hidden_size=configs.hidden_size,
                 output_dim=(
-                    decoder_output_size if i == num_decoder_layers - 1 else hidden_size
+                    decoder_output_size
+                    if i == configs.num_decoder_layers - 1
+                    else configs.hidden_size
                 ),
-                dropout=dropout,
+                dropout=configs.dropout,
             )
-            for i in range(num_decoder_layers)
+            for i in range(configs.num_decoder_layers)
         ]
         self.dense_decoder = nn.Sequential(*dense_decoder_layers)
 
         self.temporal_decoder = ResidualBlock(
-            input_dim=decoder_output_dim,
-            hidden_size=temporal_decoder_dim,
-            output_dim=output_dim,
-            dropout=dropout,
+            input_dim=configs.decoder_output_dim,
+            hidden_size=configs.temporal_decoder_dim,
+            output_dim=configs.output_dim,
+            dropout=configs.dropout,
             norm=True,
         )
 
         self.global_skip = nn.Linear(
-            in_features=input_size, out_features=h * output_dim
+            in_features=input_size, out_features=h * configs.output_dim
         )
 
     def forward(self, x: torch.Tensor, pad_mask: torch.Tensor) -> torch.Tensor:

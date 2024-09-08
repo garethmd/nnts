@@ -29,6 +29,11 @@ class Hyperparams:
     scheduler: Scheduler = Scheduler.REDUCE_LR_ON_PLATEAU
     model_file_path = f"logs"
 
+    n_blocks = [1, 1, 1]
+    mlp_units = [[512, 512], [512, 512]]
+    n_pool_kernel_size = [1, 1, 1]
+    n_freq_downsample = [1, 1, 1]
+
 
 def domain_map(y_hat: torch.Tensor):
     """
@@ -205,12 +210,9 @@ class NHITS(nn.Module):
         self,
         h,
         input_size,
+        configs: Hyperparams,
         exclude_insample_y=False,
         stack_types: list = ["identity", "identity", "identity"],
-        n_blocks: list = [1, 1, 1],
-        mlp_units: list = 3 * [[512, 512]],
-        n_pool_kernel_size: list = [2, 2, 1],
-        n_freq_downsample: list = [4, 2, 1],
         pooling_mode: str = "MaxPool1d",
         interpolation_mode: str = "linear",
         dropout_prob_theta=0.0,
@@ -225,10 +227,10 @@ class NHITS(nn.Module):
             h=h,
             input_size=input_size,
             stack_types=stack_types,
-            n_blocks=n_blocks,
-            mlp_units=mlp_units,
-            n_pool_kernel_size=n_pool_kernel_size,
-            n_freq_downsample=n_freq_downsample,
+            n_blocks=configs.n_blocks,
+            mlp_units=configs.mlp_units,
+            n_pool_kernel_size=configs.n_pool_kernel_size,
+            n_freq_downsample=configs.n_freq_downsample,
             pooling_mode=pooling_mode,
             interpolation_mode=interpolation_mode,
             dropout_prob_theta=dropout_prob_theta,
@@ -340,14 +342,3 @@ class NHITS(nn.Module):
     ) -> Tuple[torch.tensor, torch.tensor]:
         y_hat = self(x, pad_mask)
         return y_hat.unsqueeze(-1)
-
-
-"""
-model = NHITS(h=24,
-              input_size=24*2,
-              max_steps=1,
-              windows_batch_size=None, 
-              n_freq_downsample=[12,4,1], 
-              pooling_mode='MaxPool1d')
-
-"""

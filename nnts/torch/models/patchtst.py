@@ -21,9 +21,9 @@ class Hyperparams:
     # dropout: float = 0.0
     batch_size: int = 128
     lr: float = 0.0001  # for one cycle
-    epochs: int = 50
+    epochs: int = 100
     patience: int = 10
-    early_stopper_patience: int = 30
+    early_stopper_patience: int = 100
     batches_per_epoch: int = None
     weight_decay: float = 0.0
     training_method: TrainingMethod = TrainingMethod.DMS
