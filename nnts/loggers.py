@@ -10,6 +10,7 @@ from typing import Any, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 
 import wandb
@@ -242,3 +243,23 @@ class WandbRun(Run, EpochEventMixin):
                 print(f"Error saving activations: {e}")
 
         self.run.finish()
+
+    def log_table(self, df: pd.DataFrame, metadata: Dict[str, Any]) -> None:
+        table = wandb.Table(dataframe=df)
+        table_artifact = wandb.Artifact(metadata.dataset, type="dataset")
+        table_artifact.add(table, "table")
+        self.run.log_artifact(table_artifact)
+        self.log({"results": table})
+
+
+"""
+test_table = wandb.Table(dataframe=test_df)
+  test_table_artifact = wandb.Artifact(metadata.dataset, type="dataset")
+  test_table_artifact.add(test_table, "test_table")
+
+  logger.log(test_metrics)
+  logger.log({"results": test_table})
+
+  # and Log as an Artifact to increase the available row limit!
+  lxogger.run.log_artifact(test_table_artifact)
+"""
