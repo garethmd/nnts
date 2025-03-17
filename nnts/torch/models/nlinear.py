@@ -33,6 +33,22 @@ class Hyperparams:
     enc_in: int = 1
 
 
+def get_mutlivariate_params():
+    params = Hyperparams(
+        optimizer=torch.optim.Adam,
+        loss_fn=torch.nn.MSELoss(),
+        batch_size=32,
+        batches_per_epoch=100,
+        training_method=TrainingMethod.DMS,
+        model_file_path="logs",
+        epochs=10,
+        scheduler=Scheduler.STEP_LR,
+        lr=0.005,
+        weight_decay=0.0,
+    )
+    return params
+
+
 class NLinear(nn.Module):
     """
     Normalization-Linear

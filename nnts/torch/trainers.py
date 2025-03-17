@@ -194,8 +194,8 @@ class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
             self.scheduler.step(self.state.valid_loss)
         elif self.params.scheduler == utils.Scheduler.STEP_LR:
             if self.state.epoch > 1:
-                print("reducing lr")
                 self.scheduler.step()
+                print("reducing lr", self.scheduler.get_last_lr())
 
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()

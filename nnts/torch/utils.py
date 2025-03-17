@@ -126,9 +126,7 @@ def create_dataloaders_from_split_data(
             Dataset,
             dataset_options=dataset_options,
         )
-        .set_dataloader(
-            DataLoader, batch_size=batch_size, shuffle=True, drop_last=False
-        )
+        .set_dataloader(DataLoader, batch_size=batch_size, shuffle=True, drop_last=True)
         .to_dataloader()
     )
     test_dl = (
