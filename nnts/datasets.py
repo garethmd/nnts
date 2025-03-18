@@ -265,12 +265,11 @@ def split_test_val_train(
     val_length: int,
     test_length: int,
     context_length: int = 0,
+    prediction_length: int = 336,
 ) -> SplitTrainTest:
-    data = data.groupby("unique_id").head(
-        trn_length + val_length + test_length - 2 * context_length
-    )
+    data = data.groupby("unique_id").head(trn_length + val_length + test_length)
     trn_val = data.groupby("unique_id").head(trn_length + val_length - context_length)
     trn = trn_val.groupby("unique_id").head(trn_length)
-    val = trn_val.groupby("unique_id").tail(val_length)
-    test = data.groupby("unique_id").tail(test_length)
+    val = trn_val.groupby("unique_id").tail(val_length + prediction_length)
+    test = data.groupby("unique_id").tail(test_length + prediction_length)
     return SplitData(train=trn, validation=val, test=test)

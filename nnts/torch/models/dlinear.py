@@ -38,7 +38,7 @@ def get_mutlivariate_params():
         optimizer=torch.optim.Adam,
         loss_fn=torch.nn.MSELoss(),
         batch_size=32,
-        batches_per_epoch=100,
+        batches_per_epoch=250,
         training_method=TrainingMethod.DMS,
         model_file_path="logs",
         epochs=10,

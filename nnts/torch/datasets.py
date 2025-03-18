@@ -260,7 +260,7 @@ class MultivariateTimeSeriesDataset(torch.utils.data.Dataset):
     def build(self) -> "MultivariateTimeSeriesDataset":
         ts = []
         for unique_id, grp in self.df.groupby("unique_id", sort=False):
-            ts.append(torch.from_numpy(grp[["y"] + self.conts].values))
+            ts.append(torch.from_numpy(grp[self.conts + ["y"]].values))
         ts, mask = self.pad_fn(ts, min_length=self.window_size)
         self.X = ts[:, :, :]
         self.pad_mask = mask
@@ -270,8 +270,6 @@ class MultivariateTimeSeriesDataset(torch.utils.data.Dataset):
         return self.max_length
 
     def __getitem__(self, i: int) -> PaddedData:
-        X = self.X[:, i : i + self.window_size, 0].permute(1, 0)  # [N, window_size]
-        pad_mask = self.pad_mask[:, i : i + self.window_size].permute(
-            1, 0
-        )  # [N, window_size]
+        X = self.X[0, i : i + self.window_size, :]
+        pad_mask = self.pad_mask[0, i : i + self.window_size]
         return PaddedData(data=X, pad_mask=pad_mask)
