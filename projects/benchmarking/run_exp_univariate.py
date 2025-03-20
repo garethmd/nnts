@@ -19,7 +19,7 @@ import nnts.trainers
 from nnts import utils
 
 DATASET_NAMES = [
-    "bitcoin",
+    # "bitcoin",
     "car_parts",
     "cif_2016",
     "covid_deaths",
@@ -90,11 +90,31 @@ def model_factory(model_name: str, metadata: nnts.datasets.Metadata, enc_in, par
             input_size=metadata.context_length,
             configs=params,
         )
+    elif model_name == "tsmixer":
+        return nnts.torch.models.TSMixer(
+            sequence_length=metadata.context_length,
+            prediction_length=metadata.prediction_length,
+            input_channels=1,
+            params=params,
+        )
+    elif model_name == "timemixer":
+        return nnts.torch.models.TimeMixer(
+            sequence_length=metadata.context_length,
+            prediction_length=metadata.prediction_length,
+            params=params,
+        )
+    elif model_name == "patchtst":
+        return nnts.torch.models.PatchTST(
+            h=metadata.prediction_length,
+            input_size=metadata.context_length,
+            c_in=1,
+            configs=params,
+        )
     else:
         raise ValueError(f"Unknown model name: {model_name}")
 
 
-def get_hyperparams(model_name: str):
+def get_hyperparams(model_name: str, metadata):
     if model_name == "dlinear":
         return nnts.torch.models.dlinear.Hyperparams()
     elif model_name == "nlinear":
@@ -105,14 +125,21 @@ def get_hyperparams(model_name: str):
         return nnts.torch.models.tide.Hyperparams()
     elif model_name == "nbeats":
         return nnts.torch.models.nbeats.Hyperparams()
+    elif model_name == "tsmixer":
+        return nnts.torch.models.tsmixer.Hyperparams(output_channels=1)
+    elif model_name == "timemixer":
+        return nnts.torch.models.timemixer.Hyperparams(freq=metadata.freq)
+    elif model_name == "patchtst":
+        patch_len = 16 if metadata.context_length > 16 else metadata.context_length
+        return nnts.torch.models.patchtst.Hyperparams(patch_len=patch_len)
 
 
 def benchmark_dataset(model_name: str, dataset_name: str, results_path: str, seed=42):
-    CONTEXT_LENGTH_ITEM = 1
+    CONTEXT_LENGTH_ITEM = 0
     df, metadata = nnts.datasets.load_dataset(dataset_name)
     metadata.context_length = metadata.context_lengths[CONTEXT_LENGTH_ITEM]
 
-    params = get_hyperparams(model_name)
+    params = get_hyperparams(model_name, metadata)
     dataset_options = {
         "context_length": metadata.context_length,
         "prediction_length": metadata.prediction_length,
@@ -175,7 +202,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="nbeats",
+        default="timemixer",
         help="Name of the model.",
     )
     parser.add_argument(
@@ -196,7 +223,7 @@ if __name__ == "__main__":
         raise ValueError(f"Unknown dataset name: {args.dataset}")
 
     if args.dataset == "all":
-        for model_name in ["nbeats"]:
+        for model_name in ["timemixer"]:
             for seed in [42, 43, 44, 45, 46]:
                 for dataset_name in DATASET_NAMES:
                     benchmark_dataset(

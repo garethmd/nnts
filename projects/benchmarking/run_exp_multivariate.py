@@ -9,6 +9,7 @@ import nnts.metrics
 import nnts.torch
 import nnts.torch.datasets
 import nnts.torch.models
+import nnts.torch.models.tsmixer
 import nnts.torch.preprocessing
 import nnts.torch.trainers
 import nnts.torch.utils
@@ -16,24 +17,24 @@ import nnts.trainers
 from nnts.utils import Scheduler
 
 DATASET_NAMES = [
-    # "car_parts",
-    # "covid_deaths",
-    # "electricity_weekly",
-    # "fred_md",
-    # "hospital",
-    # "nn5_daily",
-    # "nn5_weekly",
-    # "rideshare",
-    # "saugeen_river_flow",
-    # "solar_weekly",  # fails patchtst
-    # "sunspot",
-    # "traffic_weekly",
-    # "us_births",
+    "car_parts",
+    "covid_deaths",
+    "electricity_weekly",
+    "fred_md",
+    "hospital",
+    "nn5_daily",
+    "nn5_weekly",
+    "rideshare",
+    "saugeen_river_flow",
+    "solar_weekly",  # fails patchtst
+    "sunspot",
+    "traffic_weekly",
+    "us_births",
     "traffic_hourly",  # fails too big
     "electricity_hourly",  # fails too big
     "solar_10_minutes",  # fails too big
-    # "kaggle_web_traffic",  # fails too big
-    # "temperature_rain",  # fails patchtst
+    "kaggle_web_traffic",  # fails too big
+    "temperature_rain",  # fails patchtst
 ]
 
 
@@ -70,6 +71,14 @@ def model_factory(
             c_in=enc_in,
             configs=params,
         )
+    elif model_name == "tsmixer":
+        params.output_channels = enc_in
+        return nnts.torch.models.TSMixer(
+            sequence_length=metadata.context_length,
+            prediction_length=metadata.prediction_length,
+            input_channels=enc_in,
+            params=params,
+        )
     else:
         raise ValueError(f"Unknown model name: {model_name}")
 
@@ -87,6 +96,8 @@ def get_hyperparams(model_name: str):
         return nnts.torch.models.patchtst.Hyperparams()
     elif model_name == "autoformer":
         return nnts.torch.models.autoformer.Hyperparams()
+    elif model_name == "tsmixer":
+        return nnts.torch.models.tsmixer.Hyperparams()
 
 
 import torch
@@ -94,7 +105,7 @@ import torch.nn.functional as F
 
 
 def benchmark_dataset(model_name: str, dataset_name: str, results_path: str, seed=42):
-    CONTEXT_LENGTH_ITEM = 2
+    CONTEXT_LENGTH_ITEM = 0
     df, metadata = nnts.datasets.load_dataset(dataset_name)
     metadata.context_length = metadata.context_lengths[CONTEXT_LENGTH_ITEM]
 
@@ -119,7 +130,7 @@ def benchmark_dataset(model_name: str, dataset_name: str, results_path: str, see
 
     nnts.torch.utils.seed_everything(seed)
     logger = nnts.loggers.WandbRun(
-        project=f"{model_name}-multivariate-{CONTEXT_LENGTH_ITEM}",
+        project=f"{model_name}-multivariate-{CONTEXT_LENGTH_ITEM}-updated",
         name=f"{dataset_name}-seed-{seed}",
         config={
             **params.__dict__,
@@ -133,7 +144,7 @@ def benchmark_dataset(model_name: str, dataset_name: str, results_path: str, see
         nnts.datasets.split_test_train_last_horizon,
         metadata.context_length,
         metadata.prediction_length,
-        Dataset=nnts.torch.datasets.MultivariateTimeSeriesDataset,
+        Dataset=nnts.torch.datasets.MultivariateTimeSeriesDatasetLong,
         dataset_options=dataset_options,
     )
 
@@ -199,7 +210,7 @@ if __name__ == "__main__":
         raise ValueError(f"Unknown dataset name: {args.dataset}")
 
     if args.dataset == "all":
-        for model_name in ["patchtst"]:
+        for model_name in ["tsmixer"]:
             for seed in [42, 43, 44, 45, 46]:
                 for dataset_name in DATASET_NAMES:
                     benchmark_dataset(

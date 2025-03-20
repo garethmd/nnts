@@ -24,7 +24,7 @@ class Hyperparams:
     epochs: int = 100
     patience: int = 10
     early_stopper_patience: int = 100
-    batches_per_epoch: int = None
+    batches_per_epoch: int = 50
     weight_decay: float = 0.0
     training_method: TrainingMethod = TrainingMethod.DMS
     scheduler: Scheduler = Scheduler.ONE_CYCLE

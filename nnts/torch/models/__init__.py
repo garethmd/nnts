@@ -8,6 +8,7 @@ from .nlinear import NLinear
 from .patchtst import PatchTST
 from .seglstm import SegLSTM
 from .tide import TiDE
+from .timemixer import TimeMixer
 from .tsmixer import TSMixer
 from .unrolledlstm import UnrolledLSTM
 
@@ -27,4 +28,5 @@ __all__ = [
     "Autoformer",
     "NBeats",
     "TSMixer",
+    "TimeMixer",
 ]

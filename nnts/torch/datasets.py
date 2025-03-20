@@ -222,6 +222,61 @@ class TimeseriesDataset(torch.utils.data.Dataset):
         return PaddedData(data=X, pad_mask=pad_mask)
 
 
+class MultivariateTimeSeriesDatasetLong(torch.utils.data.Dataset):
+    """Time series dataset for use with Multivariate or Local models where given a
+    a dataset containing multiple time series, N, we want to sample windows
+    of a fixed length determined by the context_length and prediction_length
+    across all time series so each sample will have shape (N, context_length + prediction_length)
+    """
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        context_length: int,
+        prediction_length: int,
+        conts: List[int] = [],
+        lag_seq: List[int] = None,
+        pad_fn=right_pad_sequence,
+    ):
+        self.df = df.copy()
+        self.conts = conts.copy()
+
+        self.lag_length = 0 if lag_seq is None else max(lag_seq)
+        self.context_length = torch.tensor(context_length).long()
+        self.prediction_length = torch.tensor(prediction_length).long()
+
+        lengths = (
+            self.df.groupby("unique_id", sort=False)["ds"].count()
+            - context_length
+            - prediction_length
+            - self.lag_length
+            + 1  # we return x and y so add 1 for teacher forcing
+        ).clip(1)
+        self.max_length = lengths.max()
+        self.window_size = context_length + prediction_length + self.lag_length
+        self.lengths = lengths
+        self.pad_fn = pad_fn
+
+    def build(self) -> "MultivariateTimeSeriesDataset":
+        ts = []
+        for unique_id, grp in self.df.groupby("unique_id", sort=False):
+            ts.append(torch.from_numpy(grp[["y"] + self.conts].values))
+        ts, mask = self.pad_fn(ts, min_length=self.window_size)
+        self.X = ts[:, :, :]
+        self.pad_mask = mask
+        return self
+
+    def __len__(self) -> int:
+        return self.max_length
+
+    def __getitem__(self, i: int) -> PaddedData:
+        X = self.X[:, i : i + self.window_size, 0].permute(1, 0)  # [N, window_size]
+        pad_mask = self.pad_mask[:, i : i + self.window_size].permute(
+            1, 0
+        )  # [N, window_size]
+        return PaddedData(data=X, pad_mask=pad_mask)
+
+
 class MultivariateTimeSeriesDataset(torch.utils.data.Dataset):
     """Time series dataset for use with Multivariate or Local models where given a
     a dataset containing multiple time series, N, we want to sample windows
