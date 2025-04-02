@@ -94,11 +94,11 @@ def main():
 
     params_fn = getattr(model_module, "get_mutlivariate_params")
     params = params_fn()
-    params.enc_in = 1
+    # params.enc_in = 1
     params.individual = False
 
     trn_dl, val_dl, test_dl = create_dataloaders(split_data, metadata, params)
-    model = model_class(metadata.context_length, metadata.prediction_length, 7, params)
+    model = model_class(metadata.context_length, metadata.prediction_length, params)
 
     trainer = nnts.torch.trainers.ValidationTorchEpochTrainer(model, params, metadata)
     evaluator = trainer.train(trn_dl, val_dl)

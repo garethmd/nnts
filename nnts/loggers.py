@@ -63,7 +63,7 @@ class EpochEventMixin(events.Listener):
         self.log(
             {
                 "epoch": event.state.epoch,
-                "train_loss": event.state.train_loss.detach().item(),
+                "train_loss": event.state.train_loss,  # event.state.train_loss.detach().item(),
             }
         )
 
@@ -71,11 +71,11 @@ class EpochEventMixin(events.Listener):
     def _(self, event: trainers.EpochValidateComplete) -> None:
         self.log(
             {
-                "valid_loss": event.state.valid_loss.detach().item(),
+                "valid_loss": event.state.valid_loss  # event.state.valid_loss.detach().item(),
             }
         )
         print(
-            f"Epoch {event.state.epoch} train loss: {event.state.train_loss.detach().item()}, valid loss: {event.state.valid_loss.detach().item()}"
+            f"Epoch {event.state.epoch} train loss: {event.state.train_loss}, valid loss: {event.state.valid_loss}"
         )
 
     @notify.register(trainers.EpochBestModel)

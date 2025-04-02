@@ -12,6 +12,7 @@ import nnts.metrics
 import nnts.torch
 import nnts.torch.datasets
 import nnts.torch.models
+import nnts.torch.models.patchtsmixer
 import nnts.torch.preprocessing
 import nnts.torch.trainers
 import nnts.torch.utils
@@ -103,11 +104,29 @@ def model_factory(model_name: str, metadata: nnts.datasets.Metadata, enc_in, par
             prediction_length=metadata.prediction_length,
             params=params,
         )
+    elif model_name == "patchtsmixer":
+        return nnts.torch.models.patchtsmixer.PatchTSMixer(
+            context_length=metadata.context_length,
+            prediction_length=metadata.prediction_length,
+            params=params,
+        )
     elif model_name == "patchtst":
         return nnts.torch.models.PatchTST(
             h=metadata.prediction_length,
             input_size=metadata.context_length,
             c_in=1,
+            configs=params,
+        )
+    elif model_name == "iTransformer":
+        return nnts.torch.models.iTransformer(
+            context_length=metadata.context_length,
+            prediction_length=metadata.prediction_length,
+            configs=params,
+        )
+    elif model_name == "timesnet":
+        return nnts.torch.models.TimesNet(
+            context_length=metadata.context_length,
+            prediction_length=metadata.prediction_length,
             configs=params,
         )
     else:
@@ -129,9 +148,18 @@ def get_hyperparams(model_name: str, metadata):
         return nnts.torch.models.tsmixer.Hyperparams(output_channels=1)
     elif model_name == "timemixer":
         return nnts.torch.models.timemixer.Hyperparams(freq=metadata.freq)
+    elif model_name == "patchtsmixer":
+        patch_len = 16 if metadata.context_length > 16 else metadata.context_length // 2
+        return nnts.torch.models.patchtsmixer.Hyperparams(
+            patch_length=patch_len, num_input_channels=1
+        )
     elif model_name == "patchtst":
         patch_len = 16 if metadata.context_length > 16 else metadata.context_length
         return nnts.torch.models.patchtst.Hyperparams(patch_len=patch_len)
+    elif model_name == "iTransformer":
+        return nnts.torch.models.itransformer.Hyperparams(freq=metadata.freq)
+    elif model_name == "timesnet":
+        return nnts.torch.models.timesnet.Hyperparams(freq=metadata.freq.lower())
 
 
 def benchmark_dataset(model_name: str, dataset_name: str, results_path: str, seed=42):
@@ -202,7 +230,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="timemixer",
+        default="iTransformer",
         help="Name of the model.",
     )
     parser.add_argument(
@@ -223,8 +251,8 @@ if __name__ == "__main__":
         raise ValueError(f"Unknown dataset name: {args.dataset}")
 
     if args.dataset == "all":
-        for model_name in ["timemixer"]:
-            for seed in [42, 43, 44, 45, 46]:
+        for model_name in ["iTransformer"]:
+            for seed in [46]:
                 for dataset_name in DATASET_NAMES:
                     benchmark_dataset(
                         model_name,
