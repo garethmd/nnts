@@ -6,25 +6,43 @@
         "prediction_length": 18,
         "freq": "ME",
         "seasonality": 12,
-        "url": "https://zenodo.org/records/4656159/files/m1_monthly_dataset.zip"
+        "url": "https://zenodo.org/records/4656159/files/m1_monthly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            15,
+            36,
+            23
+        ]
     },
     "m1_quarterly": {
         "filename": "m1_quarterly_dataset.tsf",
         "dataset": "m1_quarterly",
         "context_length": 5,
         "prediction_length": 8,
-        "freq": "Q",
+        "freq": "QE",
         "seasonality": 4,
-        "url": "https://zenodo.org/records/4656154/files/m1_quarterly_dataset.zip"
+        "url": "https://zenodo.org/records/4656154/files/m1_quarterly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            5,
+            16,
+            10
+        ]
     },
     "m1_yearly": {
         "filename": "m1_yearly_dataset.tsf",
         "dataset": "m1_yearly",
         "context_length": 2,
         "prediction_length": 6,
-        "freq": "1Y",
+        "freq": "YE",
         "seasonality": 1,
-        "url": "https://zenodo.org/records/4656193/files/m1_yearly_dataset.zip"
+        "url": "https://zenodo.org/records/4656193/files/m1_yearly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            2,
+            12,
+            8
+        ]
     },
     "m3_monthly": {
         "filename": "m3_monthly_dataset.tsf",
@@ -33,25 +51,43 @@
         "prediction_length": 18,
         "freq": "ME",
         "seasonality": 12,
-        "url": "https://zenodo.org/records/4656298/files/m3_monthly_dataset.zip"
+        "url": "https://zenodo.org/records/4656298/files/m3_monthly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            15,
+            36,
+            23
+        ]
     },
     "m3_quarterly": {
         "filename": "m3_quarterly_dataset.tsf",
         "dataset": "m3_quarterly",
         "context_length": 5,
         "prediction_length": 8,
-        "freq": "Q",
+        "freq": "QE",
         "seasonality": 4,
-        "url": "https://zenodo.org/records/4656262/files/m3_quarterly_dataset.zip"
+        "url": "https://zenodo.org/records/4656262/files/m3_quarterly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            5,
+            16,
+            10
+        ]
     },
     "m3_yearly": {
         "filename": "m3_yearly_dataset.tsf",
         "dataset": "m3_yearly",
         "context_length": 2,
         "prediction_length": 6,
-        "freq": "1Y",
+        "freq": "YE",
         "seasonality": 1,
-        "url": "https://zenodo.org/records/4656222/files/m3_yearly_dataset.zip"
+        "url": "https://zenodo.org/records/4656222/files/m3_yearly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            2,
+            12,
+            8
+        ]
     },
     "m4_hourly": {
         "filename": "m4_hourly_dataset.tsf",
@@ -60,7 +96,13 @@
         "prediction_length": 48,
         "freq": "1H",
         "seasonality": 24,
-        "url": "https://zenodo.org/records/4656589/files/m4_hourly_dataset.zip"
+        "url": "https://zenodo.org/records/4656589/files/m4_hourly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            210,
+            96,
+            60
+        ]
     },
     "m4_daily": {
         "filename": "m4_daily_dataset.tsf",
@@ -69,7 +111,13 @@
         "prediction_length": 14,
         "freq": "1D",
         "seasonality": 7,
-        "url": "https://zenodo.org/records/4656548/files/m4_daily_dataset.zip"
+        "url": "https://zenodo.org/records/4656548/files/m4_daily_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            9,
+            28,
+            18
+        ]
     },
     "m4_weekly": {
         "filename": "m4_weekly_dataset.tsf",
@@ -78,7 +126,13 @@
         "prediction_length": 13,
         "freq": "1W",
         "seasonality": 52,
-        "url": "https://zenodo.org/records/4656522/files/m4_weekly_dataset.zip"
+        "url": "https://zenodo.org/records/4656522/files/m4_weekly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            65,
+            26,
+            65
+        ]
     },
     "m4_monthly": {
         "filename": "m4_monthly_dataset.tsf",
@@ -87,25 +141,43 @@
         "prediction_length": 18,
         "freq": "ME",
         "seasonality": 12,
-        "url": "https://zenodo.org/records/4656480/files/m4_monthly_dataset.zip"
+        "url": "https://zenodo.org/records/4656480/files/m4_monthly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            15,
+            36,
+            23
+        ]
     },
     "m4_quarterly": {
         "filename": "m4_quarterly_dataset.tsf",
         "dataset": "m4_quarterly",
         "context_length": 5,
         "prediction_length": 8,
-        "freq": "Q",
+        "freq": "QE",
         "seasonality": 4,
-        "url": "https://zenodo.org/records/4656410/files/m4_quarterly_dataset.zip"
+        "url": "https://zenodo.org/records/4656410/files/m4_quarterly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            5,
+            16,
+            10
+        ]
     },
     "m4_yearly": {
         "filename": "m4_yearly_dataset.tsf",
         "dataset": "m4_yearly",
         "context_length": 2,
         "prediction_length": 6,
-        "freq": "1Y",
+        "freq": "YE",
         "seasonality": 1,
-        "url": "https://zenodo.org/records/4656379/files/m4_yearly_dataset.zip"
+        "url": "https://zenodo.org/records/4656379/files/m4_yearly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            2,
+            12,
+            8
+        ]
     },
     "tourism_monthly": {
         "filename": "tourism_monthly_dataset.tsf",
@@ -114,25 +186,43 @@
         "prediction_length": 24,
         "freq": "ME",
         "seasonality": 12,
-        "url": "https://zenodo.org/records/4656096/files/tourism_monthly_dataset.zip"
+        "url": "https://zenodo.org/records/4656096/files/tourism_monthly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            15,
+            48,
+            30
+        ]
     },
     "tourism_quarterly": {
         "filename": "tourism_quarterly_dataset.tsf",
         "dataset": "tourism_quarterly",
         "context_length": 5,
         "prediction_length": 8,
-        "freq": "Q",
+        "freq": "QE",
         "seasonality": 4,
-        "url": "https://zenodo.org/records/4656093/files/tourism_quarterly_dataset.zip"
+        "url": "https://zenodo.org/records/4656093/files/tourism_quarterly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            5,
+            16,
+            10
+        ]
     },
     "tourism_yearly": {
         "filename": "tourism_yearly_dataset.tsf",
         "dataset": "tourism_yearly",
         "context_length": 2,
         "prediction_length": 4,
-        "freq": "1Y",
+        "freq": "YE",
         "seasonality": 1,
-        "url": "https://zenodo.org/records/4656103/files/tourism_yearly_dataset.zip"
+        "url": "https://zenodo.org/records/4656103/files/tourism_yearly_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            2,
+            8,
+            5
+        ]
     },
     "cif_2016": {
         "filename": "cif_2016_dataset.tsf",
@@ -141,7 +231,13 @@
         "prediction_length": 12,
         "freq": "ME",
         "seasonality": 12,
-        "url": "https://zenodo.org/records/4656042/files/cif_2016_dataset.zip"
+        "url": "https://zenodo.org/records/4656042/files/cif_2016_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            15,
+            24,
+            15
+        ]
     },
     "australian_electricity_demand": {
         "filename": "australian_electricity_demand_dataset.tsf",
@@ -150,7 +246,13 @@
         "prediction_length": 336,
         "freq": "30min",
         "seasonality": 48,
-        "url": "https://zenodo.org/records/4659727/files/australian_electricity_demand_dataset.zip"
+        "url": "https://zenodo.org/records/4659727/files/australian_electricity_demand_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            420,
+            672,
+            420
+        ]
     },
     "dominick": {
         "filename": "dominick_dataset.tsf",
@@ -159,7 +261,13 @@
         "prediction_length": 8,
         "freq": "1W",
         "seasonality": 52,
-        "url": "https://zenodo.org/records/4654802/files/dominick_dataset.zip"
+        "url": "https://zenodo.org/records/4654802/files/dominick_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            10,
+            16,
+            65
+        ]
     },
     "bitcoin": {
         "filename": "bitcoin_dataset_without_missing_values.tsf",
@@ -168,7 +276,13 @@
         "prediction_length": 30,
         "freq": "1D",
         "seasonality": 7,
-        "uri": "https://zenodo.org/records/5122101/files/bitcoin_dataset_without_missing_values.zip"
+        "url": "https://zenodo.org/records/5122101/files/bitcoin_dataset_without_missing_values.zip",
+        "multivariate": false,
+        "context_lengths": [
+            9,
+            60,
+            38
+        ]
     },
     "pedestrian_counts": {
         "filename": "pedestrian_counts_dataset.tsf",
@@ -177,7 +291,13 @@
         "prediction_length": 24,
         "freq": "1H",
         "seasonality": 24,
-        "url": "https://zenodo.org/records/4656626/files/pedestrian_counts_dataset.zip"
+        "url": "https://zenodo.org/records/4656626/files/pedestrian_counts_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            210,
+            48,
+            30
+        ]
     },
     "vehicle_trips": {
         "filename": "vehicle_trips_dataset_without_missing_values.tsf",
@@ -186,7 +306,13 @@
         "prediction_length": 30,
         "freq": "1D",
         "seasonality": 7,
-        "url": "https://zenodo.org/records/5122537/files/vehicle_trips_dataset_without_missing_values.zip"
+        "url": "https://zenodo.org/records/5122537/files/vehicle_trips_dataset_without_missing_values.zip",
+        "multivariate": false,
+        "context_lengths": [
+            9,
+            30,
+            38
+        ]
     },
     "kdd_cup": {
         "filename": "kdd_cup_2018_dataset_without_missing_values.tsf",
@@ -195,7 +321,13 @@
         "prediction_length": 168,
         "freq": "1H",
         "seasonality": 24,
-        "url": "https://zenodo.org/records/4656756/files/kdd_cup_2018_dataset_without_missing_values.zip"
+        "url": "https://zenodo.org/records/4656756/files/kdd_cup_2018_dataset_without_missing_values.zip",
+        "multivariate": false,
+        "context_lengths": [
+            210,
+            336,
+            210
+        ]
     },
     "weather": {
         "filename": "weather_dataset.tsf",
@@ -204,7 +336,13 @@
         "prediction_length": 30,
         "freq": "1D",
         "seasonality": 7,
-        "url": "https://zenodo.org/records/4654822/files/weather_dataset.zip"
+        "url": "https://zenodo.org/records/4654822/files/weather_dataset.zip",
+        "multivariate": false,
+        "context_lengths": [
+            9,
+            60,
+            38
+        ]
     },
     "nn5_daily": {
         "filename": "nn5_daily_dataset_without_missing_values.tsf",
@@ -213,7 +351,13 @@
         "prediction_length": 56,
         "freq": "1D",
         "seasonality": 7,
-        "url": "https://zenodo.org/records/4656117/files/nn5_daily_dataset_without_missing_values.zip"
+        "url": "https://zenodo.org/records/4656117/files/nn5_daily_dataset_without_missing_values.zip",
+        "multivariate": true,
+        "context_lengths": [
+            9,
+            112,
+            70
+        ]
     },
     "nn5_weekly": {
         "filename": "nn5_weekly_dataset.tsf",
@@ -222,7 +366,13 @@
         "prediction_length": 8,
         "freq": "1W",
         "seasonality": 52,
-        "url": "https://zenodo.org/records/4656125/files/nn5_weekly_dataset.zip"
+        "url": "https://zenodo.org/records/4656125/files/nn5_weekly_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            65,
+            16,
+            65
+        ]
     },
     "kaggle_web_traffic": {
         "filename": "kaggle_web_traffic_weekly_dataset.tsf",
@@ -231,7 +381,13 @@
         "prediction_length": 8,
         "freq": "1W",
         "seasonality": 52,
-        "url": "https://zenodo.org/records/4656664/files/kaggle_web_traffic_weekly_dataset.zip"
+        "url": "https://zenodo.org/records/4656664/files/kaggle_web_traffic_weekly_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            10,
+            16,
+            65
+        ]
     },
     "solar_10_minutes": {
         "filename": "solar_10_minutes_dataset.tsf",
@@ -240,7 +396,13 @@
         "prediction_length": 1008,
         "freq": "10min",
         "seasonality": 144,
-        "url": "https://zenodo.org/records/4656144/files/solar_10_minutes_dataset.zip"
+        "url": "https://zenodo.org/records/4656144/files/solar_10_minutes_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            50,
+            2016,
+            1260
+        ]
     },
     "solar_weekly": {
         "filename": "solar_weekly_dataset.tsf",
@@ -249,16 +411,28 @@
         "prediction_length": 5,
         "freq": "1W",
         "seasonality": 52,
-        "url": "https://zenodo.org/records/4656151/files/solar_weekly_dataset.zip"
+        "url": "https://zenodo.org/records/4656151/files/solar_weekly_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            6,
+            10,
+            65
+        ]
     },
     "electricity_hourly": {
         "filename": "electricity_hourly_dataset.tsf",
         "dataset": "electricity_hourly",
         "context_length": 30,
         "prediction_length": 168,
-        "freq": "1H",
+        "freq": "h",
         "seasonality": 24,
-        "url": "https://zenodo.org/records/4656140/files/electricity_hourly_dataset.zip"
+        "url": "https://zenodo.org/records/4656140/files/electricity_hourly_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            30,
+            336,
+            210
+        ]
     },
     "electricity_weekly": {
         "filename": "electricity_weekly_dataset.tsf",
@@ -267,7 +441,13 @@
         "prediction_length": 8,
         "freq": "1W",
         "seasonality": 52,
-        "url": "https://zenodo.org/records/4656141/files/electricity_weekly_dataset.zip"
+        "url": "https://zenodo.org/records/4656141/files/electricity_weekly_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            65,
+            16,
+            65
+        ]
     },
     "car_parts": {
         "filename": "car_parts_dataset_without_missing_values.tsf",
@@ -276,7 +456,13 @@
         "prediction_length": 12,
         "freq": "ME",
         "seasonality": 12,
-        "url": "https://zenodo.org/records/4656021/files/car_parts_dataset_without_missing_values.zip"
+        "url": "https://zenodo.org/records/4656021/files/car_parts_dataset_without_missing_values.zip",
+        "multivariate": true,
+        "context_lengths": [
+            15,
+            24,
+            15
+        ]
     },
     "fred_md": {
         "filename": "fred_md_dataset.tsf",
@@ -285,7 +471,13 @@
         "prediction_length": 12,
         "freq": "ME",
         "seasonality": 12,
-        "url": "https://zenodo.org/records/4654833/files/fred_md_dataset.zip"
+        "url": "https://zenodo.org/records/4654833/files/fred_md_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            15,
+            24,
+            15
+        ]
     },
     "traffic_weekly": {
         "filename": "traffic_weekly_dataset.tsf",
@@ -294,7 +486,13 @@
         "prediction_length": 8,
         "freq": "1W",
         "seasonality": 52,
-        "url": "https://zenodo.org/records/4656135/files/traffic_weekly_dataset.zip"
+        "url": "https://zenodo.org/records/4656135/files/traffic_weekly_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            65,
+            16,
+            65
+        ]
     },
     "traffic_hourly": {
         "filename": "traffic_hourly_dataset.tsf",
@@ -303,7 +501,13 @@
         "prediction_length": 168,
         "freq": "1H",
         "seasonality": 24,
-        "url": "https://zenodo.org/records/4656132/files/traffic_hourly_dataset.zip"
+        "url": "https://zenodo.org/records/4656132/files/traffic_hourly_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            30,
+            336,
+            210
+        ]
     },
     "rideshare": {
         "filename": "rideshare_dataset_without_missing_values.tsf",
@@ -312,7 +516,13 @@
         "prediction_length": 168,
         "freq": "1H",
         "seasonality": 24,
-        "url": "https://zenodo.org/records/5122232/files/rideshare_dataset_without_missing_values.zip"
+        "url": "https://zenodo.org/records/5122232/files/rideshare_dataset_without_missing_values.zip",
+        "multivariate": true,
+        "context_lengths": [
+            210,
+            336,
+            210
+        ]
     },
     "hospital": {
         "filename": "hospital_dataset.tsf",
@@ -321,7 +531,13 @@
         "prediction_length": 12,
         "freq": "ME",
         "seasonality": 12,
-        "url": "https://zenodo.org/records/4656014/files/hospital_dataset.zip"
+        "url": "https://zenodo.org/records/4656014/files/hospital_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            15,
+            24,
+            15
+        ]
     },
     "covid_deaths": {
         "filename": "covid_deaths_dataset.tsf",
@@ -330,7 +546,13 @@
         "prediction_length": 30,
         "freq": "1D",
         "seasonality": 7,
-        "url": "https://zenodo.org/records/4656009/files/covid_deaths_dataset.zip"
+        "url": "https://zenodo.org/records/4656009/files/covid_deaths_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            9,
+            30,
+            38
+        ]
     },
     "temperature_rain": {
         "filename": "temperature_rain_dataset_without_missing_values.tsf",
@@ -339,7 +561,13 @@
         "prediction_length": 30,
         "freq": "1D",
         "seasonality": 7,
-        "url": "https://zenodo.org/records/5129091/files/temperature_rain_dataset_without_missing_values.zip"
+        "url": "https://zenodo.org/records/5129091/files/temperature_rain_dataset_without_missing_values.zip",
+        "multivariate": true,
+        "context_lengths": [
+            9,
+            60,
+            38
+        ]
     },
     "sunspot": {
         "filename": "sunspot_dataset_without_missing_values.tsf",
@@ -348,7 +576,13 @@
         "prediction_length": 30,
         "freq": "1D",
         "seasonality": 7,
-        "url": "https://zenodo.org/records/4654722/files/sunspot_dataset_without_missing_values.zip"
+        "url": "https://zenodo.org/records/4654722/files/sunspot_dataset_without_missing_values.zip",
+        "multivariate": true,
+        "context_lengths": [
+            9,
+            60,
+            38
+        ]
     },
     "saugeen_river_flow": {
         "filename": "saugeenday_dataset.tsf",
@@ -357,7 +591,13 @@
         "prediction_length": 30,
         "freq": "1D",
         "seasonality": 7,
-        "url": "https://zenodo.org/records/4656058/files/saugeenday_dataset.zip"
+        "url": "https://zenodo.org/records/4656058/files/saugeenday_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            9,
+            60,
+            38
+        ]
     },
     "us_births": {
         "filename": "us_births_dataset.tsf",
@@ -366,6 +606,12 @@
         "prediction_length": 30,
         "freq": "1D",
         "seasonality": 7,
-        "url": "https://zenodo.org/records/4656049/files/us_births_dataset.zip"
+        "url": "https://zenodo.org/records/4656049/files/us_births_dataset.zip",
+        "multivariate": true,
+        "context_lengths": [
+            9,
+            60,
+            38
+        ]
     }
 }

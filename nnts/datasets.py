@@ -49,6 +49,8 @@ class Metadata(BaseModel):
     freq: str
     seasonality: int
     url: str = None
+    context_lengths: list = None
+    multivariate: bool = False
 
 
 def unpack(df: pd.DataFrame, freq: str = "ME") -> pd.DataFrame:
@@ -65,7 +67,7 @@ def unpack(df: pd.DataFrame, freq: str = "ME") -> pd.DataFrame:
         )
 
     unpacked_df = pd.DataFrame(
-        data={"y": df["series_value"].to_numpy(), "ds": timesteps}
+        data={"y": df["series_value"].to_numpy(), "ds": timesteps.astype(str)}
     )
     unpacked_df["unique_id"] = df["series_name"]
     return unpacked_df
@@ -254,4 +256,20 @@ def split_test_val_train_last_horizon(
     trn = trn_val.groupby("unique_id").head(-prediction_length)
     val = trn_val.groupby("unique_id").tail(context_length + prediction_length)
     test = data.groupby("unique_id").tail(context_length + prediction_length)
+    return SplitData(train=trn, validation=val, test=test)
+
+
+def split_test_val_train(
+    data: pd.DataFrame,
+    trn_length: int,
+    val_length: int,
+    test_length: int,
+    context_length: int = 0,
+    prediction_length: int = 336,
+) -> SplitTrainTest:
+    data = data.groupby("unique_id").head(trn_length + val_length + test_length)
+    trn_val = data.groupby("unique_id").head(trn_length + val_length - context_length)
+    trn = trn_val.groupby("unique_id").head(trn_length)
+    val = trn_val.groupby("unique_id").tail(val_length + prediction_length)
+    test = data.groupby("unique_id").tail(test_length + prediction_length)
     return SplitData(train=trn, validation=val, test=test)

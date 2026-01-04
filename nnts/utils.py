@@ -10,11 +10,13 @@ import pandas as pd
 class TrainingMethod(Enum):
     TEACHER_FORCING = auto()
     FREE_RUNNING = auto()
+    DMS = auto()
 
 
 class Scheduler(Enum):
     ONE_CYCLE = auto()
     REDUCE_LR_ON_PLATEAU = auto()
+    STEP_LR = auto()
 
 
 @dataclass

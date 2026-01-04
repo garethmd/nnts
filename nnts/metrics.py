@@ -263,7 +263,52 @@ def mase(
     >>> print(error)
     tensor([1.25])
     """
+    if len(y.shape) > 2 and len(seasonal_errors.shape) == 1:
+        seasonal_errors = seasonal_errors.unsqueeze(-1)
     return mae(y_hat, y, dim=dim) / seasonal_errors
+
+
+def rmsse(
+    y_hat: torch.tensor,
+    y: torch.tensor,
+    seasonal_errors: torch.tensor,
+    dim: int = 1,
+) -> torch.tensor:
+    """
+    Calculates the Mean Absolute Scaled Error (MASE) between the predicted values and the actual values.
+
+    The function computes the MASE by dividing the mean absolute error (MAE) by the seasonal
+    errors. If the input tensors have more than one dimension, the MAE is calculated along the
+    specified dimension.
+
+    Parameters
+    ----------
+    y_hat: torch.tensor)
+        The predicted values.
+    y: torch.tensor
+        The actual values.
+    seasonal_errors: torch.tensor)
+        The seasonal errors used for scaling the mean absolute error (MAE).
+    dim: :obj:`int`, optional
+        The dimension along which to compute the mean if the input tensors have more than one dimension. Defaults to 1.
+
+    Returns
+    -------
+    torch.tensor: A tensor containing the mean absolute scaled error.
+
+    Example
+    -------
+
+    >>> y_hat = torch.tensor([1.0, 2.0, 3.0, 4.0])
+    >>> y = torch.tensor([0.0, 4.0, 6.0, 8.0])
+    >>> seasonal_errors = torch.tensor([2.0])
+    >>> error = mase(y_hat, y, seasonal_errors)
+    >>> print(error)
+    tensor([1.25])
+    """
+    if len(y.shape) > 2 and len(seasonal_errors.shape) == 1:
+        seasonal_errors = seasonal_errors.unsqueeze(-1)
+    return mse(y_hat, y, dim=dim).sqrt() / seasonal_errors
 
 
 def _single_ts_mape(y_hat: torch.tensor, y: torch.tensor) -> torch.tensor:
@@ -402,12 +447,15 @@ def get_metrics_per_ts(
 ) -> Dict[str, torch.tensor]:
     mase_per_ts = mase(y_hat, y, seasonal_error)
     mase_per_ts = mase_per_ts[mase_per_ts.isfinite()]
+    rmsse_per_ts = rmsse(y_hat, y, seasonal_error)
+    rmsse_per_ts = rmsse_per_ts[rmsse_per_ts.isfinite()]
     return {
         "mse": mse(y_hat, y),
         "abs_error": abs_error(y_hat, y),
         "abs_target_sum": abs_target_sum(y),
         "abs_target_mean": abs_target_mean(y),
         "mase": mase_per_ts,
+        "rmsse": rmsse_per_ts,
         "mape": mape(y_hat, y),
         "smape": smape(y_hat, y),
         "msmape": msmape(y_hat, y),
@@ -418,27 +466,63 @@ def get_metrics_per_ts(
     }
 
 
-def aggregate_metrics(metrics_per_ts: Dict[str, torch.tensor]) -> Dict[str, float]:
+def aggregate_base_metrics(metrics_per_ts: Dict[str, torch.tensor]) -> Dict[str, float]:
     aggregate_map = {
         "mse": "mean",
         "abs_error": "sum",
         "abs_target_sum": "sum",
         "abs_target_mean": "mean",
+        "seasonal_error": "mean",
+    }
+    return {
+        k: getattr(v, aggregate_map[k])().item()
+        for k, v in metrics_per_ts.items()
+        if k in aggregate_map
+    }
+
+
+def aggregate_mean_metrics(metrics_per_ts: Dict[str, torch.tensor]) -> Dict[str, float]:
+    aggregate_map = {
         "mase": "mean",
+        "rmsse": "mean",
         "mape": "nanmean",
         "smape": "mean",
         "msmape": "mean",
-        "nd": "mean",
         "mae": "mean",
         "rmse": "mean",
-        "seasonal_error": "mean",
     }
-    return {k: getattr(v, aggregate_map[k])().item() for k, v in metrics_per_ts.items()}
+    return {
+        f"mean_{k}": getattr(v, aggregate_map[k])().item()
+        for k, v in metrics_per_ts.items()
+        if k in aggregate_map
+    }
+
+
+def aggregate_median_metrics(
+    metrics_per_ts: Dict[str, torch.tensor],
+) -> Dict[str, float]:
+    aggregate_map = {
+        "mase": "median",
+        "rmsse": "median",
+        # "mape": "nanmedian",
+        "smape": "median",
+        "msmape": "median",
+        "mae": "median",
+        "rmse": "median",
+    }
+    return {
+        f"median_{k}": getattr(v, aggregate_map[k])().item()
+        for k, v in metrics_per_ts.items()
+        if k in aggregate_map
+    }
 
 
 def calc_metrics(
     y_hat: torch.tensor, y: torch.tensor, seasonal_error: torch.tensor
 ) -> Dict[str, float]:
     metrics_per_ts = get_metrics_per_ts(y_hat, y, seasonal_error)
-    result = aggregate_metrics(metrics_per_ts)
-    return result
+    base_metrics = aggregate_base_metrics(metrics_per_ts)
+    mean_metrics = aggregate_mean_metrics(metrics_per_ts)
+    median_metrics = aggregate_median_metrics(metrics_per_ts)
+    metrics = {**base_metrics, **mean_metrics, **median_metrics}
+    return metrics

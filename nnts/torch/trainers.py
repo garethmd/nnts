@@ -35,14 +35,14 @@ class EarlyStopper:
         return False
 
 
-def validate(net, batch, prediction_length, context_length):
+def validate(net, batch: PaddedData, prediction_length, context_length):
     if hasattr(net, "validate"):
         return net.validate(batch, prediction_length, context_length)
     else:
-        y = batch["X"][:, context_length : context_length + prediction_length, ...]
+        y = batch.data[:, context_length : context_length + prediction_length, ...]
         y_hat = net.generate(
-            batch["X"][:, :context_length, ...],
-            batch["pad_mask"][:, :context_length],
+            batch.data[:, :context_length, ...],
+            batch.pad_mask[:, :context_length],
             prediction_length=prediction_length,
             context_length=context_length,
         )
@@ -59,8 +59,8 @@ def eval(
         y_hat_list = []
         for batch in dl:
             y_hat, y = validate(net, batch, prediction_length, context_length)
-            y_list.append(y[:, :, :1])
-            y_hat_list.append(y_hat[:, :, :1])
+            y_list.append(y[:, :, :])
+            y_hat_list.append(y_hat[:, :, :])
 
             # TODO: improve this. Removing hook after first batch to make visualisation work
             if hooks is not None:
@@ -126,18 +126,21 @@ class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
         net: torch.nn.Module,
         params: utils.Hyperparams,
         metadata: datasets.Metadata,
-        state: nnts.trainers.TrainerState = nnts.trainers.TrainerState(),
+        state: nnts.trainers.TrainerState = None,
+        model_path: str = "best_model.pt",
     ):
         super().__init__(state, params)
         self.net = net
         self.metadata = metadata
         utils.makedirs_if_not_exists(params.model_file_path)
-        self.path = os.path.join(params.model_file_path, "best_model.pt")
+        self.path = os.path.join(params.model_file_path, model_path)
         self.loss_fn = params.loss_fn
         self.Optimizer = params.optimizer
 
     def before_train(self, train_dl):
         print(self.net)
+        if self.params.batches_per_epoch is None:
+            self.params.batches_per_epoch = len(train_dl)
         self.optimizer = self.Optimizer(
             self.net.parameters(),
             lr=self.params.lr,
@@ -147,12 +150,17 @@ class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 self.optimizer, mode="min", factor=0.5, patience=self.params.patience
             )
+        elif self.params.scheduler == utils.Scheduler.STEP_LR:
+            self.scheduler = torch.optim.lr_scheduler.StepLR(
+                self.optimizer, step_size=1, gamma=0.5
+            )
         elif self.params.scheduler == utils.Scheduler.ONE_CYCLE:
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 self.optimizer,
-                max_lr=self.params.lr * 3,
+                max_lr=self.params.lr,
                 steps_per_epoch=self.params.batches_per_epoch,
-                epochs=self.params.epochs + 2,
+                epochs=self.params.epochs,
+                pct_start=0.3,
             )
         self.early_stopper = (
             None
@@ -174,26 +182,29 @@ class ValidationTorchEpochTrainer(nnts.trainers.EpochTrainer):
                 self.state.stop = True
 
         if self.state.valid_loss < self.state.best_loss:
+            print(
+                f"Epoch {self.state.epoch} Train Loss: {self.state.train_loss}  Valid Loss: {self.state.valid_loss}"
+            )
+            print(f"saving model to {self.path}")
             torch.save(self.net.state_dict(), self.path)
             self.state.best_loss = self.state.valid_loss
             self.events.notify(nnts.trainers.EpochBestModel(self.path))
 
         if self.params.scheduler == utils.Scheduler.REDUCE_LR_ON_PLATEAU:
             self.scheduler.step(self.state.valid_loss)
+        elif self.params.scheduler == utils.Scheduler.STEP_LR:
+            if self.state.epoch > 1:
+                self.scheduler.step()
+                print("reducing lr", self.scheduler.get_last_lr())
 
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()
-
-        if self.params.training_method == utils.TrainingMethod.FREE_RUNNING:
-            y_hat, y = self.net.free_running(
-                batch,
-                self.metadata.context_length,
-                self.metadata.prediction_length,
-            )
-        else:
-            y_hat, y = self.net.teacher_forcing_output(
-                batch, self.metadata.context_length, self.metadata.prediction_length
-            )
+        y_hat, y = self.net.train_output(
+            batch,
+            self.metadata.prediction_length,
+            self.metadata.context_length,
+            training_method=self.params.training_method,
+        )
 
         L = self.loss_fn(y_hat, y)
         L.backward()
@@ -226,13 +237,14 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
         net: torch.nn.Module,
         params: utils.Hyperparams,
         metadata: datasets.Metadata,
-        state: nnts.trainers.TrainerState = nnts.trainers.TrainerState(),
+        state: nnts.trainers.TrainerState = None,
+        model_path: str = "best_model.pt",
     ):
         super().__init__(state, params)
         self.net = net
         self.metadata = metadata
         utils.makedirs_if_not_exists(params.model_file_path)
-        self.path = os.path.join(params.model_file_path, "best_model.pt")
+        self.path = os.path.join(params.model_file_path, model_path)
         self.loss_fn = params.loss_fn
         self.Optimizer = params.optimizer
 
@@ -246,6 +258,10 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
         if self.params.scheduler == utils.Scheduler.REDUCE_LR_ON_PLATEAU:
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 self.optimizer, mode="min", factor=0.5, patience=self.params.patience
+            )
+        elif self.params.scheduler == utils.Scheduler.STEP_LR:
+            self.scheduler = torch.optim.lr_scheduler.StepLR(
+                self.optimizer, step_size=1, gamma=0.5
             )
         elif self.params.scheduler == utils.Scheduler.ONE_CYCLE:
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
@@ -261,35 +277,29 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
 
     def after_train_epoch(self) -> None:
         if self.state.train_loss < self.state.best_loss:
-            print("saving model")
+            print(f"saving model to {self.path}")
             torch.save(self.net.state_dict(), self.path)
             self.state.best_loss = self.state.train_loss
-            self.events.notify(nnts.trainers.EpochBestModel(self.path))
 
         if self.params.scheduler == utils.Scheduler.REDUCE_LR_ON_PLATEAU:
             self.scheduler.step(self.state.train_loss)
+        elif self.params.scheduler == utils.Scheduler.STEP_LR:
+            self.scheduler.step()
 
         print(f"Epoch {self.state.epoch} Train Loss: {self.state.train_loss}")
 
     def _train_batch(self, i, batch):
         self.optimizer.zero_grad()
-
-        if self.params.training_method == utils.TrainingMethod.FREE_RUNNING:
-            y_hat, y = self.net.free_running(
-                batch,
-                self.metadata.prediction_length,
-                self.metadata.context_length,
-            )
-        else:
-            y_hat, y = self.net.teacher_forcing_output(
-                batch,
-                self.metadata.prediction_length,
-                self.metadata.context_length,
-            )
+        y_hat, y = self.net.train_output(
+            batch,
+            self.metadata.prediction_length,
+            self.metadata.context_length,
+            training_method=self.params.training_method,
+        )
 
         L = self.loss_fn(y_hat, y)
         L.backward()
-        torch.nn.utils.clip_grad_value_(self.net.parameters(), 10.0)
+        # torch.nn.utils.clip_grad_value_(self.net.parameters(), 10.0)
         self.optimizer.step()
 
         if self.params.scheduler == utils.Scheduler.ONE_CYCLE:
@@ -300,6 +310,7 @@ class TorchEpochTrainer(nnts.trainers.EpochTrainer):
         pass
 
     def create_evaluator(self) -> nnts.trainers.Evaluator:
+        self.events.notify(nnts.trainers.EpochBestModel(self.path))
         state_dict = torch.load(self.path)
         self.net.load_state_dict(state_dict)
         print(f"Best model loaded from {self.path}")

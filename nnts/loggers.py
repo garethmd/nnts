@@ -10,6 +10,7 @@ from typing import Any, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 
 import wandb
@@ -62,7 +63,7 @@ class EpochEventMixin(events.Listener):
         self.log(
             {
                 "epoch": event.state.epoch,
-                "train_loss": event.state.train_loss.detach().item(),
+                "train_loss": event.state.train_loss,  # event.state.train_loss.detach().item(),
             }
         )
 
@@ -70,11 +71,11 @@ class EpochEventMixin(events.Listener):
     def _(self, event: trainers.EpochValidateComplete) -> None:
         self.log(
             {
-                "valid_loss": event.state.valid_loss.detach().item(),
+                "valid_loss": event.state.valid_loss  # event.state.valid_loss.detach().item(),
             }
         )
         print(
-            f"Epoch {event.state.epoch} train loss: {event.state.train_loss.detach().item()}, valid loss: {event.state.valid_loss.detach().item()}"
+            f"Epoch {event.state.epoch} train loss: {event.state.train_loss}, valid loss: {event.state.valid_loss}"
         )
 
     @notify.register(trainers.EpochBestModel)
@@ -105,6 +106,9 @@ class Run(ABC):
 class ActivationVisualizer:
     def __init__(self):
         self.activations = []
+
+    def has_activations(self):
+        return len(self.activations) > 0
 
     def save_heatmap(self, path):
         if len(self.activations) > 0:
@@ -164,12 +168,13 @@ class LocalFileRun(Run, EpochEventMixin):
         run_time = timeit.default_timer() - self.start_time
         self.static_data["run_time"] = run_time
         self.handler.handle(self.static_data)
-        try:
-            self.activation_visualizer.save_heatmap(
-                os.path.join(self.path, "activations.png")
-            )
-        except Exception as e:
-            print(f"Error saving activations: {e}")
+        if self.activation_visualizer.has_activations():
+            try:
+                self.activation_visualizer.save_heatmap(
+                    os.path.join(self.path, "activations.png")
+                )
+            except Exception as e:
+                print(f"Error saving activations: {e}")
         print(f"Run {self.name} finished")
 
 
@@ -229,11 +234,32 @@ class WandbRun(Run, EpochEventMixin):
     def finish(self) -> None:
         print(f"Run {self.name} finished")
 
-        try:
-            activation_image_path = os.path.join(self.path, "activations.png")
-            self.activation_visualizer.save_heatmap(activation_image_path)
-            self.run.log({"activations": wandb.Image(activation_image_path)})
-        except Exception as e:
-            print(f"Error saving activations: {e}")
+        if self.activation_visualizer.has_activations():
+            try:
+                activation_image_path = os.path.join(self.path, "activations.png")
+                self.activation_visualizer.save_heatmap(activation_image_path)
+                self.run.log({"activations": wandb.Image(activation_image_path)})
+            except Exception as e:
+                print(f"Error saving activations: {e}")
 
         self.run.finish()
+
+    def log_table(self, df: pd.DataFrame, metadata: Dict[str, Any]) -> None:
+        table = wandb.Table(dataframe=df)
+        table_artifact = wandb.Artifact(metadata.dataset, type="dataset")
+        table_artifact.add(table, "table")
+        self.run.log_artifact(table_artifact)
+        self.log({"results": table})
+
+
+"""
+test_table = wandb.Table(dataframe=test_df)
+  test_table_artifact = wandb.Artifact(metadata.dataset, type="dataset")
+  test_table_artifact.add(test_table, "test_table")
+
+  logger.log(test_metrics)
+  logger.log({"results": test_table})
+
+  # and Log as an Artifact to increase the available row limit!
+  lxogger.run.log_artifact(test_table_artifact)
+"""
