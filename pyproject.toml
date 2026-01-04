@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-torch = "^2.3.1"
+torch = "2.4.0"
 pandas = "^2.2.2"
 matplotlib = "^3.9.1"
 wandb = "^0.17.4"
@@ -16,6 +16,7 @@ seaborn = "^0.13.2"
 plotly = "^5.22.0"
 scipy = "^1.14.0"
 pydantic = "^2.8.2"
+transformers = "^4.50.0"
 
 
 [tool.poetry.group.test.dependencies]
