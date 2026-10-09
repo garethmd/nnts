@@ -25,7 +25,7 @@ jobs:
           path: ./.venv
           key: venv-${{ hashFiles('poetry.lock') }}
       - name: Install the project dependencies
-        run: poetry install --with dev
+        run: poetry install --with dev --all-extras
       - name: Sphinx api doc
         run: |
           poetry run sphinx-apidoc -o docs nnts
