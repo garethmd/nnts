@@ -1,6 +1,7 @@
 """Install contract for consumers of nnts.
 
-Core is pandas and pydantic. Torch is optional, on a range, and the
+Core is pandas, pydantic, and requests (nnts.data.tsf downloads the
+Monash files with it). Torch is optional, on a range, and the
 torch extra does not bring the plotting or experiment-tracking
 packages. Notebooks keep the previous stack through the all extra,
 including scipy, which is not part of any narrower group.
@@ -24,15 +25,28 @@ def _poetry():
         return tomllib.load(handle)["tool"]["poetry"]
 
 
-def test_core_dependencies_are_pandas_and_pydantic():
+def test_core_dependencies_are_pandas_pydantic_and_requests():
     dependencies = _poetry()["dependencies"]
     required = {
         name
         for name, spec in dependencies.items()
-        if name != "python"
-        and not (isinstance(spec, dict) and spec.get("optional"))
+        if name != "python" and not (isinstance(spec, dict) and spec.get("optional"))
     }
-    assert required == {"pandas", "pydantic"}
+    assert required == {"pandas", "pydantic", "requests"}
+
+
+def test_torch_only_import_chain_has_no_top_level_optional_imports():
+    # nnts.torch.trainers imports nnts.loggers; the plotting and wandb
+    # imports there must stay inside the methods that use them.
+    optional = ("matplotlib", "seaborn", "wandb", "plotly", "scipy", "transformers")
+    for module in ("nnts/loggers.py", "nnts/torch/trainers.py", "nnts/datasets.py"):
+        for line in (ROOT / module).read_text().splitlines():
+            stripped = line.strip()
+            if stripped.startswith(("import ", "from ")) and not line.startswith(" "):
+                assert not any(
+                    stripped.startswith((f"import {name}", f"from {name}"))
+                    for name in optional
+                ), f"{module}: {stripped}"
 
 
 def test_torch_is_optional_on_the_two_four_range():

@@ -8,14 +8,14 @@ from enum import Enum
 from functools import singledispatchmethod
 from typing import Any, Dict
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
-
-import wandb
 
 from . import events, trainers, utils
+
+# matplotlib, seaborn and wandb are optional extras (nnts[viz], nnts[wandb]).
+# They are imported inside the methods that use them so that a torch-only
+# install can import nnts.torch.trainers, which imports this module.
 
 
 class Handler(ABC):
@@ -112,6 +112,9 @@ class ActivationVisualizer:
 
     def save_heatmap(self, path):
         if len(self.activations) > 0:
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+
             plt.figure(figsize=(10, 6))
             sns.heatmap(self.activations, cmap="coolwarm", linewidths=0.5)
             plt.savefig(path)
@@ -215,6 +218,8 @@ class WandbRun(Run, EpochEventMixin):
         self.project = project
         self.name = name
         self.static_data = config
+        import wandb
+
         self.run = wandb.init(
             project=self.project, name=self.name, config=self.static_data
         )
@@ -235,6 +240,8 @@ class WandbRun(Run, EpochEventMixin):
         print(f"Run {self.name} finished")
 
         if self.activation_visualizer.has_activations():
+            import wandb
+
             try:
                 activation_image_path = os.path.join(self.path, "activations.png")
                 self.activation_visualizer.save_heatmap(activation_image_path)
@@ -245,6 +252,8 @@ class WandbRun(Run, EpochEventMixin):
         self.run.finish()
 
     def log_table(self, df: pd.DataFrame, metadata: Dict[str, Any]) -> None:
+        import wandb
+
         table = wandb.Table(dataframe=df)
         table_artifact = wandb.Artifact(metadata.dataset, type="dataset")
         table_artifact.add(table, "table")
