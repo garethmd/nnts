@@ -222,6 +222,47 @@ class TimeseriesDataset(torch.utils.data.Dataset):
         return PaddedData(data=X, pad_mask=pad_mask)
 
 
+class LastWindowDataset(torch.utils.data.Dataset):
+    """One item per series: that series' last `context` values.
+
+    Rows are read in frame order within each `unique_id`, the same order
+    `TimeseriesDataset` uses, so each series should already be in time order.
+    A series shorter than `context` is kept and left-padded with zeros; the
+    pad mask is 0 on the pad and 1 on real values. The caller wraps this in a
+    DataLoader and passes it to `TorchForecaster.forecast`.
+    """
+
+    def __init__(self, df: pd.DataFrame, context: int):
+        self.context = context
+        self._unique_ids = []
+        self._windows = []
+        self._masks = []
+        for unique_id, grp in df.groupby("unique_id", sort=False):
+            self._unique_ids.append(unique_id)
+            values = torch.tensor(grp["y"].to_numpy(), dtype=torch.float32).reshape(
+                -1, 1
+            )
+            if values.shape[0] > context:
+                values = values[-context:]
+            length = values.shape[0]
+            window = torch.zeros(context, 1)
+            mask = torch.zeros(context)
+            window[-length:] = values
+            mask[-length:] = 1
+            self._windows.append(window)
+            self._masks.append(mask)
+
+    def __len__(self) -> int:
+        return len(self._windows)
+
+    @property
+    def unique_ids(self) -> list:
+        return list(self._unique_ids)
+
+    def __getitem__(self, index: int) -> PaddedData:
+        return PaddedData(data=self._windows[index], pad_mask=self._masks[index])
+
+
 class MultivariateTimeSeriesDatasetLong(torch.utils.data.Dataset):
     """Time series dataset for use with Multivariate or Local models where given a
     a dataset containing multiple time series, N, we want to sample windows
